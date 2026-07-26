@@ -3,7 +3,7 @@ import type {} from "@tanstack/react-start";
 
 const BASE_URL = "https://troop2001naples.org";
 
-const paths = ["/", "/about", "/eagle-scouts", "/calendar", "/events", "/join", "/quick-links"];
+const paths = ["/", "/about", "/eagle-scouts", "/calendar", "/events", "/gallery", "/join", "/quick-links"];
 
 export const Route = createFileRoute("/sitemap.xml")({
   server: {

@@ -1,0 +1,40 @@
+CONNECT BAND APP CALENDAR
+=========================
+
+Band has no public API, but it exports an iCal (webcal) feed. The website
+fetches that feed on the server and shows events on:
+
+  • Calendar tab  — full year month grid
+  • Events tab    — next 5 upcoming events
+  • Home page     — next 4 upcoming events
+
+STEP 1 — Export from Band (any member can do this)
+  1. Open your troop Band in the app or at https://band.us
+  2. Go to Calendar / Events tab
+  3. Manage Events → Export Band Calendars
+  4. Select your troop calendar
+  5. Copy the subscription URL (looks like):
+       webcal://api.band.us/ical?token=XXXXXXXX
+     or
+       https://api.band.us/ical?token=XXXXXXXX
+
+STEP 2 — Add to .env in this project
+  BAND_ICAL_URL="webcal://api.band.us/ical?token=YOUR_TOKEN_HERE"
+
+  (webcal:// or https:// both work)
+
+STEP 3 — Restart dev server
+  Ctrl+C then: npm run dev
+
+STEP 4 — Verify
+  • http://localhost:8080/calendar  — full year
+  • http://localhost:8080/events    — next 5
+
+NOTES
+  • Keep the token private — do not commit .env to GitHub
+  • Events update in Band → website refreshes within ~15 minutes
+  • If BAND_ICAL_URL is not set, the site falls back to Supabase events
+  • Admin /admin/events is only needed when not using Band feed
+
+DEPLOYMENT
+  When you deploy (Cloudflare, etc.), set BAND_ICAL_URL in production env vars too.

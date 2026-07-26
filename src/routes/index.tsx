@@ -1,39 +1,38 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/site/Layout";
-import heroImg from "@/assets/troop-summit.jpg.asset.json";
-import eagleImg from "@/assets/eagle.jpg";
-import adventureImg from "@/assets/adventure.jpg";
-import canoeImg from "@/assets/canoe.jpg";
-import campingImg from "@/assets/camping.jpg";
-import hikingImg from "@/assets/hiking.jpg";
-import flagImg from "@/assets/flag.jpg";
+import { TroopPhoto } from "@/components/site/TroopPhoto";
+import { photos } from "@/lib/photos";
 import { ArrowRight, Calendar, Compass, Award, ChevronRight, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fetchUpcomingEvents, type EventRow } from "@/lib/events";
+import { fetchActiveAnnouncements, type AnnouncementRow } from "@/lib/announcements";
+import { fetchApprovedEagleScoutCount } from "@/lib/content";
+import { galleryPhotos } from "@/lib/gallery-photos";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Troop 2001 Naples — Scouts BSA in Naples, Florida" },
       { name: "description", content: "Adventure, leadership, and Eagle Scout achievement. Troop 2001 meets Wednesdays at 7 PM in Naples, Florida. Join us." },
-      { property: "og:image", content: "https://troop2001naples.org/og-cover.jpg" },
+      { property: "og:image", content: `https://troop2001naples.org${photos.ogLogo}` },
     ],
   }),
+  loader: async () => ({ eagleCount: await fetchApprovedEagleScoutCount() }),
   component: HomePage,
 });
 
-const slides = [heroImg.url, adventureImg, canoeImg, campingImg, hikingImg, flagImg];
-
-const announcements = [
-  "Registration is open for Fall camping season — see the Calendar for dates.",
-  "Congratulations to our newest Eagle Scout — full ceremony recap in Events.",
-  "Merit Badge University sign-ups close August 15th.",
-];
+// Prefer real troop photos from the gallery; fall back to the stock set when it is empty.
+const slides =
+  galleryPhotos.length > 0
+    ? [photos.hero, ...galleryPhotos.slice(0, 4).map((p) => p.src)]
+    : photos.slideshow;
 
 function HomePage() {
+  const { eagleCount } = Route.useLoaderData();
+
   return (
     <SiteLayout>
-      <Hero />
+      <Hero eagleCount={eagleCount} />
       <EagleSection />
       <AdventureSection />
       <EventsAndAnnouncements />
@@ -44,15 +43,26 @@ function HomePage() {
   );
 }
 
-function Hero() {
+function Hero({ eagleCount }: { eagleCount: number | null }) {
+  // Retry from the browser when the server-rendered count is unavailable.
+  const [count, setCount] = useState(eagleCount);
+  useEffect(() => {
+    if (count !== null) return;
+    fetchApprovedEagleScoutCount().then(setCount);
+  }, [count]);
+
+  const showEagleStat = typeof count === "number" && count > 0;
+
   return (
     <section className="relative isolate overflow-hidden">
-      <img
-        src={heroImg.url}
+      <TroopPhoto
+        src={photos.hero}
         alt="Scouts on a mountain ridge at sunrise"
         width={1920}
         height={1200}
+        loading="eager"
         className="absolute inset-0 h-full w-full object-cover"
+        label="Hero photo"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-navy/70 via-forest-deep/55 to-forest-deep/85" />
       <div className="relative">
@@ -81,8 +91,23 @@ function Hero() {
             </div>
           </div>
 
-          <div className="mt-16 grid w-full max-w-4xl gap-6 border-t border-cream/15 pt-8 text-left md:grid-cols-3">
+          <div
+            className={`mt-16 grid w-full gap-6 border-t border-cream/15 pt-8 text-left sm:grid-cols-2 ${
+              showEagleStat ? "max-w-5xl md:grid-cols-4" : "max-w-4xl md:grid-cols-3"
+            }`}
+          >
             <Stat label="Founded" value="2000" />
+            {showEagleStat && (
+              <Link to="/eagle-scouts" className="group">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-cream/60">Eagle Scouts</div>
+                <div className="mt-1 font-display text-2xl text-gold md:text-3xl">
+                  {count}
+                  <span className="ml-1.5 inline-block text-base text-cream/70 transition-transform group-hover:translate-x-0.5">
+                    →
+                  </span>
+                </div>
+              </Link>
+            )}
             <Stat label="Meets" value="Wednesdays · 7:00 PM" />
             <div>
               <div className="text-[11px] uppercase tracking-[0.22em] text-cream/60 flex items-center gap-1.5"><MapPin size={12} /> Meeting Location</div>
@@ -112,7 +137,7 @@ function EagleSection() {
     <section className="py-24">
       <div className="container-page grid gap-12 md:grid-cols-2 md:items-center">
         <div className="relative overflow-hidden rounded-2xl">
-          <img src={eagleImg} alt="Eagle Scout medal on uniform" width={1600} height={1100} loading="lazy" className="h-full w-full object-cover" />
+          <TroopPhoto src={photos.trailToEagle} alt="Eagle Scout medal on uniform" width={1600} height={1100} className="h-full w-full object-cover" label="Eagle Scout" />
         </div>
         <div>
           <div className="eyebrow">The Trail to Eagle</div>
@@ -138,9 +163,9 @@ function EagleSection() {
 
 function AdventureSection() {
   const cards = [
-    { img: campingImg, title: "Camping", copy: "Monthly campouts across Florida and the Southeast." },
-    { img: hikingImg, title: "Hiking & Backpacking", copy: "From day hikes to high adventure treks." },
-    { img: canoeImg, title: "Water Sports", copy: "Canoeing, kayaking, sailing, and swimming." },
+    { img: photos.outdoorAdventure.camping, title: "Camping", copy: "Monthly campouts across Florida and the Southeast." },
+    { img: photos.outdoorAdventure.hiking, title: "Hiking & Backpacking", copy: "From day hikes to high adventure treks." },
+    { img: photos.outdoorAdventure.waterSports, title: "Water Sports", copy: "Canoeing, kayaking, sailing, and swimming." },
   ];
   return (
     <section className="border-y border-border/60 bg-sand py-24">
@@ -160,7 +185,7 @@ function AdventureSection() {
           {cards.map((c) => (
             <article key={c.title} className="group overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border transition-transform hover:-translate-y-1">
               <div className="aspect-[4/3] overflow-hidden">
-                <img src={c.img} alt={c.title} width={1400} height={900} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <TroopPhoto src={c.img} alt={c.title} width={1400} height={900} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" label={c.title} />
               </div>
               <div className="p-6">
                 <div className="flex items-center gap-2 text-forest">
@@ -180,9 +205,17 @@ function AdventureSection() {
 
 function EventsAndAnnouncements() {
   const [events, setEvents] = useState<EventRow[]>([]);
+  const [announcements, setAnnouncements] = useState<AnnouncementRow[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    fetchUpcomingEvents(4).then((rows) => { setEvents(rows); setLoading(false); }).catch(() => setLoading(false));
+    Promise.all([
+      fetchUpcomingEvents(4).catch(() => [] as EventRow[]),
+      fetchActiveAnnouncements().catch(() => [] as AnnouncementRow[]),
+    ]).then(([ev, ann]) => {
+      setEvents(ev);
+      setAnnouncements(ann);
+      setLoading(false);
+    });
   }, []);
   return (
     <section className="py-24">
@@ -219,17 +252,25 @@ function EventsAndAnnouncements() {
           </div>
         </div>
 
-        <aside className="lg:col-span-2">
+        <aside id="announcements" className="lg:col-span-2">
           <div className="rounded-2xl border border-border bg-forest-deep p-8 text-cream">
             <div className="eyebrow !text-gold">Announcements</div>
             <h3 className="mt-3 font-display text-2xl text-cream">Latest from the troop</h3>
-            <ul className="mt-6 space-y-4 text-sm text-cream/85">
-              {announcements.map((a, i) => (
-                <li key={i} className="flex gap-3">
+            <ul className="mt-6 space-y-5 text-sm text-cream/85">
+              {announcements.map((a) => (
+                <li key={a.id} className="flex gap-3">
                   <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
-                  <span>{a}</span>
+                  <div>
+                    {a.title && a.title !== a.body && (
+                      <div className="font-medium text-cream">{a.title}</div>
+                    )}
+                    <p className={a.title && a.title !== a.body ? "mt-1 text-cream/80" : ""}>{a.body}</p>
+                  </div>
                 </li>
               ))}
+              {!loading && announcements.length === 0 && (
+                <li className="text-cream/60">No announcements at the moment.</li>
+              )}
             </ul>
           </div>
         </aside>
@@ -251,6 +292,12 @@ function PhotoSlideshow() {
           <div>
             <div className="eyebrow !text-gold">Photo Slideshow</div>
             <h2 className="mt-3 font-display text-4xl text-cream md:text-5xl">Moments from the trail.</h2>
+            <Link
+              to="/gallery"
+              className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-gold hover:gap-2.5 transition-all"
+            >
+              See the full photo gallery <ArrowRight size={15} />
+            </Link>
           </div>
           <div className="flex gap-2">
             {slides.map((_, idx) => (
@@ -265,12 +312,12 @@ function PhotoSlideshow() {
         </div>
         <div className="relative mt-8 aspect-[16/8] overflow-hidden rounded-2xl">
           {slides.map((s, idx) => (
-            <img
+            <TroopPhoto
               key={idx}
               src={s}
               alt="Troop 2001 activities"
               className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${idx === i ? "opacity-100" : "opacity-0"}`}
-              loading="lazy"
+              label="Slideshow"
             />
           ))}
         </div>
@@ -324,7 +371,7 @@ function CTA() {
     <section className="pb-24">
       <div className="container-page">
         <div className="relative overflow-hidden rounded-3xl bg-forest px-8 py-16 text-cream md:px-14 md:py-20">
-          <div className="absolute inset-0 opacity-15" style={{ backgroundImage: `url(${flagImg})`, backgroundSize: "cover", backgroundPosition: "center" }} />
+          <div className="absolute inset-0 opacity-15" style={{ backgroundImage: `url(${photos.home.flag})`, backgroundSize: "cover", backgroundPosition: "center" }} />
           <div className="relative max-w-2xl">
             <div className="eyebrow !text-gold">Join Us</div>
             <h2 className="mt-3 font-display text-4xl text-cream md:text-5xl">Ready to start the adventure?</h2>

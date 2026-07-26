@@ -74,6 +74,207 @@ export type Database = {
         }
         Relationships: []
       }
+      eagle_scouts: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          name: string
+          project: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          submitted_by_email: string | null
+          updated_at: string
+          year: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          project: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          submitted_by_email?: string | null
+          updated_at?: string
+          year: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          project?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          submitted_by_email?: string | null
+          updated_at?: string
+          year?: string
+        }
+        Relationships: []
+      }
+      scoutmasters: {
+        Row: {
+          admin_notes: string | null
+          bio: string | null
+          created_at: string
+          id: string
+          name: string
+          photo_url: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          submitted_by_email: string | null
+          updated_at: string
+          years: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          bio?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          photo_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          submitted_by_email?: string | null
+          updated_at?: string
+          years: string
+        }
+        Update: {
+          admin_notes?: string | null
+          bio?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          photo_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          submitted_by_email?: string | null
+          updated_at?: string
+          years?: string
+        }
+        Relationships: []
+      }
+      announcements: {
+        Row: {
+          body: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          published_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          published_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          published_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      join_notify_emails: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string
+          id: string
+          label: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          label?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          label?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gallery_photos: {
+        Row: {
+          admin_notes: string | null
+          approved_path: string | null
+          caption: string | null
+          consent_confirmed: boolean
+          created_at: string
+          height: number | null
+          id: string
+          pending_path: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          submitted_by_email: string | null
+          submitted_by_name: string | null
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_path?: string | null
+          caption?: string | null
+          consent_confirmed?: boolean
+          created_at?: string
+          height?: number | null
+          id?: string
+          pending_path?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          submitted_by_email?: string | null
+          submitted_by_name?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_path?: string | null
+          caption?: string | null
+          consent_confirmed?: boolean
+          created_at?: string
+          height?: number | null
+          id?: string
+          pending_path?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          submitted_by_email?: string | null
+          submitted_by_name?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -86,9 +287,52 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_troop_users: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          email: string
+          is_admin: boolean
+          created_at: string
+          last_sign_in_at: string | null
+          email_confirmed: boolean
+        }[]
+      }
+      list_approved_gallery_photos: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          approved_path: string | null
+          caption: string | null
+          width: number | null
+          height: number | null
+          created_at: string
+        }[]
+      }
+      submit_gallery_photo: {
+        Args: {
+          p_pending_path: string
+          p_caption: string | null
+          p_submitted_by_name: string
+          p_submitted_by_email: string
+          p_consent_confirmed: boolean
+          p_width: number | null
+          p_height: number | null
+        }
+        Returns: string
+      }
+      grant_troop_admin: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
+      revoke_troop_admin: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
+      content_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -217,6 +461,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      content_status: ["pending", "approved", "rejected"],
     },
   },
 } as const

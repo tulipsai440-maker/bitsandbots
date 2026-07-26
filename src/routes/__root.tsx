@@ -7,12 +7,15 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header } from "../components/site/Header";
 import { Footer } from "../components/site/Footer";
+import { Toaster } from "../components/ui/sonner";
+import { photos } from "@/lib/photos";
+
+const SITE_URL = "https://troop2001naples.org";
 
 function NotFoundComponent() {
   return (
@@ -38,9 +41,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -74,11 +74,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Adventure, leadership, and Eagle Scout achievement in Naples, Florida since 2000." },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "Troop 2001 Naples" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: SITE_URL },
+      { property: "og:image", content: `${SITE_URL}${photos.ogLogo}` },
+      { property: "og:image:alt", content: "Boy Scouts of America Troop 2001 Naples logo" },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:image", content: `${SITE_URL}${photos.ogLogo}` },
+      { name: "twitter:image:alt", content: "Boy Scouts of America Troop 2001 Naples logo" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", href: photos.favicon32, type: "image/png", sizes: "32x32" },
+      { rel: "icon", href: photos.favicon16, type: "image/png", sizes: "16x16" },
+      { rel: "apple-touch-icon", href: photos.appleTouchIcon, sizes: "180x180" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -95,7 +103,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <head>
         <HeadContent />
       </head>
@@ -112,6 +120,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <Toaster richColors closeButton position="top-center" />
     </QueryClientProvider>
   );
 }

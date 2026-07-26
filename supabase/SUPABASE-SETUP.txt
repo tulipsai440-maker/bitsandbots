@@ -1,0 +1,64 @@
+Troop 2001 — YOUR Supabase project
+==================================
+
+Project: xohaeezxzbeyzpjbngkj
+Dashboard: https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj
+
+STEP 1 — Copy API keys
+----------------------
+Open: Settings → API
+https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/settings/api
+
+Copy into .env:
+  SUPABASE_URL=https://xohaeezxzbeyzpjbngkj.supabase.co
+  SUPABASE_PROJECT_ID=xohaeezxzbeyzpjbngkj
+  SUPABASE_PUBLISHABLE_KEY=<anon or publishable key from dashboard>
+  (same three values with VITE_ prefix)
+
+STEP 2 — Fix auth redirect URLs (IMPORTANT)
+---------------------------------------------
+Email confirmation links use these settings — NOT Lovable.
+
+Authentication → URL Configuration:
+https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/auth/url-configuration
+
+Set:
+  Site URL: http://localhost:8080
+  Redirect URLs (add each line):
+    http://localhost:8080/**
+    http://localhost:8080/auth
+
+When you deploy, add your production URL too (e.g. https://troop2001naples.org/**).
+
+STEP 3 — Enable email sign-up
+-----------------------------
+Authentication → Providers → Email → ON
+https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/auth/providers
+
+Optional for local dev: turn OFF "Confirm email" so sign-up works instantly.
+
+STEP 4 — Run database setup (one paste)
+---------------------------------------
+SQL Editor → paste ALL of bootstrap-new-project.sql → Run
+https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/sql/new
+
+Also run fix-eagle-scouts-rls.sql if Eagle Scouts page errors.
+Also run setup-join-notify-emails.sql for Join Notifications admin tab.
+Also run setup-troop-admins.sql for the Troop Admins admin tab.
+Also run setup-gallery-uploads.sql for gallery photo uploads + Photo Review admin tab.
+
+STEP 5 — Create your account
+----------------------------
+Restart dev server (npm run dev), open http://localhost:8080/auth
+Sign up with tulipsai440@gmail.com and a strong password.
+
+If email confirmation is on, the link should open http://localhost:8080/auth
+(not Lovable). Or run confirm-user-tulipsai440.sql to confirm email and set admin access.
+
+STEP 6 — Make yourself admin
+----------------------------
+SQL Editor → run confirm-user-tulipsai440.sql
+
+Sign in at http://localhost:8080/auth with tulipsai440@gmail.com and your admin password.
+
+Then visit http://localhost:8080/admin/eagle-scouts (or /admin/scoutmasters, /admin/announcements)

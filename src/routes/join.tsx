@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Send } from "lucide-react";
-import { submitJoinRequest } from "@/lib/join.functions";
+import { fetchJoinContactEmail, sendJoinEmailFromBrowser } from "@/lib/join-client-email";
 
 export const Route = createFileRoute("/join")({
   head: () => ({
@@ -30,6 +30,11 @@ function JoinPage() {
   const [form, setForm] = useState<FormState>(empty);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [contactEmail, setContactEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchJoinContactEmail().then(setContactEmail);
+  }, []);
 
   const onChange = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -39,12 +44,25 @@ function JoinPage() {
     setStatus("submitting");
     setError(null);
     try {
-      await submitJoinRequest({ data: form });
+      const { submitJoinRequest } = await import("@/lib/join.functions");
+      const result = await submitJoinRequest({ data: form });
+      if (result.useClientFormSubmit) {
+        await sendJoinEmailFromBrowser(form);
+      }
       setStatus("success");
       setForm(empty);
     } catch (err) {
       setStatus("error");
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      const msg = err instanceof Error ? err.message : "Something went wrong.";
+      if (msg.toLowerCase().includes("fetch")) {
+        setError(
+          contactEmail
+            ? `Network blocked the email request. Try again on home Wi‑Fi, or email ${contactEmail} directly.`
+            : "Network blocked the email request. Try again on home Wi‑Fi, or contact the troop directly.",
+        );
+      } else {
+        setError(msg);
+      }
     }
   };
 
@@ -105,7 +123,20 @@ function JoinPage() {
                   />
                 </label>
 
-                {error && <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
+                {error && (
+                  <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    {error}
+                    {contactEmail && (
+                      <p className="mt-2 text-foreground/80">
+                        Or email{" "}
+                        <a href={`mailto:${contactEmail}`} className="font-medium text-forest underline">
+                          {contactEmail}
+                        </a>{" "}
+                        directly.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-xs text-muted-foreground">Submissions are sent securely to the troop.</p>

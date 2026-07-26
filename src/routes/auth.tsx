@@ -1,9 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SiteLayout } from "@/components/site/Layout";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
+import { supabase, getSupabaseProjectRef } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+function authCallbackUrl(): string {
+  if (typeof window !== "undefined") return `${window.location.origin}/auth`;
+  return "/auth";
+}
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -24,43 +28,78 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
+  const callbackUrl = authCallbackUrl();
+  const isDev = import.meta.env.DEV;
+  const projectRef = getSupabaseProjectRef();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate({ to: "/admin/events" });
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        toast.success("Signed in successfully.");
+        navigate({ to: "/admin/events" });
+      }
+      if (event === "PASSWORD_RECOVERY") {
+        setMessage({
+          type: "success",
+          text: "Password reset confirmed. Sign in with your new password.",
+        });
+      }
+    });
+
+    return () => authListener.subscription.unsubscribe();
+  }, [navigate]);
+
+  function authErrorMessage(err: unknown): string {
+    const msg = err instanceof Error ? err.message : "Sign in failed";
+    if (msg.includes("Invalid login credentials")) {
+      return "Wrong email or password. If this is your first time, click “Need an account? Sign up” below.";
+    }
+    if (msg.includes("Email not confirmed")) {
+      return `Email not confirmed yet. Open the confirmation link from your inbox — it should return to ${callbackUrl}. An admin can also confirm your account in Supabase.`;
+    }
+    return msg;
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
+    setMessage(null);
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password;
     try {
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: trimmedEmail,
+          password: trimmedPassword,
         });
         if (error) throw error;
-        toast.success("Account created. Check your email if confirmation is required.");
+        if (!data.session) throw new Error("Sign in succeeded but no session was returned. Try again.");
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email: trimmedEmail,
+          password: trimmedPassword,
+          options: { emailRedirectTo: callbackUrl },
+        });
+        if (error) throw error;
+        const success = `Account created. Check your email for a confirmation link — it should open ${callbackUrl}.`;
+        setMessage({ type: "success", text: success });
+        toast.success("Account created. Check your email to confirm.");
+        setMode("signin");
+        return;
       }
-      navigate({ to: "/_authenticated/admin/events" as string });
+      navigate({ to: "/admin/events" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign in failed");
+      const text = authErrorMessage(err);
+      setMessage({ type: "error", text });
+      toast.error(text);
     } finally {
       setBusy(false);
     }
-  }
-
-  async function onGoogle() {
-    setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error(result.error.message ?? "Google sign in failed");
-      setBusy(false);
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/_authenticated/admin/events" as string });
   }
 
   return (
@@ -70,24 +109,17 @@ function AuthPage() {
           <div className="eyebrow">Troop Admin</div>
           <h1 className="mt-3 font-display text-4xl">Sign in</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Access the admin area to manage events. First-time admin? Create an account and ask a
-            troop leader to grant admin access.
+            Access the admin area to manage events, Eagle Scouts, scoutmasters, and announcements.
+            First-time admin? Create an account, confirm your email, then ask a leader to grant admin
+            access in Supabase.
           </p>
+          {isDev && projectRef && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Dev Supabase project: <code className="rounded bg-muted px-1">{projectRef}</code>
+            </p>
+          )}
 
-          <button
-            type="button"
-            onClick={onGoogle}
-            disabled={busy}
-            className="btn-outline mt-8 w-full"
-          >
-            Continue with Google
-          </button>
-
-          <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
-          </div>
-
-          <form onSubmit={onSubmit} className="space-y-3">
+          <form onSubmit={onSubmit} className="mt-8 space-y-3">
             <div>
               <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Email</label>
               <input
@@ -110,9 +142,22 @@ function AuthPage() {
               />
             </div>
             <button type="submit" disabled={busy} className="btn-primary w-full">
-              {mode === "signin" ? "Sign in" : "Create account"}
+              {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
             </button>
           </form>
+
+          {message && (
+            <p
+              role="alert"
+              className={`mt-4 rounded-lg border px-3 py-2 text-sm ${
+                message.type === "success"
+                  ? "border-forest/30 bg-forest/5 text-forest"
+                  : "border-destructive/30 bg-destructive/5 text-destructive"
+              }`}
+            >
+              {message.text}
+            </p>
+          )}
 
           <button
             type="button"

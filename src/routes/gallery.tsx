@@ -1,0 +1,232 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { SiteLayout, PageHero } from "@/components/site/Layout";
+import { TroopPhoto } from "@/components/site/TroopPhoto";
+import { GalleryUploadForm } from "@/components/site/GalleryUploadForm";
+import { galleryPhotos } from "@/lib/gallery-photos";
+import { fetchApprovedGalleryPhotos } from "@/lib/gallery-uploads";
+import { photos } from "@/lib/photos";
+import { ArrowRight, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
+
+export const Route = createFileRoute("/gallery")({
+  head: () => ({
+    meta: [
+      { title: "Photo Gallery — Troop 2001 Naples" },
+      {
+        name: "description",
+        content:
+          "Photos from Troop 2001 Naples campouts, ceremonies, service projects, and troop meetings.",
+      },
+      { property: "og:title", content: "Troop 2001 Naples Photo Gallery" },
+      {
+        property: "og:description",
+        content: "Moments from campouts, ceremonies, and service projects.",
+      },
+      { property: "og:image", content: `https://troop2001naples.org${photos.ogLogo}` },
+    ],
+  }),
+  component: GalleryPage,
+});
+
+type DisplayPhoto = {
+  key: string;
+  src: string;
+  thumb: string;
+  width: number | null;
+  height: number | null;
+  caption: string | null;
+};
+
+const staticPhotos: DisplayPhoto[] = galleryPhotos.map((photo) => ({
+  key: photo.src,
+  src: photo.src,
+  thumb: photo.thumb,
+  width: photo.width,
+  height: photo.height,
+  caption: null,
+}));
+
+function GalleryPage() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [uploaded, setUploaded] = useState<DisplayPhoto[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchApprovedGalleryPhotos()
+      .then((rows) => {
+        if (cancelled) return;
+        setUploaded(
+          rows.map((row) => ({
+            key: row.id,
+            src: row.url,
+            thumb: row.url,
+            width: row.width,
+            height: row.height,
+            caption: row.caption,
+          })),
+        );
+      })
+      .catch(() => {
+        // Gallery still works with the built-in photos if uploads aren't set up yet.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const allPhotos = useMemo(() => [...uploaded, ...staticPhotos], [uploaded]);
+  const total = allPhotos.length;
+
+  const close = useCallback(() => setOpenIndex(null), []);
+  const step = useCallback(
+    (delta: number) => setOpenIndex((i) => (i === null ? i : (i + delta + total) % total)),
+    [total],
+  );
+
+  useEffect(() => {
+    if (openIndex === null) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+      if (e.key === "ArrowRight") step(1);
+      if (e.key === "ArrowLeft") step(-1);
+    };
+    document.addEventListener("keydown", onKey);
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [openIndex, close, step]);
+
+  const active = openIndex === null ? null : allPhotos[openIndex];
+
+  return (
+    <SiteLayout>
+      <PageHero
+        eyebrow="Photo Gallery"
+        title="Moments from the trail."
+        align="center"
+        description={
+          total > 0
+            ? "Campouts, ceremonies, service projects, and everything in between."
+            : "Photos from troop adventures will appear here soon."
+        }
+      />
+
+      <section className="py-16">
+        <div className="container-page">
+          <div className="mb-8 flex justify-center">
+            <a href="#share-photos" className="btn-primary gap-2">
+              <Upload size={16} /> Share your photos
+            </a>
+          </div>
+
+          {total === 0 ? (
+            <div className="rounded-2xl border border-border bg-card p-10 text-center">
+              <p className="font-display text-2xl text-foreground">No photos yet.</p>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+                Troop photos will be posted here after upcoming campouts and ceremonies.
+              </p>
+              <Link to="/events" className="btn-outline mt-6 inline-flex gap-2">
+                See upcoming events <ArrowRight size={16} />
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {allPhotos.map((photo, index) => (
+                  <button
+                    key={photo.key}
+                    type="button"
+                    onClick={() => setOpenIndex(index)}
+                    className="group relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-sand shadow-sm transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest"
+                    aria-label={`Open photo ${index + 1} of ${total}`}
+                  >
+                    <TroopPhoto
+                      src={photo.thumb}
+                      alt={photo.caption ?? `Troop 2001 Naples activity photo ${index + 1}`}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      label="Troop photo"
+                    />
+                    <span className="pointer-events-none absolute inset-0 bg-forest-deep/0 transition-colors group-hover:bg-forest-deep/15" />
+                  </button>
+                ))}
+              </div>
+
+              <p className="mt-8 text-center text-sm text-muted-foreground">
+                Select any photo to view it full size.
+              </p>
+            </>
+          )}
+        </div>
+      </section>
+
+      <section id="share-photos" className="scroll-mt-20 border-t border-border bg-sand/40 py-16">
+        <div className="container-page max-w-3xl">
+          <GalleryUploadForm />
+        </div>
+      </section>
+
+      {active && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-forest-deep/90 p-4"
+          onClick={close}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Photo ${(openIndex ?? 0) + 1} of ${total}`}
+        >
+          <button
+            onClick={close}
+            className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-cream/10 text-cream transition-colors hover:bg-cream/20"
+            aria-label="Close photo"
+          >
+            <X size={20} />
+          </button>
+
+          {total > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  step(-1);
+                }}
+                className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-cream/10 text-cream transition-colors hover:bg-cream/20 md:left-6"
+                aria-label="Previous photo"
+              >
+                <ChevronLeft size={22} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  step(1);
+                }}
+                className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-cream/10 text-cream transition-colors hover:bg-cream/20 md:right-6"
+                aria-label="Next photo"
+              >
+                <ChevronRight size={22} />
+              </button>
+            </>
+          )}
+
+          <figure className="max-h-full w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={active.src}
+              alt={active.caption ?? `Troop 2001 Naples activity photo ${(openIndex ?? 0) + 1}`}
+              width={active.width ?? undefined}
+              height={active.height ?? undefined}
+              className="mx-auto max-h-[80vh] w-auto rounded-2xl object-contain shadow-2xl"
+            />
+            <figcaption className="mt-4 text-center text-sm text-cream/70">
+              {active.caption ? `${active.caption} · ` : ""}
+              {(openIndex ?? 0) + 1} of {total}
+            </figcaption>
+          </figure>
+        </div>
+      )}
+    </SiteLayout>
+  );
+}

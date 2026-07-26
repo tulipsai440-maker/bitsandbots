@@ -9,51 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as QuickLinksRouteImport } from './routes/quick-links'
-import { Route as JoinRouteImport } from './routes/join'
-import { Route as EventsRouteImport } from './routes/events'
-import { Route as EagleScoutsRouteImport } from './routes/eagle-scouts'
-import { Route as CalendarRouteImport } from './routes/calendar'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as EagleScoutsRouteImport } from './routes/eagle-scouts'
+import { Route as EventsRouteImport } from './routes/events'
+import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as JoinRouteImport } from './routes/join'
+import { Route as QuickLinksRouteImport } from './routes/quick-links'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as AuthenticatedAdminAnnouncementsRouteImport } from './routes/_authenticated/admin.announcements'
+import { Route as AuthenticatedAdminContentRouteImport } from './routes/_authenticated/admin.content'
+import { Route as AuthenticatedAdminEagleScoutsRouteImport } from './routes/_authenticated/admin.eagle-scouts'
 import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenticated/admin.events'
+import { Route as AuthenticatedAdminGalleryPhotosRouteImport } from './routes/_authenticated/admin.gallery-photos'
+import { Route as AuthenticatedAdminJoinNotificationsRouteImport } from './routes/_authenticated/admin.join-notifications'
+import { Route as AuthenticatedAdminScoutmastersRouteImport } from './routes/_authenticated/admin.scoutmasters'
+import { Route as AuthenticatedAdminTroopAdminsRouteImport } from './routes/_authenticated/admin.troop-admins'
 
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const QuickLinksRoute = QuickLinksRouteImport.update({
-  id: '/quick-links',
-  path: '/quick-links',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JoinRoute = JoinRouteImport.update({
-  id: '/join',
-  path: '/join',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EventsRoute = EventsRouteImport.update({
-  id: '/events',
-  path: '/events',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EagleScoutsRoute = EagleScoutsRouteImport.update({
-  id: '/eagle-scouts',
-  path: '/eagle-scouts',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CalendarRoute = CalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -61,19 +43,92 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EagleScoutsRoute = EagleScoutsRouteImport.update({
+  id: '/eagle-scouts',
+  path: '/eagle-scouts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsRoute = EventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleryRoute = GalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuickLinksRoute = QuickLinksRouteImport.update({
+  id: '/quick-links',
+  path: '/quick-links',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminAnnouncementsRoute =
+  AuthenticatedAdminAnnouncementsRouteImport.update({
+    id: '/admin/announcements',
+    path: '/admin/announcements',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminContentRoute =
+  AuthenticatedAdminContentRouteImport.update({
+    id: '/admin/content',
+    path: '/admin/content',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminEagleScoutsRoute =
+  AuthenticatedAdminEagleScoutsRouteImport.update({
+    id: '/admin/eagle-scouts',
+    path: '/admin/eagle-scouts',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminEventsRoute =
   AuthenticatedAdminEventsRouteImport.update({
     id: '/admin/events',
     path: '/admin/events',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminGalleryPhotosRoute =
+  AuthenticatedAdminGalleryPhotosRouteImport.update({
+    id: '/admin/gallery-photos',
+    path: '/admin/gallery-photos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminJoinNotificationsRoute =
+  AuthenticatedAdminJoinNotificationsRouteImport.update({
+    id: '/admin/join-notifications',
+    path: '/admin/join-notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminScoutmastersRoute =
+  AuthenticatedAdminScoutmastersRouteImport.update({
+    id: '/admin/scoutmasters',
+    path: '/admin/scoutmasters',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminTroopAdminsRoute =
+  AuthenticatedAdminTroopAdminsRouteImport.update({
+    id: '/admin/troop-admins',
+    path: '/admin/troop-admins',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -84,10 +139,18 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof CalendarRoute
   '/eagle-scouts': typeof EagleScoutsRoute
   '/events': typeof EventsRoute
+  '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
   '/quick-links': typeof QuickLinksRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/announcements': typeof AuthenticatedAdminAnnouncementsRoute
+  '/admin/content': typeof AuthenticatedAdminContentRoute
+  '/admin/eagle-scouts': typeof AuthenticatedAdminEagleScoutsRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
+  '/admin/gallery-photos': typeof AuthenticatedAdminGalleryPhotosRoute
+  '/admin/join-notifications': typeof AuthenticatedAdminJoinNotificationsRoute
+  '/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
+  '/admin/troop-admins': typeof AuthenticatedAdminTroopAdminsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -96,10 +159,18 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/eagle-scouts': typeof EagleScoutsRoute
   '/events': typeof EventsRoute
+  '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
   '/quick-links': typeof QuickLinksRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/announcements': typeof AuthenticatedAdminAnnouncementsRoute
+  '/admin/content': typeof AuthenticatedAdminContentRoute
+  '/admin/eagle-scouts': typeof AuthenticatedAdminEagleScoutsRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
+  '/admin/gallery-photos': typeof AuthenticatedAdminGalleryPhotosRoute
+  '/admin/join-notifications': typeof AuthenticatedAdminJoinNotificationsRoute
+  '/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
+  '/admin/troop-admins': typeof AuthenticatedAdminTroopAdminsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -110,10 +181,18 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/eagle-scouts': typeof EagleScoutsRoute
   '/events': typeof EventsRoute
+  '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
   '/quick-links': typeof QuickLinksRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_authenticated/admin/announcements': typeof AuthenticatedAdminAnnouncementsRoute
+  '/_authenticated/admin/content': typeof AuthenticatedAdminContentRoute
+  '/_authenticated/admin/eagle-scouts': typeof AuthenticatedAdminEagleScoutsRoute
   '/_authenticated/admin/events': typeof AuthenticatedAdminEventsRoute
+  '/_authenticated/admin/gallery-photos': typeof AuthenticatedAdminGalleryPhotosRoute
+  '/_authenticated/admin/join-notifications': typeof AuthenticatedAdminJoinNotificationsRoute
+  '/_authenticated/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
+  '/_authenticated/admin/troop-admins': typeof AuthenticatedAdminTroopAdminsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -124,10 +203,18 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/eagle-scouts'
     | '/events'
+    | '/gallery'
     | '/join'
     | '/quick-links'
     | '/sitemap.xml'
+    | '/admin/announcements'
+    | '/admin/content'
+    | '/admin/eagle-scouts'
     | '/admin/events'
+    | '/admin/gallery-photos'
+    | '/admin/join-notifications'
+    | '/admin/scoutmasters'
+    | '/admin/troop-admins'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -136,10 +223,18 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/eagle-scouts'
     | '/events'
+    | '/gallery'
     | '/join'
     | '/quick-links'
     | '/sitemap.xml'
+    | '/admin/announcements'
+    | '/admin/content'
+    | '/admin/eagle-scouts'
     | '/admin/events'
+    | '/admin/gallery-photos'
+    | '/admin/join-notifications'
+    | '/admin/scoutmasters'
+    | '/admin/troop-admins'
   id:
     | '__root__'
     | '/'
@@ -149,10 +244,18 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/eagle-scouts'
     | '/events'
+    | '/gallery'
     | '/join'
     | '/quick-links'
     | '/sitemap.xml'
+    | '/_authenticated/admin/announcements'
+    | '/_authenticated/admin/content'
+    | '/_authenticated/admin/eagle-scouts'
     | '/_authenticated/admin/events'
+    | '/_authenticated/admin/gallery-photos'
+    | '/_authenticated/admin/join-notifications'
+    | '/_authenticated/admin/scoutmasters'
+    | '/_authenticated/admin/troop-admins'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -163,6 +266,7 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   EagleScoutsRoute: typeof EagleScoutsRoute
   EventsRoute: typeof EventsRoute
+  GalleryRoute: typeof GalleryRoute
   JoinRoute: typeof JoinRoute
   QuickLinksRoute: typeof QuickLinksRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -170,60 +274,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quick-links': {
-      id: '/quick-links'
-      path: '/quick-links'
-      fullPath: '/quick-links'
-      preLoaderRoute: typeof QuickLinksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/join': {
-      id: '/join'
-      path: '/join'
-      fullPath: '/join'
-      preLoaderRoute: typeof JoinRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/events': {
-      id: '/events'
-      path: '/events'
-      fullPath: '/events'
-      preLoaderRoute: typeof EventsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/eagle-scouts': {
-      id: '/eagle-scouts'
-      path: '/eagle-scouts'
-      fullPath: '/eagle-scouts'
-      preLoaderRoute: typeof EagleScoutsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/calendar': {
-      id: '/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof CalendarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -233,12 +288,89 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/eagle-scouts': {
+      id: '/eagle-scouts'
+      path: '/eagle-scouts'
+      fullPath: '/eagle-scouts'
+      preLoaderRoute: typeof EagleScoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events': {
+      id: '/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof EventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gallery': {
+      id: '/gallery'
+      path: '/gallery'
+      fullPath: '/gallery'
+      preLoaderRoute: typeof GalleryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quick-links': {
+      id: '/quick-links'
+      path: '/quick-links'
+      fullPath: '/quick-links'
+      preLoaderRoute: typeof QuickLinksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin/announcements': {
+      id: '/_authenticated/admin/announcements'
+      path: '/admin/announcements'
+      fullPath: '/admin/announcements'
+      preLoaderRoute: typeof AuthenticatedAdminAnnouncementsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/content': {
+      id: '/_authenticated/admin/content'
+      path: '/admin/content'
+      fullPath: '/admin/content'
+      preLoaderRoute: typeof AuthenticatedAdminContentRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/eagle-scouts': {
+      id: '/_authenticated/admin/eagle-scouts'
+      path: '/admin/eagle-scouts'
+      fullPath: '/admin/eagle-scouts'
+      preLoaderRoute: typeof AuthenticatedAdminEagleScoutsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/events': {
       id: '/_authenticated/admin/events'
@@ -247,15 +379,58 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEventsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/gallery-photos': {
+      id: '/_authenticated/admin/gallery-photos'
+      path: '/admin/gallery-photos'
+      fullPath: '/admin/gallery-photos'
+      preLoaderRoute: typeof AuthenticatedAdminGalleryPhotosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/join-notifications': {
+      id: '/_authenticated/admin/join-notifications'
+      path: '/admin/join-notifications'
+      fullPath: '/admin/join-notifications'
+      preLoaderRoute: typeof AuthenticatedAdminJoinNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/scoutmasters': {
+      id: '/_authenticated/admin/scoutmasters'
+      path: '/admin/scoutmasters'
+      fullPath: '/admin/scoutmasters'
+      preLoaderRoute: typeof AuthenticatedAdminScoutmastersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/troop-admins': {
+      id: '/_authenticated/admin/troop-admins'
+      path: '/admin/troop-admins'
+      fullPath: '/admin/troop-admins'
+      preLoaderRoute: typeof AuthenticatedAdminTroopAdminsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminAnnouncementsRoute: typeof AuthenticatedAdminAnnouncementsRoute
+  AuthenticatedAdminContentRoute: typeof AuthenticatedAdminContentRoute
+  AuthenticatedAdminEagleScoutsRoute: typeof AuthenticatedAdminEagleScoutsRoute
   AuthenticatedAdminEventsRoute: typeof AuthenticatedAdminEventsRoute
+  AuthenticatedAdminGalleryPhotosRoute: typeof AuthenticatedAdminGalleryPhotosRoute
+  AuthenticatedAdminJoinNotificationsRoute: typeof AuthenticatedAdminJoinNotificationsRoute
+  AuthenticatedAdminScoutmastersRoute: typeof AuthenticatedAdminScoutmastersRoute
+  AuthenticatedAdminTroopAdminsRoute: typeof AuthenticatedAdminTroopAdminsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminAnnouncementsRoute: AuthenticatedAdminAnnouncementsRoute,
+  AuthenticatedAdminContentRoute: AuthenticatedAdminContentRoute,
+  AuthenticatedAdminEagleScoutsRoute: AuthenticatedAdminEagleScoutsRoute,
   AuthenticatedAdminEventsRoute: AuthenticatedAdminEventsRoute,
+  AuthenticatedAdminGalleryPhotosRoute: AuthenticatedAdminGalleryPhotosRoute,
+  AuthenticatedAdminJoinNotificationsRoute:
+    AuthenticatedAdminJoinNotificationsRoute,
+  AuthenticatedAdminScoutmastersRoute: AuthenticatedAdminScoutmastersRoute,
+  AuthenticatedAdminTroopAdminsRoute: AuthenticatedAdminTroopAdminsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -269,6 +444,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   EagleScoutsRoute: EagleScoutsRoute,
   EventsRoute: EventsRoute,
+  GalleryRoute: GalleryRoute,
   JoinRoute: JoinRoute,
   QuickLinksRoute: QuickLinksRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
@@ -276,3 +452,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

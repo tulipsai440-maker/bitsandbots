@@ -1,12 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
+import { TroopPhoto } from "@/components/site/TroopPhoto";
 import { ArrowRight, Calendar } from "lucide-react";
-import campingImg from "@/assets/camping.jpg";
-import hikingImg from "@/assets/hiking.jpg";
-import canoeImg from "@/assets/canoe.jpg";
-import flagImg from "@/assets/flag.jpg";
-import adventureImg from "@/assets/adventure.jpg";
-import eagleImg from "@/assets/eagle.jpg";
+import { fetchUpcomingEvents, type EventRow } from "@/lib/events";
+import { photoForEventType } from "@/lib/photos";
 
 export const Route = createFileRoute("/events")({
   head: () => ({
@@ -20,42 +18,89 @@ export const Route = createFileRoute("/events")({
   component: EventsPage,
 });
 
-const events = [
-  { img: campingImg, date: "Aug 23–25, 2026", title: "Big Cypress Weekend Campout", desc: "A weekend of hiking, wildlife viewing, and Dutch oven cooking in Big Cypress Preserve." },
-  { img: hikingImg, date: "Sep 20–22, 2026", title: "Ocala National Forest", desc: "A fall backpacking trip along the Florida Trail through sand pine scrub and clear springs." },
-  { img: canoeImg, date: "Oct 11, 2026", title: "Estero Bay Canoe Day", desc: "Half-day paddle through mangrove estuaries with a shoreline lunch cookout." },
-  { img: adventureImg, date: "Nov 8–10, 2026", title: "Fall Camporee", desc: "District camporee with skill events, campfire competition, and inter-troop games." },
-  { img: flagImg, date: "Nov 27, 2026", title: "Veterans Memorial Service", desc: "Color guard and community service at Freedom Memorial in Naples." },
-  { img: eagleImg, date: "Dec 14, 2026", title: "Winter Court of Honor", desc: "Recognizing rank advancements, merit badges, and outstanding service." },
-];
+function formatEventDate(startsAt: string, endsAt: string | null): string {
+  const start = new Date(startsAt);
+  const startStr = start.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  if (!endsAt) return startStr;
+  const end = new Date(endsAt);
+  if (start.toDateString() === end.toDateString()) {
+    return `${startStr} · ${start.toLocaleString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+  }
+  return `${start.toLocaleString("en-US", { month: "short", day: "numeric" })} – ${end.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+}
 
 function EventsPage() {
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUpcomingEvents(5)
+      .then(setEvents)
+      .catch(() => setEvents([]))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <SiteLayout>
       <PageHero
         eyebrow="Events"
         title="From campouts to Courts of Honor."
-        description="A rolling look at what Troop 2001 is up to. Photos and details will be updated as each event approaches."
+        align="center"
+        description="The upcoming troop activities."
       />
       <section className="py-16">
-        <div className="container-page grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {events.map((e, i) => (
-            <article key={i} className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-transform hover:-translate-y-1">
-              <div className="aspect-[4/3] overflow-hidden">
-                <img src={e.img} alt={e.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        <div className="container-page">
+          {loading && <p className="text-sm text-muted-foreground">Loading events…</p>}
+          {!loading && events.length === 0 && (
+            <div className="rounded-2xl border border-border bg-card p-10 text-center">
+              <p className="font-display text-2xl text-foreground">Nothing on the schedule right now.</p>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+                New campouts, ceremonies, and service projects are posted here as they are planned.
+                In the meantime, scouts and parents are welcome at our weekly meeting — Wednesdays at
+                7:00 PM at North Collier Fire Station #45.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Link to="/calendar" className="btn-outline inline-flex gap-2">
+                  View calendar <ArrowRight size={16} />
+                </Link>
+                <Link to="/join" className="btn-primary inline-flex gap-2">
+                  Join Troop 2001 <ArrowRight size={16} />
+                </Link>
               </div>
-              <div className="p-6">
-                <div className="flex items-center gap-1.5 text-xs uppercase tracking-widest text-forest">
-                  <Calendar size={14} /> {e.date}
+            </div>
+          )}
+          <div className="grid gap-6 md:grid-cols-2">
+            {events.slice(0, 5).map((e) => (
+              <article key={e.id} className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-transform hover:-translate-y-0.5">
+                <div className="relative h-24 overflow-hidden bg-sand sm:h-28">
+                  <TroopPhoto
+                    src={photoForEventType(e.type)}
+                    alt={`${e.type} event — ${e.title}`}
+                    width={640}
+                    height={240}
+                    className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
+                    label={e.type}
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card/30 to-transparent" />
+                  <span className="absolute bottom-2 left-3 rounded-full bg-forest/90 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-cream">
+                    {e.type}
+                  </span>
                 </div>
-                <h3 className="mt-2 font-display text-2xl">{e.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{e.desc}</p>
-                <button className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-forest hover:gap-2.5 transition-all">
-                  Learn more <ArrowRight size={14} />
-                </button>
-              </div>
-            </article>
-          ))}
+                <div className="p-5">
+                  <div className="flex items-center gap-1.5 text-xs uppercase tracking-widest text-forest">
+                    <Calendar size={14} /> {formatEventDate(e.starts_at, e.ends_at)}
+                  </div>
+                  <h3 className="mt-2 font-display text-xl leading-tight">{e.title}</h3>
+                  <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
+                    {e.description || e.location || "Details coming soon."}
+                  </p>
+                  <Link to="/calendar" className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-forest hover:gap-2.5 transition-all">
+                    Calendar <ArrowRight size={14} />
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
     </SiteLayout>

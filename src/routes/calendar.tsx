@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
 import { Calendar as CalendarIcon, MapPin, ChevronLeft, ChevronRight, ExternalLink, X } from "lucide-react";
-import { fetchAllEvents, type EventRow } from "@/lib/events";
+import { fetchAllEvents, fetchUpcomingEvents, getLastEventsSource, type EventRow } from "@/lib/events";
 
 export const Route = createFileRoute("/calendar")({
   head: () => ({
@@ -45,9 +45,16 @@ function CalendarPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [selected, setSelected] = useState<EventRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [source, setSource] = useState<string>("");
 
   useEffect(() => {
-    fetchAllEvents().then((rows) => { setEvents(rows); setLoading(false); }).catch(() => setLoading(false));
+    fetchAllEvents()
+      .then((rows) => {
+        setEvents(rows);
+        setSource(getLastEventsSource());
+      })
+      .catch(() => setLoading(false))
+      .finally(() => setLoading(false));
   }, []);
 
   const monthLabel = cursor.toLocaleString("en-US", { month: "long", year: "numeric" });
@@ -90,10 +97,11 @@ function CalendarPage() {
       <PageHero
         eyebrow="Calendar"
         title="What's coming up."
-        description="Browse meetings, campouts, and ceremonies month by month. Click any event to see details."
+        align="center"
+        description="Meetings, campouts, and ceremonies month by month."
       />
 
-      <section className="py-12">
+      <section className="py-16">
         <div className="container-page">
           {/* Legend */}
           <div className="mb-6 flex flex-wrap gap-2">
@@ -211,26 +219,28 @@ function CalendarPage() {
               })}
               {!loading && upcoming.length === 0 && (
                 <li className="rounded-2xl border border-dashed border-border p-6 text-center text-muted-foreground">
-                  No upcoming events yet.
+                  Nothing scheduled just yet. Troop meetings are every Wednesday at 7:00 PM at North
+                  Collier Fire Station #45 — visitors are always welcome.
                 </li>
               )}
             </ul>
           </div>
 
-          {/* Band app sync notice */}
-          <div className="mt-10 rounded-2xl border border-dashed border-border bg-sand/50 p-6 text-sm text-muted-foreground">
-            <div className="flex items-start gap-3">
-              <CalendarIcon size={18} className="mt-0.5 text-forest" />
-              <div>
-                <div className="font-medium text-foreground">Band app sync</div>
-                <p>
-                  Events shown here are managed by troop leaders. Because the Band app has no public
-                  API, admins keep this calendar in sync with the troop's Band community. Each event
-                  can also link back to its Band post so scouts and parents can join the conversation.
-                </p>
+          {source === "band" && (
+            <div className="mt-10 rounded-2xl border border-dashed border-border bg-sand/50 p-6 text-sm text-muted-foreground">
+              <div className="flex items-start gap-3">
+                <CalendarIcon size={18} className="mt-0.5 text-forest" />
+                <div>
+                  <div className="font-medium text-foreground">Kept up to date by troop leaders</div>
+                  <p>
+                    This calendar updates automatically as events are added. Dates, times, and
+                    locations can change — check back before heading out, or ask a leader at the
+                    Wednesday meeting.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 

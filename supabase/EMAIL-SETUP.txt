@@ -1,0 +1,25 @@
+JOIN FORM EMAIL
+=============
+
+Recipient: suresh440@gmail.com
+
+OPTION A — Works now (no API key)
+  The form uses FormSubmit.co automatically when RESEND_API_KEY is not set.
+
+  ONE-TIME SETUP:
+  1. Submit the Join form once at http://localhost:8080/join
+  2. Check suresh440@gmail.com for email from FormSubmit
+  3. Click "Activate Form" in that email
+  4. Submit the Join form again — join requests will arrive by email
+
+OPTION B — Resend (better for production)
+  1. Sign up at https://resend.com with suresh440@gmail.com
+  2. Create API key → add to .env:
+       RESEND_API_KEY="re_..."
+       RESEND_FROM="Troop 2001 Naples <onboarding@resend.dev>"
+  3. Restart npm run dev
+  Resend takes priority over FormSubmit when configured.
+
+PRODUCTION
+  Set SITE_ORIGIN to your live URL, e.g.:
+    SITE_ORIGIN="https://troop2001naples.org"

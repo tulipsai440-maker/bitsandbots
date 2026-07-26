@@ -1,0 +1,21 @@
+# Merged into the Worker deploy config on build.
+# Secrets (BAND_ICAL_URL, SUPABASE_SERVICE_ROLE_KEY): keep in Cloudflare Dashboard only.
+# Always deploy with: npm run deploy  (--keep-vars preserves dashboard secrets)
+
+name = "tulipsai440-maker-pixel-perfect-ui"
+compatibility_date = "2026-07-21"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+preview_urls = true
+
+[[routes]]
+pattern = "troop2001naples.org"
+custom_domain = true
+
+[[routes]]
+pattern = "www.troop2001naples.org"
+custom_domain = true
+
+[vars]
+SITE_ORIGIN = "https://troop2001naples.org"
+SUPABASE_URL = "https://xohaeezxzbeyzpjbngkj.supabase.co"

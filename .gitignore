@@ -16,9 +16,17 @@ dist-ssr
 .nitro
 *.local
 
+# Local secrets — production values live in the Cloudflare dashboard
+.env
+.env.*
+!.env.example
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
+
+# Full-resolution photo backups (see scripts/optimize-photos.py)
+photo-originals/
 
 # Editor directories and files
 .vscode/*
@@ -30,3 +38,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# One-off tooling for generating the training PDF (not part of the app)
+handbook-build/

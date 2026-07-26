@@ -1,14 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import logoAsset from "@/assets/troop-2001-logo.png.asset.json";
+import { TroopLogo } from "./TroopLogo";
 
 const nav = [
   { to: "/about", label: "About Us" },
   { to: "/eagle-scouts", label: "Eagle Scouts" },
   { to: "/calendar", label: "Calendar" },
   { to: "/events", label: "Events" },
-  { to: "/join", label: "Join Us" },
+  { to: "/gallery", label: "Gallery" },
   { to: "/quick-links", label: "Quick Links" },
 ] as const;
 
@@ -17,16 +17,12 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md">
       <div className="container-page flex h-28 items-center justify-between md:h-32">
-        <Link to="/" className="flex items-center gap-3.5" onClick={() => setOpen(false)}>
-          <span className="grid place-items-center rounded-full bg-cream ring-1 ring-border p-2 shadow-sm">
-            <img
-              src={logoAsset.url}
-              alt="Boy Scouts of America Troop 2001 Naples"
-              width={96}
-              height={96}
-              className="h-20 w-20 object-contain md:h-24 md:w-24"
-            />
-          </span>
+        <Link
+          to="/"
+          className="group flex items-center gap-3.5"
+          onClick={() => setOpen(false)}
+        >
+          <TroopLogo variant="light" size="md" priority className="group-hover:-translate-y-0.5 group-hover:shadow-[0_8px_28px_rgba(27,54,40,0.18)]" />
           <span className="flex flex-col leading-tight">
             <span className="font-display text-xl text-forest-deep md:text-2xl">Troop 2001</span>
             <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Naples, FL</span>

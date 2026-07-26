@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
+import { AdminNav } from "@/components/site/AdminNav";
+import { checkIsAdmin } from "@/lib/admin";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAllEvents, type EventRow } from "@/lib/events";
+import { fetchAllSupabaseEvents, type EventRow } from "@/lib/events";
 import { toast } from "sonner";
 import { Trash2, Pencil, Plus, LogOut } from "lucide-react";
 
@@ -27,23 +29,12 @@ function AdminEventsPage() {
   const [showForm, setShowForm] = useState(false);
 
   async function checkRole() {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-      setIsAdmin(false);
-      return;
-    }
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userData.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    setIsAdmin(!!data);
+    setIsAdmin(await checkIsAdmin());
   }
 
   async function load() {
     try {
-      setEvents(await fetchAllEvents());
+      setEvents(await fetchAllSupabaseEvents());
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Load failed");
     }
@@ -93,17 +84,20 @@ function AdminEventsPage() {
 
   return (
     <SiteLayout>
-      <PageHero eyebrow="Admin" title="Manage events" description="Add, edit, or delete events. Public calendar updates immediately." />
+      <PageHero eyebrow="Admin" title="Manage events" description="Supabase events shown here. Public Calendar and Events pages use the Band app feed when BAND_ICAL_URL is set." />
       <section className="py-12">
         <div className="container-page">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <button
-              onClick={() => { setEditing(null); setShowForm(true); }}
-              className="btn-primary gap-2"
-            >
-              <Plus size={16} /> New event
-            </button>
-            <button onClick={signOut} className="btn-outline gap-2"><LogOut size={16} /> Sign out</button>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <AdminNav active="events" />
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => { setEditing(null); setShowForm(true); }}
+                className="btn-primary gap-2"
+              >
+                <Plus size={16} /> New event
+              </button>
+              <button onClick={signOut} className="btn-outline gap-2"><LogOut size={16} /> Sign out</button>
+            </div>
           </div>
 
           {showForm && (

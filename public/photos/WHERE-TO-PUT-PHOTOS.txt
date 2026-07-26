@@ -1,0 +1,40 @@
+Troop 2001 — where to add photos
+================================
+
+Project folder (NOT on Desktop):
+  /Users/sbheemanap001/Test Project/public/photos/
+
+Drop files into the subfolders (exact filenames matter):
+
+  logo/Logo.png                — header & footer logo (you added this ✓)
+  hero/troop-summit.webp       — home page hero + slideshow (you added this ✓)
+  The Trail to Eagle/          — home “Trail to Eagle” section
+    Trail to eagle.webp
+  home/eagle.jpg               — fallback only
+  home/adventure.jpg           — slideshow fallback
+  Outdoor Adventure/           — home “Outdoor Adventure” cards (you added these ✓)
+    Camping.webp
+    Hiking backpacking.webp
+    Water Sports.webp
+  home/canoe.jpg               — slideshow fallback
+  home/camping.jpg
+  home/hiking.jpg
+  home/flag.jpg
+  gallery/                     — Photo Gallery page at /gallery (see its README.txt)
+  events/                      — Events page banners by type (Meeting, Campout, etc.)
+  values/                      — About page Scout Oath, Law, Outdoor Code banners
+  scoutmasters/                — optional legacy photos; new uploads use Admin form
+  eagles/                      — Eagle project photos (optional, future)
+
+After copying photos, refresh http://localhost:8080/ (keep npm run dev running).
+
+Missing photos show a green placeholder until you add the file.
+
+Photos straight from a phone or camera are large (5–15 MB) and make the site slow.
+After adding new ones, shrink them all with:
+
+  python3 scripts/optimize-photos.py
+
+That resizes and converts photos to .webp, and keeps the untouched originals in
+photo-originals/ (that folder is never published). If a filename changes from
+.png/.jpg to .webp, update the matching path in src/lib/photos.ts.
