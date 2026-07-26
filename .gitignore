@@ -20,6 +20,8 @@ dist-ssr
 .env
 .env.*
 !.env.example
+.github-token
+github-token.txt
 
 # Wrangler / Cloudflare
 .wrangler/
