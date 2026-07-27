@@ -68,9 +68,6 @@ function Hero({ eagleCount }: { eagleCount: number | null }) {
       <div className="relative">
         <div className="container-page flex min-h-[86vh] flex-col items-center justify-end pb-16 pt-32 text-center text-cream md:min-h-[92vh] md:pb-24">
           <div className="max-w-3xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cream/25 bg-cream/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-gold" /> Scouts BSA · Naples, FL
-            </div>
             <h1 className="font-display text-5xl leading-[1.02] text-cream md:text-7xl">
               Adventure begins <em className="not-italic text-gold">on the trail</em>.
             </h1>
