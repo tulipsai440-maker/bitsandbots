@@ -43,10 +43,9 @@ function EventsPage() {
   return (
     <SiteLayout>
       <PageHero
-        eyebrow="Events"
-        title="From campouts to Courts of Honor."
+        title="Upcoming events"
         align="center"
-        description="The upcoming troop activities."
+        description="Campouts, meetings, Courts of Honor, and other troop activities."
       />
       <section className="py-16">
         <div className="container-page">

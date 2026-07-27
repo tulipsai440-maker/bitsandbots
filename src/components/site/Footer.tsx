@@ -12,11 +12,11 @@ export function Footer() {
             <TroopLogo variant="dark" size="sm" />
             <div>
               <div className="font-display text-lg font-semibold">Troop 2001</div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-cream/60">Naples · Florida</div>
+              <div className="text-sm text-cream/60">Naples, Florida</div>
             </div>
           </div>
           <p className="mt-4 text-sm leading-relaxed text-cream/75">
-            Building character, leadership, and a lifelong love of the outdoors through Scouting since 2000.
+            Scouts BSA troop chartered in Naples in 2000. Wednesday meetings at North Collier Fire Station #45.
           </p>
           <p className="mt-3 text-xs text-cream/60">Gulf Coast Council · Scouts BSA</p>
         </div>
@@ -54,7 +54,7 @@ export function Footer() {
         </div>
 
         <div className="text-sm">
-          <h3 className="font-display text-base text-cream">Explore</h3>
+          <h3 className="font-display text-base text-cream">Pages</h3>
           <ul className="mt-3 grid grid-cols-2 gap-y-2 text-cream/80">
             <li><Link to="/about" className="hover:text-gold">About</Link></li>
             <li><Link to="/eagle-scouts" className="hover:text-gold">Eagle Scouts</Link></li>

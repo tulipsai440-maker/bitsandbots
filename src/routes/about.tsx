@@ -4,13 +4,13 @@ import { SiteLayout, PageHero } from "@/components/site/Layout";
 import { fetchApprovedScoutmasters, type ScoutmasterRow } from "@/lib/content";
 import { photos } from "@/lib/photos";
 import { TroopPhoto } from "@/components/site/TroopPhoto";
-import { MapPin, Clock, ScrollText, Flag, TreePine, Sparkles } from "lucide-react";
+import { MapPin, Clock, ScrollText, Flag, TreePine } from "lucide-react";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
       { title: "About Troop 2001 — Scouts BSA in Naples, Florida" },
-      { name: "description", content: "Founded in 2000, Troop 2001 Naples builds character, leadership, and outdoor skills. Meet our scoutmasters and learn our story." },
+      { name: "description", content: "Troop 2001 was chartered in Naples in 2000. Meet our scoutmasters, find meeting times, and read the Scout Oath and Law." },
       { property: "og:title", content: "About Troop 2001 Naples" },
       { property: "og:description", content: "Our history, mission, values, and leadership team." },
     ],
@@ -34,27 +34,20 @@ function AboutPage() {
   return (
     <SiteLayout>
       <PageHero
-        eyebrow="About Us"
-        title="Guided by scouting values since 2000."
+        title="About Troop 2001"
         align="center"
-        description="Troop 2001 was chartered in Naples in 2000 with a simple mission: prepare young people for life through the outdoors, service, and self-reliance."
+        description="Chartered in Naples in 2000. We meet Wednesdays at North Collier Fire Station #45."
       />
 
-      {/* Fun Fact */}
       <section className="pt-14">
         <div className="container-page">
-          <div className="flex flex-col gap-4 rounded-2xl border border-gold/40 bg-gold/10 p-6 md:flex-row md:items-center md:gap-6">
-            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gold text-forest-deep">
-              <Sparkles size={22} />
-            </div>
-            <div>
-              <div className="eyebrow !text-forest-deep">Fun Fact</div>
-              <p className="mt-1 text-base leading-relaxed text-forest-deep">
-                Troop 2001 was founded in the year 2000. The Scoutmasters thought
-                <em> "Troop 2001"</em> sounded more memorable than <em>"Troop 2000,"</em>
-                so they chose the name 2001.
-              </p>
-            </div>
+          <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
+            <h2 className="font-display text-2xl text-foreground">Why &ldquo;Troop 2001&rdquo;?</h2>
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+              The troop was founded in the year 2000. The scoutmasters thought
+              &ldquo;Troop 2001&rdquo; sounded more memorable than &ldquo;Troop 2000,&rdquo;
+              so that is the number we kept.
+            </p>
           </div>
         </div>
       </section>
@@ -88,7 +81,7 @@ function AboutPage() {
             icon={<TreePine />}
             title="Outdoor Code"
             image={photos.values.outdoorCode}
-            imageAlt="Scouts on a forest trail"
+            imageAlt="Troop 2001 scouts outdoors"
           >
             <p className="text-sm leading-relaxed text-muted-foreground">
               As an American, I will do my best to be clean in my outdoor manners, be careful with
@@ -103,10 +96,9 @@ function AboutPage() {
         <div className="container-page">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
-              <div className="eyebrow">Leadership</div>
-              <h2 className="mt-3 font-display text-4xl md:text-5xl">Our Scoutmasters.</h2>
+              <h2 className="font-display text-4xl md:text-5xl">Scoutmasters</h2>
               <p className="mt-3 max-w-xl text-muted-foreground">
-                The volunteers who have shaped Troop 2001 across two decades.
+                Volunteer leaders who have run meetings, campouts, and Eagle boards over the years.
               </p>
             </div>
           </div>
@@ -127,10 +119,9 @@ function AboutPage() {
       <section className="border-t border-border/60 bg-sand py-20 pb-24">
         <div className="container-page grid gap-10 md:grid-cols-2 md:items-center">
           <div>
-            <div className="eyebrow">Where we meet</div>
-            <h2 className="mt-3 font-display text-4xl md:text-5xl">Come see us on Wednesday.</h2>
+            <h2 className="font-display text-4xl md:text-5xl">Meeting location</h2>
             <p className="mt-4 text-muted-foreground">
-              Meetings are open to scouts, parents, and any young person curious about scouting.
+              Wednesday meetings are open to scouts, parents, and visitors.
             </p>
             <ul className="mt-6 space-y-3 text-foreground">
               <li className="flex gap-3"><MapPin className="mt-0.5 shrink-0 text-forest" size={20} /><span>North Collier Fire Station #45<br/>1885 Veterans Park Dr, Naples, FL 34109</span></li>

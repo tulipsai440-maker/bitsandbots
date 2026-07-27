@@ -95,8 +95,7 @@ function CalendarPage() {
   return (
     <SiteLayout>
       <PageHero
-        eyebrow="Calendar"
-        title="What's coming up."
+        title="Troop calendar"
         align="center"
         description="Meetings, campouts, and ceremonies month by month."
       />
@@ -183,8 +182,7 @@ function CalendarPage() {
           <div className="mt-16">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <div className="eyebrow">Upcoming</div>
-                <h2 className="mt-2 font-display text-3xl md:text-4xl">Next on the schedule</h2>
+                <h2 className="font-display text-3xl md:text-4xl">Upcoming events</h2>
               </div>
             </div>
             <ul className="mt-6 space-y-3">

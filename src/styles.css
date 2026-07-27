@@ -171,9 +171,8 @@
 
 @utility eyebrow {
   font-family: var(--font-sans);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-forest);
+  letter-spacing: 0.02em;
+  color: var(--color-muted-foreground);
 }

@@ -23,10 +23,10 @@ function NotFoundComponent() {
       <Header />
       <div className="flex flex-1 items-center justify-center px-4 py-24">
         <div className="max-w-md text-center">
-          <div className="eyebrow mb-3">404</div>
-          <h1 className="font-display text-5xl text-foreground">Trail not found</h1>
+          <p className="text-sm text-muted-foreground mb-3">404</p>
+          <h1 className="font-display text-5xl text-foreground">Page not found</h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            This path isn't on our map. Let's get you back on the trail.
+            That address is not on this site. Use the menu or return to the homepage.
           </p>
           <div className="mt-6">
             <Link to="/" className="btn-primary">Return home</Link>
@@ -67,11 +67,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Troop 2001 Naples — Scouts BSA in Naples, Florida" },
-      { name: "description", content: "Troop 2001 Naples is a Scouts BSA troop meeting Wednesdays at North Collier Fire Station #45. Adventure, leadership, and Eagle Scout achievement since 2000." },
+      { name: "description", content: "Troop 2001 Naples meets Wednesdays at North Collier Fire Station #45. Campouts, service projects, and Eagle Scout program since 2000." },
       { name: "author", content: "Troop 2001 Naples" },
       { name: "theme-color", content: "#1f3d1f" },
       { property: "og:title", content: "Troop 2001 Naples — Scouts BSA" },
-      { property: "og:description", content: "Adventure, leadership, and Eagle Scout achievement in Naples, Florida since 2000." },
+      { property: "og:description", content: "Scouts BSA in Naples, Florida since 2000. Wednesday meetings at 7 PM." },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "Troop 2001 Naples" },
       { property: "og:url", content: SITE_URL },

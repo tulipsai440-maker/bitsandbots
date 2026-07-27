@@ -11,8 +11,8 @@ export function VisitBar() {
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-forest/20 bg-forest-deep px-4 py-3 text-cream shadow-lg lg:hidden">
       <div className="container-page flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gold">
-            <Clock size={12} /> Visit us Wednesday · 7 PM
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-gold">
+            <Clock size={12} /> Wednesday meetings · 7 PM
           </div>
           <p className="mt-1 text-sm leading-snug text-cream/90">
             North Collier Fire Station #45

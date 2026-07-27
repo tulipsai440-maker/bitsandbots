@@ -162,10 +162,9 @@ function QuickLinksPage() {
   return (
     <SiteLayout>
       <PageHero
-        eyebrow="Quick Links"
-        title="Everything scouts and parents need."
+        title="Quick links"
         align="center"
-        description="Essential resources for Troop 2001 families — from health forms to merit badge references."
+        description="Forms, payments, Scoutbook, and other resources for Troop 2001 families."
       />
       <section className="py-16">
         <div className="container-page grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

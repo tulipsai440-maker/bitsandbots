@@ -40,8 +40,7 @@ function EagleScoutsPage() {
   return (
     <SiteLayout>
       <PageHero
-        eyebrow="Eagle Scouts"
-        title="Our Eagle Scouts."
+        title="Our Eagle Scouts"
         align="center"
         description={
           eagleCount > 0

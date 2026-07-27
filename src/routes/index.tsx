@@ -2,41 +2,72 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/site/Layout";
 import { TroopPhoto } from "@/components/site/TroopPhoto";
 import { photos } from "@/lib/photos";
-import { ArrowRight, Calendar, Compass, Award, ChevronRight, MapPin } from "lucide-react";
+import { ArrowRight, Calendar, ChevronRight, Clock, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fetchUpcomingEvents, type EventRow } from "@/lib/events";
 import { fetchActiveAnnouncements, type AnnouncementRow } from "@/lib/announcements";
-import { fetchApprovedEagleScoutCount } from "@/lib/content";
+import {
+  fetchApprovedEagleScoutCount,
+  fetchApprovedEagleScouts,
+  rankEagleScouts,
+  type EagleScoutRow,
+} from "@/lib/content";
+import { fetchApprovedGalleryPhotos, type ApprovedGalleryPhoto } from "@/lib/gallery-uploads";
 import { galleryPhotos } from "@/lib/gallery-photos";
+import { formatMeetingDate, formatMeetingTime, getNextMeetingDate } from "@/lib/meeting";
+
+type MosaicPhoto = { src: string; alt: string };
+
+function buildMosaicPhotos(uploaded: ApprovedGalleryPhoto[]): MosaicPhoto[] {
+  const merged: MosaicPhoto[] = [
+    ...uploaded.map((p) => ({ src: p.url, alt: p.caption ?? "Troop 2001 photo" })),
+    { src: photos.hero, alt: "Troop 2001 scouts at camp" },
+    ...galleryPhotos.map((p) => ({ src: p.src, alt: "Troop 2001 photo" })),
+  ];
+
+  const seen = new Set<string>();
+  return merged.filter((p) => {
+    if (seen.has(p.src)) return false;
+    seen.add(p.src);
+    return true;
+  }).slice(0, 7);
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Troop 2001 Naples — Scouts BSA in Naples, Florida" },
-      { name: "description", content: "Adventure, leadership, and Eagle Scout achievement. Troop 2001 meets Wednesdays at 7 PM in Naples, Florida. Join us." },
+      { name: "description", content: "Troop 2001 meets Wednesdays at 7 PM in Naples, Florida. Campouts, service projects, and Eagle Scout program since 2000." },
       { property: "og:image", content: `https://troop2001naples.org${photos.ogLogo}` },
     ],
   }),
-  loader: async () => ({ eagleCount: await fetchApprovedEagleScoutCount() }),
+  loader: async () => {
+    const [eagleCount, eagles, uploadedPhotos] = await Promise.all([
+      fetchApprovedEagleScoutCount(),
+      fetchApprovedEagleScouts().catch(() => [] as EagleScoutRow[]),
+      fetchApprovedGalleryPhotos().catch(() => [] as ApprovedGalleryPhoto[]),
+    ]);
+
+    return {
+      eagleCount,
+      eagles,
+      mosaicPhotos: buildMosaicPhotos(uploadedPhotos),
+    };
+  },
   component: HomePage,
 });
 
-// Prefer real troop photos from the gallery; fall back to the stock set when it is empty.
-const slides =
-  galleryPhotos.length > 0
-    ? [photos.hero, ...galleryPhotos.slice(0, 4).map((p) => p.src)]
-    : photos.slideshow;
-
 function HomePage() {
-  const { eagleCount } = Route.useLoaderData();
+  const { eagleCount, eagles, mosaicPhotos } = Route.useLoaderData();
 
   return (
     <SiteLayout>
       <Hero eagleCount={eagleCount} />
-      <EagleSection />
+      <NextUpStrip />
+      <EaglePreviewWall eagles={eagles} eagleCount={eagleCount} />
       <AdventureSection />
       <EventsAndAnnouncements />
-      <PhotoSlideshow />
+      <PhotoMosaic photos={mosaicPhotos} />
       <QuickLinksPreview />
       <CTA />
     </SiteLayout>
@@ -57,33 +88,31 @@ function Hero({ eagleCount }: { eagleCount: number | null }) {
     <section className="relative isolate overflow-hidden">
       <TroopPhoto
         src={photos.hero}
-        alt="Scouts on a mountain ridge at sunrise"
+        alt="Troop 2001 scouts at camp"
         width={1920}
         height={1200}
         loading="eager"
         className="absolute inset-0 h-full w-full object-cover"
-        label="Hero photo"
+        label="Troop photo"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-navy/70 via-forest-deep/55 to-forest-deep/85" />
+      <div className="absolute inset-0 bg-gradient-to-b from-navy/75 via-forest-deep/60 to-forest-deep/90" />
       <div className="relative">
         <div className="container-page flex min-h-[86vh] flex-col items-center justify-end pb-16 pt-32 text-center text-cream md:min-h-[92vh] md:pb-24">
           <div className="max-w-3xl">
-            <h1 className="font-display text-5xl leading-[1.02] text-cream md:text-7xl">
-              Adventure begins <em className="not-italic text-gold">on the trail</em>.
+            <p className="font-display text-lg text-cream/90 md:text-xl">Troop 2001 · Naples, Florida</p>
+            <h1 className="mt-3 font-display text-5xl leading-[1.05] text-cream md:text-6xl">
+              Scouting here since 2000.
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-cream/85 md:text-lg">
-              Since 2000, Troop 2001 has helped young people in Naples grow into leaders through
-              camping, service, and the rank of Eagle Scout.
-            </p>
-            <p className="mx-auto mt-4 max-w-xl text-base font-medium leading-relaxed text-cream md:text-lg">
-              We inspire boys to become confident explorers, engaged citizens, and ethical leaders.
+              We meet every Wednesday at 7 PM at North Collier Fire Station #45. Scouts camp frequently,
+              serve the community, and work toward Eagle Scout with volunteer leaders who know them by name.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link to="/join" className="btn-primary bg-gold !text-forest-deep hover:!bg-gold hover:brightness-110">
                 Join Troop 2001 <ArrowRight size={16} />
               </Link>
               <Link to="/about" className="btn-outline !border-cream/30 !text-cream hover:!bg-cream/10">
-                Learn about us
+                About the troop
               </Link>
             </div>
           </div>
@@ -93,10 +122,10 @@ function Hero({ eagleCount }: { eagleCount: number | null }) {
               showEagleStat ? "max-w-5xl md:grid-cols-4" : "max-w-4xl md:grid-cols-3"
             }`}
           >
-            <Stat label="Founded" value="2000" />
+            <Stat label="Chartered" value="2000" />
             {showEagleStat && (
               <Link to="/eagle-scouts" className="group">
-                <div className="text-[11px] uppercase tracking-[0.22em] text-cream/60">Eagle Scouts</div>
+                <div className="text-sm text-cream/65">Eagle Scouts</div>
                 <div className="mt-1 font-display text-2xl text-gold md:text-3xl">
                   {count}
                   <span className="ml-1.5 inline-block text-base text-cream/70 transition-transform group-hover:translate-x-0.5">
@@ -105,9 +134,11 @@ function Hero({ eagleCount }: { eagleCount: number | null }) {
                 </div>
               </Link>
             )}
-            <Stat label="Meets" value="Wednesdays · 7:00 PM" />
+            <Stat label="Weekly meeting" value="Wednesdays · 7:00 PM" />
             <div>
-              <div className="text-[11px] uppercase tracking-[0.22em] text-cream/60 flex items-center gap-1.5"><MapPin size={12} /> Meeting Location</div>
+              <div className="flex items-center gap-1.5 text-sm text-cream/65">
+                <MapPin size={14} /> Meeting place
+              </div>
               <div className="mt-1 font-display text-lg leading-tight text-cream md:text-xl">
                 North Collier Fire Station #45<br/>
                 <span className="text-base text-cream/85 md:text-lg">1885 Veterans Park Dr, Naples, FL 34109</span>
@@ -123,35 +154,125 @@ function Hero({ eagleCount }: { eagleCount: number | null }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-[0.22em] text-cream/60">{label}</div>
+      <div className="text-sm text-cream/65">{label}</div>
       <div className="mt-1 font-display text-2xl text-cream md:text-3xl">{value}</div>
     </div>
   );
 }
 
-function EagleSection() {
+function NextUpStrip() {
+  const meeting = getNextMeetingDate();
+
+  return (
+    <section className="border-b border-border/60 bg-sand">
+      <div className="container-page flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-forest text-cream">
+            <Clock size={18} />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-foreground">Next meeting</div>
+            <div className="mt-0.5 text-sm text-muted-foreground">
+              {formatMeetingDate(meeting)} · {formatMeetingTime()} · North Collier Fire Station #45
+            </div>
+          </div>
+        </div>
+
+        <Link to="/calendar" className="text-sm font-medium text-forest hover:underline sm:shrink-0">
+          Campouts and events on the calendar →
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function eagleInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function EaglePreviewWall({
+  eagles,
+  eagleCount,
+}: {
+  eagles: EagleScoutRow[];
+  eagleCount: number | null;
+}) {
+  const ranked = rankEagleScouts(eagles.filter((e) => e.status === "approved"));
+  const preview = ranked.slice(-8).reverse();
+  const total = eagleCount ?? ranked.length;
+
+  if (preview.length === 0) {
+    return (
+      <section className="py-24">
+        <div className="container-page grid gap-12 md:grid-cols-2 md:items-center">
+          <div className="relative overflow-hidden rounded-2xl">
+            <TroopPhoto
+              src={photos.trailToEagle}
+              alt="Eagle Scout medal on uniform"
+              width={1600}
+              height={1100}
+              className="h-full w-full object-cover"
+              label="Eagle Scout"
+            />
+          </div>
+          <div>
+            <h2 className="font-display text-4xl text-foreground md:text-5xl">Eagle Scouts</h2>
+            <p className="mt-4 max-w-lg text-muted-foreground">
+              Scouts work through ranks with adult mentors who track merit badges, leadership roles,
+              and Eagle service projects.
+            </p>
+            <div className="mt-8">
+              <Link to="/eagle-scouts" className="btn-primary">
+                Eagle Scout roll <ChevronRight size={16} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-24">
-      <div className="container-page grid gap-12 md:grid-cols-2 md:items-center">
-        <div className="relative overflow-hidden rounded-2xl">
-          <TroopPhoto src={photos.trailToEagle} alt="Eagle Scout medal on uniform" width={1600} height={1100} className="h-full w-full object-cover" label="Eagle Scout" />
-        </div>
-        <div>
-          <div className="eyebrow">The Trail to Eagle</div>
-          <h2 className="mt-3 font-display text-4xl text-foreground md:text-5xl">Where scouts become <em className="text-forest not-italic">Eagles</em>.</h2>
-          <p className="mt-4 max-w-lg text-muted-foreground">
-            Only about 6% of scouts nationwide earn the rank of Eagle. At Troop 2001, we mentor
-            each scout through the journey — from Tenderfoot to a service project that leaves a
-            mark on our community.
-          </p>
-          <ul className="mt-6 space-y-3 text-sm text-foreground/80">
-            <li className="flex items-start gap-3"><Award size={18} className="mt-0.5 text-gold" /> Trail-tested leadership development</li>
-            <li className="flex items-start gap-3"><Award size={18} className="mt-0.5 text-gold" /> Merit badge coaching and mentorship</li>
-            <li className="flex items-start gap-3"><Award size={18} className="mt-0.5 text-gold" /> Eagle project planning and support</li>
-          </ul>
-          <div className="mt-8">
-            <Link to="/eagle-scouts" className="btn-primary">See our Eagle Scouts <ChevronRight size={16} /></Link>
+      <div className="container-page">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="font-display text-4xl text-foreground md:text-5xl">Eagle Scouts</h2>
+            <p className="mt-3 max-w-2xl text-muted-foreground">
+              {total > 0
+                ? `${total} Eagle Scout${total === 1 ? "" : "s"} on our roll. Recent awards shown below.`
+                : "Recent Eagle Scouts from Troop 2001."}
+            </p>
           </div>
+          <Link to="/eagle-scouts" className="btn-outline">
+            Full roll of honor <ArrowRight size={16} />
+          </Link>
+        </div>
+
+        <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {preview.map((eagle) => (
+            <Link
+              key={eagle.id}
+              to="/eagle-scouts"
+              className="group overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-forest/40"
+            >
+              <div className="flex items-start gap-3">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-forest via-forest-deep to-navy font-display text-lg text-cream">
+                  {eagleInitials(eagle.name)}
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate font-medium text-foreground group-hover:text-forest">{eagle.name}</div>
+                  <div className="mt-0.5 text-sm text-muted-foreground">Eagle · {eagle.year}</div>
+                  <div className="mt-1 font-display text-sm tabular-nums text-gold">#{eagle.rank}</div>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </section>
@@ -160,20 +281,19 @@ function EagleSection() {
 
 function AdventureSection() {
   const cards = [
-    { img: photos.outdoorAdventure.camping, title: "Camping", copy: "Monthly campouts across Florida and the Southeast." },
-    { img: photos.outdoorAdventure.hiking, title: "Hiking & Backpacking", copy: "From day hikes to high adventure treks." },
-    { img: photos.outdoorAdventure.waterSports, title: "Water Sports", copy: "Canoeing, kayaking, sailing, and swimming." },
+    { img: photos.outdoorAdventure.camping, title: "Camping", copy: "Monthly campouts in Florida and nearby states." },
+    { img: photos.outdoorAdventure.hiking, title: "Hiking & backpacking", copy: "Day hikes through multi-day treks, depending on the season." },
+    { img: photos.outdoorAdventure.waterSports, title: "Aquatics", copy: "Canoeing, kayaking, and swimming as part of summer program." },
   ];
   return (
     <section className="border-y border-border/60 bg-sand py-24">
       <div className="container-page">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl">
-            <div className="eyebrow">Outdoor Adventure</div>
-            <h2 className="mt-3 font-display text-4xl text-foreground md:text-5xl">A year full of the outdoors.</h2>
+            <h2 className="font-display text-4xl text-foreground md:text-5xl">Campouts and activities</h2>
             <p className="mt-4 text-muted-foreground">
-              Scouting happens outside. Our program balances skills, service, and pure adventure
-              across Southwest Florida and beyond.
+              The calendar changes every year, but scouts can count on regular outdoor weekends,
+              service days, and summer camp.
             </p>
           </div>
           <Link to="/events" className="btn-outline">View events <ArrowRight size={16} /></Link>
@@ -185,11 +305,7 @@ function AdventureSection() {
                 <TroopPhoto src={c.img} alt={c.title} width={1400} height={900} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" label={c.title} />
               </div>
               <div className="p-6">
-                <div className="flex items-center gap-2 text-forest">
-                  <Compass size={16} />
-                  <span className="eyebrow !text-forest">Program</span>
-                </div>
-                <h3 className="mt-2 font-display text-2xl">{c.title}</h3>
+                <h3 className="font-display text-2xl">{c.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{c.copy}</p>
               </div>
             </article>
@@ -218,8 +334,7 @@ function EventsAndAnnouncements() {
     <section className="py-24">
       <div className="container-page grid gap-12 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <div className="eyebrow">Upcoming</div>
-          <h2 className="mt-3 font-display text-4xl md:text-5xl">On the calendar.</h2>
+          <h2 className="font-display text-4xl md:text-5xl">Upcoming events</h2>
           <ul className="mt-8 divide-y divide-border rounded-2xl border border-border bg-card">
             {events.map((e) => {
               const d = new Date(e.starts_at);
@@ -231,11 +346,11 @@ function EventsAndAnnouncements() {
                     <Calendar size={20} />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs uppercase tracking-widest text-muted-foreground">{date} · {time}</div>
+                    <div className="text-xs text-muted-foreground">{date} · {time}</div>
                     <div className="font-display text-lg text-foreground md:text-xl">{e.title}</div>
                     {e.location && <div className="truncate text-sm text-muted-foreground">{e.location}</div>}
                   </div>
-                  <Link to="/calendar" className="shrink-0 text-sm font-medium text-forest hover:underline">Details →</Link>
+                  <Link to="/calendar" className="shrink-0 text-sm font-medium text-forest hover:underline">Calendar</Link>
                 </li>
               );
             })}
@@ -251,18 +366,14 @@ function EventsAndAnnouncements() {
 
         <aside id="announcements" className="lg:col-span-2">
           <div className="rounded-2xl border border-border bg-forest-deep p-8 text-cream">
-            <div className="eyebrow !text-gold">Announcements</div>
-            <h3 className="mt-3 font-display text-2xl text-cream">Latest from the troop</h3>
+            <h3 className="font-display text-2xl text-cream">Announcements</h3>
             <ul className="mt-6 space-y-5 text-sm text-cream/85">
               {announcements.map((a) => (
-                <li key={a.id} className="flex gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
-                  <div>
-                    {a.title && a.title !== a.body && (
-                      <div className="font-medium text-cream">{a.title}</div>
-                    )}
-                    <p className={a.title && a.title !== a.body ? "mt-1 text-cream/80" : ""}>{a.body}</p>
-                  </div>
+                <li key={a.id} className="border-b border-cream/10 pb-5 last:border-0 last:pb-0">
+                  {a.title && a.title !== a.body && (
+                    <div className="font-medium text-cream">{a.title}</div>
+                  )}
+                  <p className={a.title && a.title !== a.body ? "mt-1 text-cream/80" : ""}>{a.body}</p>
                 </li>
               ))}
               {!loading && announcements.length === 0 && (
@@ -276,46 +387,53 @@ function EventsAndAnnouncements() {
   );
 }
 
-function PhotoSlideshow() {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % slides.length), 4500);
-    return () => clearInterval(t);
-  }, []);
+function mosaicTileClass(index: number, total: number): string {
+  const base = "group relative overflow-hidden rounded-xl bg-forest-deep/10";
+  if (total === 1) return `${base} col-span-2 aspect-[16/10] md:col-span-12 md:row-span-6 md:aspect-auto md:min-h-[28rem]`;
+  if (index === 0) return `${base} col-span-2 row-span-2 aspect-[16/10] md:col-span-7 md:row-span-4 md:aspect-auto md:min-h-0`;
+  if (index === 1) return `${base} aspect-square md:col-span-5 md:row-span-2 md:aspect-auto`;
+  if (index === 2) return `${base} aspect-square md:col-span-5 md:row-span-2 md:aspect-auto`;
+  return `${base} aspect-square md:col-span-4 md:row-span-2 md:aspect-auto`;
+}
+
+function PhotoMosaic({ photos: mosaicPhotos }: { photos: MosaicPhoto[] }) {
+  if (mosaicPhotos.length === 0) return null;
+
   return (
     <section className="border-y border-border/60 bg-forest-deep py-24 text-cream">
       <div className="container-page">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="eyebrow !text-gold">Photo Slideshow</div>
-            <h2 className="mt-3 font-display text-4xl text-cream md:text-5xl">Moments from the trail.</h2>
-            <Link
-              to="/gallery"
-              className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-gold hover:gap-2.5 transition-all"
-            >
-              See the full photo gallery <ArrowRight size={15} />
-            </Link>
+            <h2 className="font-display text-4xl text-cream md:text-5xl">Photos from the troop</h2>
+            <p className="mt-3 max-w-xl text-sm text-cream/75">
+              Campouts, courts of honor, and service projects. Parents can share photos from the gallery page.
+            </p>
           </div>
-          <div className="flex gap-2">
-            {slides.map((_, idx) => (
-              <button
-                key={idx}
-                aria-label={`Slide ${idx + 1}`}
-                onClick={() => setI(idx)}
-                className={`h-2 rounded-full transition-all ${idx === i ? "w-8 bg-gold" : "w-2 bg-cream/30"}`}
-              />
-            ))}
-          </div>
+          <Link
+            to="/gallery"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-gold hover:gap-2.5 transition-all"
+          >
+            Open the gallery <ArrowRight size={15} />
+          </Link>
         </div>
-        <div className="relative mt-8 aspect-[16/8] overflow-hidden rounded-2xl">
-          {slides.map((s, idx) => (
-            <TroopPhoto
-              key={idx}
-              src={s}
-              alt="Troop 2001 activities"
-              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${idx === i ? "opacity-100" : "opacity-0"}`}
-              label="Slideshow"
-            />
+
+        <div className="mt-8 grid grid-cols-2 gap-2 md:grid-cols-12 md:grid-rows-6 md:gap-3 md:min-h-[28rem]">
+          {mosaicPhotos.map((photo, index) => (
+            <Link
+              key={`${photo.src}-${index}`}
+              to="/gallery"
+              className={mosaicTileClass(index, mosaicPhotos.length)}
+            >
+              <TroopPhoto
+                src={photo.src}
+                alt={photo.alt}
+                width={1400}
+                height={900}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                label="Troop photo"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-forest-deep/50 via-transparent to-transparent opacity-80" />
+            </Link>
           ))}
         </div>
       </div>
@@ -337,8 +455,8 @@ function QuickLinksPreview() {
       <div className="container-page">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="eyebrow">Quick Links</div>
-            <h2 className="mt-3 font-display text-4xl md:text-5xl">Everything scouts and parents need.</h2>
+            <h2 className="font-display text-4xl md:text-5xl">Quick links</h2>
+            <p className="mt-2 text-muted-foreground">Forms, payments, and scout resources.</p>
           </div>
           <Link to="/quick-links" className="btn-outline">All quick links <ArrowRight size={16} /></Link>
         </div>
@@ -368,17 +486,15 @@ function CTA() {
     <section className="pb-24">
       <div className="container-page">
         <div className="relative overflow-hidden rounded-3xl bg-forest px-8 py-16 text-cream md:px-14 md:py-20">
-          <div className="absolute inset-0 opacity-15" style={{ backgroundImage: `url(${photos.home.flag})`, backgroundSize: "cover", backgroundPosition: "center" }} />
           <div className="relative max-w-2xl">
-            <div className="eyebrow !text-gold">Join Us</div>
-            <h2 className="mt-3 font-display text-4xl text-cream md:text-5xl">Ready to start the adventure?</h2>
+            <h2 className="font-display text-4xl text-cream md:text-5xl">Visit us on a Wednesday</h2>
             <p className="mt-4 text-cream/85">
-              Visit us any Wednesday at 7 PM at North Collier Fire Station #45. Scouts and parents
-              are always welcome — no experience needed.
+              Meetings start at 7 PM at North Collier Fire Station #45. Scouts and parents are
+              welcome—no appointment needed.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/join" className="btn-primary bg-gold !text-forest-deep hover:brightness-110">Join Troop 2001</Link>
-              <Link to="/about" className="btn-outline !border-cream/30 !text-cream hover:!bg-cream/10">Meet the troop</Link>
+              <Link to="/join" className="btn-primary bg-gold !text-forest-deep hover:brightness-110">How to join</Link>
+              <Link to="/about" className="btn-outline !border-cream/30 !text-cream hover:!bg-cream/10">About the troop</Link>
             </div>
           </div>
         </div>

@@ -20,7 +20,7 @@ export const Route = createFileRoute("/gallery")({
       { property: "og:title", content: "Troop 2001 Naples Photo Gallery" },
       {
         property: "og:description",
-        content: "Moments from campouts, ceremonies, and service projects.",
+        content: "Photos from campouts, ceremonies, and service projects.",
       },
       { property: "og:image", content: `https://troop2001naples.org${photos.ogLogo}` },
     ],
@@ -107,13 +107,12 @@ function GalleryPage() {
   return (
     <SiteLayout>
       <PageHero
-        eyebrow="Photo Gallery"
-        title="Moments from the trail."
+        title="Photo gallery"
         align="center"
         description={
           total > 0
-            ? "Campouts, ceremonies, service projects, and everything in between."
-            : "Photos from troop adventures will appear here soon."
+            ? "Approved photos from troop events and parent uploads."
+            : "Photos from troop events will appear here."
         }
       />
 

@@ -25,7 +25,7 @@ export function Header() {
           <TroopLogo variant="light" size="md" priority className="group-hover:-translate-y-0.5 group-hover:shadow-[0_8px_28px_rgba(27,54,40,0.18)]" />
           <span className="flex flex-col leading-tight">
             <span className="font-display text-xl text-forest-deep md:text-2xl">Troop 2001</span>
-            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Naples, FL</span>
+            <span className="text-sm text-muted-foreground">Naples, FL</span>
           </span>
         </Link>
 

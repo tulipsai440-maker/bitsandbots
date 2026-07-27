@@ -8,9 +8,9 @@ export const Route = createFileRoute("/join")({
   head: () => ({
     meta: [
       { title: "Join Troop 2001 Naples — Scouts BSA" },
-      { name: "description", content: "Ready to join Troop 2001? Send us a short form and we'll be in touch." },
+      { name: "description", content: "Contact Troop 2001 with a short form. A leader will reply and invite you to a Wednesday meeting." },
       { property: "og:title", content: "Join Troop 2001 Naples" },
-      { property: "og:description", content: "Start your scouting adventure with Troop 2001." },
+      { property: "og:description", content: "Send a message to join Troop 2001 in Naples, Florida." },
     ],
   }),
   component: JoinPage,
@@ -69,15 +69,14 @@ function JoinPage() {
   return (
     <SiteLayout>
       <PageHero
-        eyebrow="Join Us"
-        title="Start your scouting adventure."
-        description="Fill in a few details and a troop leader will reach out. Prospective scouts and parents are welcome to visit any Wednesday meeting at 7 PM."
+        title="Join Troop 2001"
+        description="Send a short message and a troop leader will follow up. You can also visit any Wednesday meeting at 7 PM."
       />
       <section className="py-16">
         <div className="container-page grid gap-12 lg:grid-cols-[1fr_1.4fr]">
           <aside>
             <div className="rounded-2xl border border-border bg-card p-8">
-              <div className="eyebrow">What to expect</div>
+              <h2 className="font-display text-xl">What happens next</h2>
               <ul className="mt-4 space-y-4 text-sm text-foreground/85">
                 <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> A troop leader replies within a few days.</li>
                 <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> We'll invite you to a Wednesday meeting to visit.</li>
