@@ -23,10 +23,10 @@ function parseEagleYear(year: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-/** Newest Eagle first (#1), then alphabetical within the same year. */
+/** Oldest Eagle first (#1 = first Eagle Scout of the troop), then alphabetical within the same year. */
 export function sortEagleScoutsForDisplay(eagles: EagleScoutRow[]): EagleScoutRow[] {
   return [...eagles].sort((a, b) => {
-    const yearDiff = parseEagleYear(b.year) - parseEagleYear(a.year);
+    const yearDiff = parseEagleYear(a.year) - parseEagleYear(b.year);
     if (yearDiff !== 0) return yearDiff;
 
     const nameDiff = a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
@@ -34,7 +34,7 @@ export function sortEagleScoutsForDisplay(eagles: EagleScoutRow[]): EagleScoutRo
 
     const aTime = a.reviewed_at ?? a.created_at;
     const bTime = b.reviewed_at ?? b.created_at;
-    return bTime.localeCompare(aTime);
+    return aTime.localeCompare(bTime);
   });
 }
 
@@ -121,7 +121,7 @@ function normalizeEagleScout(row: Record<string, unknown>): EagleScoutRow {
 export async function fetchApprovedEagleScouts(): Promise<EagleScoutRow[]> {
   const { url, key } = supabasePublicConfig();
   const res = await fetch(
-    `${url}/rest/v1/eagle_scouts?select=*&status=eq.approved&order=year.desc&order=name.asc`,
+    `${url}/rest/v1/eagle_scouts?select=*&status=eq.approved&order=year.asc&order=name.asc`,
     {
       headers: {
         apikey: key,
