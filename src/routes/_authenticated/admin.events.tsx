@@ -84,7 +84,11 @@ function AdminEventsPage() {
 
   return (
     <SiteLayout>
-      <PageHero eyebrow="Admin" title="Manage events" description="Supabase events shown here. Public Calendar and Events pages use the Band app feed when BAND_ICAL_URL is set." />
+      <PageHero
+        eyebrow="Admin"
+        title="Manage events"
+        description="Public Calendar and Events pages use the Band app feed while BAND_ICAL_URL is set. Events added here are stored in Supabase only and won't appear on the website — update the troop schedule in Band instead."
+      />
       <section className="py-12">
         <div className="container-page">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
