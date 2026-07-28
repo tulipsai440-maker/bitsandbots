@@ -81,7 +81,7 @@ export function Footer() {
       <div className="border-t border-cream/10">
         <div className="container-page flex flex-col items-start justify-between gap-2 py-5 text-xs text-cream/60 md:flex-row md:items-center">
           <div>© {new Date().getFullYear()} Troop 2001 Naples. All rights reserved.</div>
-          <div>Meets every Wednesday at 7:00 PM · North Collier Fire Station #45</div>
+          <div>New scouts welcome · Wednesdays 7:00 PM · North Collier Fire Station #45</div>
         </div>
       </div>
     </footer>
