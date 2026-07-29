@@ -30,6 +30,9 @@ export function AdminNav({ active }: { active: AdminNavKey }) {
       <Link to="/admin/announcements" className={linkClass("announcements")}>
         <Megaphone size={16} /> Announcements
       </Link>
+      <Link to="/admin/site-images" className={linkClass("site-images")}>
+        <ImageIcon size={16} /> Site Images
+      </Link>
       <Link to="/admin/gallery-photos" className={linkClass("gallery-photos")}>
         <ImageIcon size={16} /> Photo Review
       </Link>

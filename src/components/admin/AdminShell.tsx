@@ -12,6 +12,7 @@ export type AdminNavKey =
   | "scoutmasters"
   | "announcements"
   | "gallery-photos"
+  | "site-images"
   | "join-notifications"
   | "troop-admins";
 

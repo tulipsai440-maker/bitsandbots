@@ -27,6 +27,7 @@ import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminGalleryPhotosRouteImport } from './routes/_authenticated/admin.gallery-photos'
 import { Route as AuthenticatedAdminJoinNotificationsRouteImport } from './routes/_authenticated/admin.join-notifications'
 import { Route as AuthenticatedAdminScoutmastersRouteImport } from './routes/_authenticated/admin.scoutmasters'
+import { Route as AuthenticatedAdminSiteImagesRouteImport } from './routes/_authenticated/admin.site-images'
 import { Route as AuthenticatedAdminTroopAdminsRouteImport } from './routes/_authenticated/admin.troop-admins'
 
 const IndexRoute = IndexRouteImport.update({
@@ -125,6 +126,12 @@ const AuthenticatedAdminScoutmastersRoute =
     path: '/admin/scoutmasters',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminSiteImagesRoute =
+  AuthenticatedAdminSiteImagesRouteImport.update({
+    id: '/admin/site-images',
+    path: '/admin/site-images',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminTroopAdminsRoute =
   AuthenticatedAdminTroopAdminsRouteImport.update({
     id: '/admin/troop-admins',
@@ -150,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/admin/gallery-photos': typeof AuthenticatedAdminGalleryPhotosRoute
   '/admin/join-notifications': typeof AuthenticatedAdminJoinNotificationsRoute
   '/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
+  '/admin/site-images': typeof AuthenticatedAdminSiteImagesRoute
   '/admin/troop-admins': typeof AuthenticatedAdminTroopAdminsRoute
 }
 export interface FileRoutesByTo {
@@ -170,6 +178,7 @@ export interface FileRoutesByTo {
   '/admin/gallery-photos': typeof AuthenticatedAdminGalleryPhotosRoute
   '/admin/join-notifications': typeof AuthenticatedAdminJoinNotificationsRoute
   '/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
+  '/admin/site-images': typeof AuthenticatedAdminSiteImagesRoute
   '/admin/troop-admins': typeof AuthenticatedAdminTroopAdminsRoute
 }
 export interface FileRoutesById {
@@ -192,6 +201,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/gallery-photos': typeof AuthenticatedAdminGalleryPhotosRoute
   '/_authenticated/admin/join-notifications': typeof AuthenticatedAdminJoinNotificationsRoute
   '/_authenticated/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
+  '/_authenticated/admin/site-images': typeof AuthenticatedAdminSiteImagesRoute
   '/_authenticated/admin/troop-admins': typeof AuthenticatedAdminTroopAdminsRoute
 }
 export interface FileRouteTypes {
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/admin/gallery-photos'
     | '/admin/join-notifications'
     | '/admin/scoutmasters'
+    | '/admin/site-images'
     | '/admin/troop-admins'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/admin/gallery-photos'
     | '/admin/join-notifications'
     | '/admin/scoutmasters'
+    | '/admin/site-images'
     | '/admin/troop-admins'
   id:
     | '__root__'
@@ -255,6 +267,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/gallery-photos'
     | '/_authenticated/admin/join-notifications'
     | '/_authenticated/admin/scoutmasters'
+    | '/_authenticated/admin/site-images'
     | '/_authenticated/admin/troop-admins'
   fileRoutesById: FileRoutesById
 }
@@ -400,6 +413,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminScoutmastersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/site-images': {
+      id: '/_authenticated/admin/site-images'
+      path: '/admin/site-images'
+      fullPath: '/admin/site-images'
+      preLoaderRoute: typeof AuthenticatedAdminSiteImagesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/troop-admins': {
       id: '/_authenticated/admin/troop-admins'
       path: '/admin/troop-admins'
@@ -418,6 +438,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminGalleryPhotosRoute: typeof AuthenticatedAdminGalleryPhotosRoute
   AuthenticatedAdminJoinNotificationsRoute: typeof AuthenticatedAdminJoinNotificationsRoute
   AuthenticatedAdminScoutmastersRoute: typeof AuthenticatedAdminScoutmastersRoute
+  AuthenticatedAdminSiteImagesRoute: typeof AuthenticatedAdminSiteImagesRoute
   AuthenticatedAdminTroopAdminsRoute: typeof AuthenticatedAdminTroopAdminsRoute
 }
 
@@ -430,6 +451,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminJoinNotificationsRoute:
     AuthenticatedAdminJoinNotificationsRoute,
   AuthenticatedAdminScoutmastersRoute: AuthenticatedAdminScoutmastersRoute,
+  AuthenticatedAdminSiteImagesRoute: AuthenticatedAdminSiteImagesRoute,
   AuthenticatedAdminTroopAdminsRoute: AuthenticatedAdminTroopAdminsRoute,
 }
 

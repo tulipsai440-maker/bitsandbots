@@ -12,16 +12,25 @@ import {
   rankEagleScouts,
   type EagleScoutRow,
 } from "@/lib/content";
+import { GALLERY_PHOTOS_PUBLIC } from "@/lib/gallery-config";
 import { fetchApprovedGalleryPhotos, type ApprovedGalleryPhoto } from "@/lib/gallery-uploads";
 import { galleryPhotos } from "@/lib/gallery-photos";
 import { formatMeetingDate, formatMeetingTime, getNextMeetingDate } from "@/lib/meeting";
+import {
+  buildDefaultSiteImageOverrides,
+  fetchSiteImageOverrides,
+  resolveSiteImage,
+  type SiteImageOverrides,
+} from "@/lib/site-images";
 
 type MosaicPhoto = { src: string; alt: string };
 
 function buildMosaicPhotos(uploaded: ApprovedGalleryPhoto[]): MosaicPhoto[] {
+  if (!GALLERY_PHOTOS_PUBLIC) return [];
+
   const merged: MosaicPhoto[] = [
     ...uploaded.map((p) => ({ src: p.url, alt: p.caption ?? "Troop 2001 photo" })),
-    { src: photos.hero, alt: "Troop 2001 scouts at camp" },
+    { src: photos.hero, alt: "Naples Florida Gulf Coast" },
     ...galleryPhotos.map((p) => ({ src: p.src, alt: "Troop 2001 photo" })),
   ];
 
@@ -42,30 +51,34 @@ export const Route = createFileRoute("/")({
     ],
   }),
   loader: async () => {
-    const [eagleCount, eagles, uploadedPhotos] = await Promise.all([
+    const [eagleCount, eagles, uploadedPhotos, siteImages] = await Promise.all([
       fetchApprovedEagleScoutCount(),
       fetchApprovedEagleScouts().catch(() => [] as EagleScoutRow[]),
-      fetchApprovedGalleryPhotos().catch(() => [] as ApprovedGalleryPhoto[]),
+      GALLERY_PHOTOS_PUBLIC
+        ? fetchApprovedGalleryPhotos().catch(() => [] as ApprovedGalleryPhoto[])
+        : Promise.resolve([] as ApprovedGalleryPhoto[]),
+      fetchSiteImageOverrides().catch(() => buildDefaultSiteImageOverrides()),
     ]);
 
     return {
       eagleCount,
       eagles,
       mosaicPhotos: buildMosaicPhotos(uploadedPhotos),
+      siteImages,
     };
   },
   component: HomePage,
 });
 
 function HomePage() {
-  const { eagleCount, eagles, mosaicPhotos } = Route.useLoaderData();
+  const { eagleCount, eagles, mosaicPhotos, siteImages } = Route.useLoaderData();
 
   return (
     <SiteLayout>
-      <Hero eagleCount={eagleCount} />
+      <Hero eagleCount={eagleCount} siteImages={siteImages} />
       <NextUpStrip />
-      <EaglePreviewWall eagles={eagles} eagleCount={eagleCount} />
-      <AdventureSection />
+      <EaglePreviewWall eagles={eagles} eagleCount={eagleCount} siteImages={siteImages} />
+      <AdventureSection siteImages={siteImages} />
       <EventsAndAnnouncements />
       <PhotoMosaic photos={mosaicPhotos} />
       <QuickLinksPreview />
@@ -74,7 +87,8 @@ function HomePage() {
   );
 }
 
-function Hero({ eagleCount }: { eagleCount: number | null }) {
+function Hero({ eagleCount, siteImages }: { eagleCount: number | null; siteImages: SiteImageOverrides }) {
+  const hero = resolveSiteImage("hero", siteImages);
   // Retry from the browser when the server-rendered count is unavailable.
   const [count, setCount] = useState(eagleCount);
   useEffect(() => {
@@ -85,17 +99,17 @@ function Hero({ eagleCount }: { eagleCount: number | null }) {
   const showEagleStat = typeof count === "number" && count > 0;
 
   return (
-    <section className="relative isolate overflow-hidden">
+    <section className="relative isolate overflow-hidden bg-forest-deep">
       <TroopPhoto
-        src={photos.hero}
-        alt="Troop 2001 scouts at camp"
+        src={hero.url}
+        alt={hero.alt}
         width={1920}
-        height={1200}
+        height={1080}
         loading="eager"
         className="absolute inset-0 h-full w-full object-cover"
-        label="Troop photo"
+        label="Hero"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-navy/75 via-forest-deep/60 to-forest-deep/90" />
+      <div className="absolute inset-0 bg-gradient-to-b from-navy/80 via-forest-deep/55 to-forest-deep/95" />
       <div className="relative">
         <div className="container-page flex min-h-[86vh] flex-col items-center justify-end pb-16 pt-32 text-center text-cream md:min-h-[92vh] md:pb-24">
           <div className="max-w-3xl">
@@ -198,10 +212,13 @@ function eagleInitials(name: string): string {
 function EaglePreviewWall({
   eagles,
   eagleCount,
+  siteImages,
 }: {
   eagles: EagleScoutRow[];
   eagleCount: number | null;
+  siteImages: SiteImageOverrides;
 }) {
+  const trailToEagle = resolveSiteImage("trailToEagle", siteImages);
   const ranked = rankEagleScouts(eagles.filter((e) => e.status === "approved"));
   const preview = ranked.slice(-8).reverse();
   const total = eagleCount ?? ranked.length;
@@ -212,8 +229,8 @@ function EaglePreviewWall({
         <div className="container-page grid gap-12 md:grid-cols-2 md:items-center">
           <div className="relative overflow-hidden rounded-2xl">
             <TroopPhoto
-              src={photos.trailToEagle}
-              alt="Eagle Scout medal on uniform"
+              src={trailToEagle.url}
+              alt={trailToEagle.alt}
               width={1600}
               height={1100}
               className="h-full w-full object-cover"
@@ -279,11 +296,23 @@ function EaglePreviewWall({
   );
 }
 
-function AdventureSection() {
+function AdventureSection({ siteImages }: { siteImages: SiteImageOverrides }) {
   const cards = [
-    { img: photos.outdoorAdventure.camping, title: "Camping", copy: "Monthly campouts in Florida and nearby states." },
-    { img: photos.outdoorAdventure.hiking, title: "Hiking & backpacking", copy: "Day hikes through multi-day treks, depending on the season." },
-    { img: photos.outdoorAdventure.waterSports, title: "Aquatics", copy: "Canoeing, kayaking, and swimming as part of summer program." },
+    {
+      key: "camping" as const,
+      title: "Camping",
+      copy: "Monthly campouts in Florida and nearby states.",
+    },
+    {
+      key: "hiking" as const,
+      title: "Hiking & backpacking",
+      copy: "Day hikes through multi-day treks, depending on the season.",
+    },
+    {
+      key: "aquatics" as const,
+      title: "Aquatics",
+      copy: "Canoeing, kayaking, and swimming as part of summer program.",
+    },
   ];
   return (
     <section className="border-y border-border/60 bg-sand py-24">
@@ -299,17 +328,20 @@ function AdventureSection() {
           <Link to="/events" className="btn-outline">View events <ArrowRight size={16} /></Link>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {cards.map((c) => (
-            <article key={c.title} className="group overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border transition-transform hover:-translate-y-1">
-              <div className="aspect-[4/3] overflow-hidden">
-                <TroopPhoto src={c.img} alt={c.title} width={1400} height={900} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" label={c.title} />
-              </div>
-              <div className="p-6">
-                <h3 className="font-display text-2xl">{c.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{c.copy}</p>
-              </div>
-            </article>
-          ))}
+          {cards.map((c) => {
+            const image = resolveSiteImage(c.key, siteImages);
+            return (
+              <article key={c.title} className="group overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border transition-transform hover:-translate-y-1">
+                <div className="aspect-[4/3] overflow-hidden">
+                  <TroopPhoto src={image.url} alt={image.alt} width={1400} height={900} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" label={c.title} />
+                </div>
+                <div className="p-6">
+                  <h3 className="font-display text-2xl">{c.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{c.copy}</p>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

@@ -4,6 +4,7 @@ import { SiteLayout, PageHero } from "@/components/site/Layout";
 import { TroopPhoto } from "@/components/site/TroopPhoto";
 import { GalleryUploadForm } from "@/components/site/GalleryUploadForm";
 import { galleryPhotos } from "@/lib/gallery-photos";
+import { GALLERY_PHOTOS_PUBLIC } from "@/lib/gallery-config";
 import { fetchApprovedGalleryPhotos } from "@/lib/gallery-uploads";
 import { photos } from "@/lib/photos";
 import { ArrowRight, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
@@ -37,20 +38,23 @@ type DisplayPhoto = {
   caption: string | null;
 };
 
-const staticPhotos: DisplayPhoto[] = galleryPhotos.map((photo) => ({
-  key: photo.src,
-  src: photo.src,
-  thumb: photo.thumb,
-  width: photo.width,
-  height: photo.height,
-  caption: null,
-}));
+const staticPhotos: DisplayPhoto[] = GALLERY_PHOTOS_PUBLIC
+  ? galleryPhotos.map((photo) => ({
+      key: photo.src,
+      src: photo.src,
+      thumb: photo.thumb,
+      width: photo.width,
+      height: photo.height,
+      caption: null,
+    }))
+  : [];
 
 function GalleryPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [uploaded, setUploaded] = useState<DisplayPhoto[]>([]);
 
   useEffect(() => {
+    if (!GALLERY_PHOTOS_PUBLIC) return;
     let cancelled = false;
     fetchApprovedGalleryPhotos()
       .then((rows) => {
@@ -110,9 +114,11 @@ function GalleryPage() {
         title="Photo gallery"
         align="center"
         description={
-          total > 0
-            ? "Approved photos from troop events and parent uploads."
-            : "Photos from troop events will appear here."
+          GALLERY_PHOTOS_PUBLIC
+            ? total > 0
+              ? "Approved photos from troop events and parent uploads."
+              : "Photos from troop events will appear here."
+            : "Gallery photos are temporarily hidden while the troop refreshes the collection. Parent uploads are still saved for review."
         }
       />
 

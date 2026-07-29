@@ -46,6 +46,7 @@ Also run fix-eagle-scouts-rls.sql if Eagle Scouts page errors.
 Also run setup-join-notify-emails.sql for Join Notifications admin tab.
 Also run setup-troop-admins.sql for the Troop Admins admin tab.
 Also run setup-gallery-uploads.sql for gallery photo uploads + Photo Review admin tab.
+Also run setup-site-images.sql for Admin → Site Images (homepage hero and section photos).
 
 STEP 5 — Create your account
 ----------------------------

@@ -5,7 +5,7 @@ export const photos = {
   favicon16: "/photos/logo/favicon-16x16.png",
   appleTouchIcon: "/photos/logo/apple-touch-icon.png",
   ogLogo: "/photos/logo/og-logo.png",
-  hero: "/photos/hero/troop-summit.webp",
+  hero: "/photos/site/hero-naples.png",
   og: "/photos/logo/og-logo.png",
   home: {
     eagle: "/photos/The%20Trail%20to%20Eagle/Trail%20to%20eagle.webp",
@@ -16,7 +16,7 @@ export const photos = {
     flag: "/photos/hero/troop-summit.webp",
   },
   outdoorAdventure: {
-    camping: "/photos/Outdoor%20Adventure/Camping.webp",
+    camping: "/photos/site/camping-tents.png",
     hiking: "/photos/Outdoor%20Adventure/Hiking%20backpacking.webp",
     waterSports: "/photos/Outdoor%20Adventure/Water%20Sports.webp",
   },
