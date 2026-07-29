@@ -12,7 +12,10 @@ import {
   rankEagleScouts,
   type EagleScoutRow,
 } from "@/lib/content";
-import { GALLERY_PHOTOS_PUBLIC } from "@/lib/gallery-config";
+import {
+  GALLERY_STATIC_PHOTOS_PUBLIC,
+  GALLERY_UPLOADS_PUBLIC,
+} from "@/lib/gallery-config";
 import { fetchApprovedGalleryPhotos, type ApprovedGalleryPhoto } from "@/lib/gallery-uploads";
 import { galleryPhotos } from "@/lib/gallery-photos";
 import { formatMeetingDate, formatMeetingTime, getNextMeetingDate } from "@/lib/meeting";
@@ -26,12 +29,16 @@ import {
 type MosaicPhoto = { src: string; alt: string };
 
 function buildMosaicPhotos(uploaded: ApprovedGalleryPhoto[]): MosaicPhoto[] {
-  if (!GALLERY_PHOTOS_PUBLIC) return [];
-
   const merged: MosaicPhoto[] = [
-    ...uploaded.map((p) => ({ src: p.url, alt: p.caption ?? "Troop 2001 photo" })),
-    { src: photos.hero, alt: "Naples Florida Gulf Coast" },
-    ...galleryPhotos.map((p) => ({ src: p.src, alt: "Troop 2001 photo" })),
+    ...(GALLERY_UPLOADS_PUBLIC
+      ? uploaded.map((p) => ({ src: p.url, alt: p.caption ?? "Troop 2001 photo" }))
+      : []),
+    ...(GALLERY_STATIC_PHOTOS_PUBLIC
+      ? [
+          { src: photos.hero, alt: "Naples Florida Gulf Coast" },
+          ...galleryPhotos.map((p) => ({ src: p.src, alt: "Troop 2001 photo" })),
+        ]
+      : []),
   ];
 
   const seen = new Set<string>();
@@ -54,7 +61,7 @@ export const Route = createFileRoute("/")({
     const [eagleCount, eagles, uploadedPhotos, siteImages] = await Promise.all([
       fetchApprovedEagleScoutCount(),
       fetchApprovedEagleScouts().catch(() => [] as EagleScoutRow[]),
-      GALLERY_PHOTOS_PUBLIC
+      GALLERY_UPLOADS_PUBLIC
         ? fetchApprovedGalleryPhotos().catch(() => [] as ApprovedGalleryPhoto[])
         : Promise.resolve([] as ApprovedGalleryPhoto[]),
       fetchSiteImageOverrides().catch(() => buildDefaultSiteImageOverrides()),

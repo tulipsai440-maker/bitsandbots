@@ -4,8 +4,14 @@ import { SiteLayout, PageHero } from "@/components/site/Layout";
 import { TroopPhoto } from "@/components/site/TroopPhoto";
 import { GalleryUploadForm } from "@/components/site/GalleryUploadForm";
 import { galleryPhotos } from "@/lib/gallery-photos";
-import { GALLERY_PHOTOS_PUBLIC } from "@/lib/gallery-config";
-import { fetchApprovedGalleryPhotos } from "@/lib/gallery-uploads";
+import {
+  GALLERY_STATIC_PHOTOS_PUBLIC,
+  GALLERY_UPLOADS_PUBLIC,
+} from "@/lib/gallery-config";
+import {
+  fetchApprovedGalleryPhotos,
+  type ApprovedGalleryPhoto,
+} from "@/lib/gallery-uploads";
 import { photos } from "@/lib/photos";
 import { ArrowRight, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 
@@ -26,6 +32,16 @@ export const Route = createFileRoute("/gallery")({
       { property: "og:image", content: `https://troop2001naples.org${photos.ogLogo}` },
     ],
   }),
+  loader: async () => {
+    if (!GALLERY_UPLOADS_PUBLIC) {
+      return { uploaded: [] as ApprovedGalleryPhoto[] };
+    }
+    try {
+      return { uploaded: await fetchApprovedGalleryPhotos() };
+    } catch {
+      return { uploaded: [] as ApprovedGalleryPhoto[] };
+    }
+  },
   component: GalleryPage,
 });
 
@@ -38,7 +54,18 @@ type DisplayPhoto = {
   caption: string | null;
 };
 
-const staticPhotos: DisplayPhoto[] = GALLERY_PHOTOS_PUBLIC
+function toDisplayPhotos(rows: ApprovedGalleryPhoto[]): DisplayPhoto[] {
+  return rows.map((row) => ({
+    key: row.id,
+    src: row.url,
+    thumb: row.url,
+    width: row.width,
+    height: row.height,
+    caption: row.caption,
+  }));
+}
+
+const staticPhotos: DisplayPhoto[] = GALLERY_STATIC_PHOTOS_PUBLIC
   ? galleryPhotos.map((photo) => ({
       key: photo.src,
       src: photo.src,
@@ -50,28 +77,23 @@ const staticPhotos: DisplayPhoto[] = GALLERY_PHOTOS_PUBLIC
   : [];
 
 function GalleryPage() {
+  const { uploaded: loaderUploaded } = Route.useLoaderData();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [uploaded, setUploaded] = useState<DisplayPhoto[]>([]);
+  const [uploaded, setUploaded] = useState<DisplayPhoto[]>(() => toDisplayPhotos(loaderUploaded));
 
   useEffect(() => {
-    if (!GALLERY_PHOTOS_PUBLIC) return;
+    if (!GALLERY_UPLOADS_PUBLIC) {
+      setUploaded([]);
+      return;
+    }
     let cancelled = false;
     fetchApprovedGalleryPhotos()
       .then((rows) => {
         if (cancelled) return;
-        setUploaded(
-          rows.map((row) => ({
-            key: row.id,
-            src: row.url,
-            thumb: row.url,
-            width: row.width,
-            height: row.height,
-            caption: row.caption,
-          })),
-        );
+        setUploaded(toDisplayPhotos(rows));
       })
-      .catch(() => {
-        // Gallery still works with the built-in photos if uploads aren't set up yet.
+      .catch((error) => {
+        console.error("[gallery] Could not refresh approved photos", error);
       });
     return () => {
       cancelled = true;
@@ -114,11 +136,9 @@ function GalleryPage() {
         title="Photo gallery"
         align="center"
         description={
-          GALLERY_PHOTOS_PUBLIC
-            ? total > 0
-              ? "Approved photos from troop events and parent uploads."
-              : "Photos from troop events will appear here."
-            : "Gallery photos are temporarily hidden while the troop refreshes the collection. Parent uploads are still saved for review."
+          total > 0
+            ? "Approved photos from troop events and parent uploads."
+            : "Photos from troop events will appear here after admin review."
         }
       />
 
@@ -134,7 +154,7 @@ function GalleryPage() {
             <div className="rounded-2xl border border-border bg-card p-10 text-center">
               <p className="font-display text-2xl text-foreground">No photos yet.</p>
               <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-                Troop photos will be posted here after upcoming campouts and ceremonies.
+                Share photos below — a troop leader approves them before they appear here.
               </p>
               <Link to="/events" className="btn-outline mt-6 inline-flex gap-2">
                 See upcoming events <ArrowRight size={16} />
