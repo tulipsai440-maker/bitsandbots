@@ -19,7 +19,10 @@ export const Route = createFileRoute("/quick-links")({
   head: () => ({
     meta: [
       { title: "Quick Links — Troop 2001 Naples" },
-      { name: "description", content: "Essential scouting resources: health forms, payments, Scoutbook, TroopTrack, and more." },
+      {
+        name: "description",
+        content: "Essential scouting resources: health forms, payments, Scoutbook, TroopTrack, and more.",
+      },
       { property: "og:title", content: "Troop 2001 Quick Links" },
       { property: "og:description", content: "Essential scouting resources for Troop 2001 families." },
     ],
@@ -85,9 +88,9 @@ const links: LinkItem[] = [
   },
   {
     label: "Online Payments",
-    href: "/join",
+    href: "/payments",
     icon: CreditCard,
-    desc: "Contact the troop for dues, camp fees, and payment instructions.",
+    desc: "Pay dues and camp fees with Zelle or Venmo.",
   },
   {
     label: "Camping Checklist",

@@ -18,6 +18,7 @@ import { Route as EagleScoutsRouteImport } from './routes/eagle-scouts'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as JoinRouteImport } from './routes/join'
+import { Route as PaymentsRouteImport } from './routes/payments'
 import { Route as QuickLinksRouteImport } from './routes/quick-links'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthenticatedAdminAnnouncementsRouteImport } from './routes/_authenticated/admin.announcements'
@@ -72,6 +73,11 @@ const GalleryRoute = GalleryRouteImport.update({
 const JoinRoute = JoinRouteImport.update({
   id: '/join',
   path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentsRoute = PaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuickLinksRoute = QuickLinksRouteImport.update({
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/events': typeof EventsRoute
   '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
+  '/payments': typeof PaymentsRoute
   '/quick-links': typeof QuickLinksRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/announcements': typeof AuthenticatedAdminAnnouncementsRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByTo {
   '/events': typeof EventsRoute
   '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
+  '/payments': typeof PaymentsRoute
   '/quick-links': typeof QuickLinksRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/announcements': typeof AuthenticatedAdminAnnouncementsRoute
@@ -192,6 +200,7 @@ export interface FileRoutesById {
   '/events': typeof EventsRoute
   '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
+  '/payments': typeof PaymentsRoute
   '/quick-links': typeof QuickLinksRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/admin/announcements': typeof AuthenticatedAdminAnnouncementsRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/events'
     | '/gallery'
     | '/join'
+    | '/payments'
     | '/quick-links'
     | '/sitemap.xml'
     | '/admin/announcements'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/events'
     | '/gallery'
     | '/join'
+    | '/payments'
     | '/quick-links'
     | '/sitemap.xml'
     | '/admin/announcements'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/events'
     | '/gallery'
     | '/join'
+    | '/payments'
     | '/quick-links'
     | '/sitemap.xml'
     | '/_authenticated/admin/announcements'
@@ -281,6 +293,7 @@ export interface RootRouteChildren {
   EventsRoute: typeof EventsRoute
   GalleryRoute: typeof GalleryRoute
   JoinRoute: typeof JoinRoute
+  PaymentsRoute: typeof PaymentsRoute
   QuickLinksRoute: typeof QuickLinksRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
@@ -348,6 +361,13 @@ declare module '@tanstack/react-router' {
       path: '/join'
       fullPath: '/join'
       preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payments': {
+      id: '/payments'
+      path: '/payments'
+      fullPath: '/payments'
+      preLoaderRoute: typeof PaymentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quick-links': {
@@ -468,6 +488,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsRoute: EventsRoute,
   GalleryRoute: GalleryRoute,
   JoinRoute: JoinRoute,
+  PaymentsRoute: PaymentsRoute,
   QuickLinksRoute: QuickLinksRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }

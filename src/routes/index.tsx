@@ -483,7 +483,7 @@ function PhotoMosaic({ photos: mosaicPhotos }: { photos: MosaicPhoto[] }) {
 function QuickLinksPreview() {
   const links = [
     { label: "Health Forms", href: "https://filestore.scouting.org/filestore/healthsafety/pdf/680-001_ab.pdf" },
-    { label: "Online Payments", href: "/quick-links" },
+    { label: "Online Payments", href: "/payments" },
     { label: "Scoutbook", href: "/quick-links" },
     { label: "TroopTrack", href: "/quick-links" },
     { label: "Youth Protection", href: "/quick-links" },
@@ -506,7 +506,9 @@ function QuickLinksPreview() {
             return (
               <El
                 key={l.label}
-                {...(external ? { href: l.href, target: "_blank", rel: "noopener noreferrer" } : { to: l.href })}
+                {...(external
+                  ? { href: l.href, target: "_blank", rel: "noopener noreferrer" }
+                  : { to: l.href })}
                 className="group flex items-center justify-between rounded-xl border border-border bg-card p-5 transition-colors hover:border-forest"
               >
                 <span className="font-medium">{l.label}</span>
