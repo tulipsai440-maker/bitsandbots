@@ -134,7 +134,7 @@ function AdminAssignmentsPage() {
         <div className="mb-6 rounded-2xl border border-forest/20 bg-forest/5 p-5 text-sm text-foreground">
           <p className="font-medium">Overdue parent emails</p>
           <p className="mt-1 text-muted-foreground">
-            Each day at ~10 AM Eastern, parents get a separate email if their kid did not finish a
+            Each day at <strong className="text-foreground">8 AM Eastern</strong>, parents get a separate email if their kid did not finish a
             task by the due date (sent the <strong className="text-foreground">next day</strong>).
             Coach <strong className="text-foreground">suresh440@gmail.com</strong> is CC&apos;d on
             every reminder. One-time: run{" "}

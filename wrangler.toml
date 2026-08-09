@@ -25,6 +25,6 @@ zone_name = "fllbots.com"
 SITE_ORIGIN = "https://fllbots.com"
 SUPABASE_URL = "https://njhiqsbykiggxqkjrxse.supabase.co"
 
-# Daily overdue assignment emails to parents (day after due date). 15:00 UTC ≈ 10–11 AM Eastern.
+# Daily overdue assignment emails to parents (day after due date). 12:00 UTC = 8 AM Eastern (EDT).
 [triggers]
-crons = ["0 15 * * *"]
+crons = ["0 12 * * *"]
