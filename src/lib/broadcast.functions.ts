@@ -256,11 +256,16 @@ async function sendBroadcastResend(
   const result = (await res.json().catch(() => null)) as {
     data?: Array<{ id?: string }>;
   } | null;
-  const delivered = result?.data?.filter((d) => d?.id).length ?? recipients.length;
-  if (delivered === 0) {
+  const ids = result?.data?.filter((d) => d?.id) ?? [];
+  if (ids.length === 0) {
     throw new Error("Resend accepted the request but no emails were queued.");
   }
-  return delivered;
+  if (ids.length < recipients.length) {
+    throw new Error(
+      `Resend queued ${ids.length} of ${recipients.length} emails — retrying individually.`,
+    );
+  }
+  return ids.length;
 }
 
 /** Admin-only: email every unique parent address via Resend. */
