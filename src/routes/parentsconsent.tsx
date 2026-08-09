@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CheckCircle2, Send } from "lucide-react";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
-import { fetchTeamMembers, type TeamMember } from "@/lib/team-members";
+import { type TeamMember } from "@/lib/team-members";
 import {
   MEDIA_CONSENT_INTRO,
   MEDIA_CONSENT_TERMS,
@@ -27,9 +27,12 @@ export const Route = createFileRoute("/parentsconsent")({
       },
     ],
   }),
-  loader: async () => ({
-    members: await fetchTeamMembers(),
-  }),
+  loader: async () => {
+    const { fetchConsentEligibleMembers } = await import("@/lib/parent-consent.functions");
+    return {
+      members: await fetchConsentEligibleMembers(),
+    };
+  },
   component: ParentsConsentPage,
 });
 
@@ -51,7 +54,8 @@ const emptyForm = (): ParentMediaConsentInput => ({
 });
 
 function ParentsConsentPage() {
-  const { members } = Route.useLoaderData();
+  const { members: initialMembers } = Route.useLoaderData();
+  const [members, setMembers] = useState<TeamMember[]>(initialMembers);
   const [form, setForm] = useState<ParentMediaConsentInput>(emptyForm);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +79,7 @@ function ParentsConsentPage() {
       const { submitParentMediaConsent } = await import("@/lib/parent-consent.functions");
       const result = await submitParentMediaConsent({ data: form });
       setSubmittedKid(result.memberName);
+      setMembers((current) => current.filter((m) => m.id !== result.memberId));
       setStatus("success");
       setForm(emptyForm());
     } catch (err) {
@@ -119,9 +124,26 @@ function ParentsConsentPage() {
                   Thank you{submittedKid ? ` for ${submittedKid}'s consent` : ""}. Coaches have your
                   signed permission on file.
                 </p>
-                <button type="button" onClick={() => setStatus("idle")} className="btn-outline mt-6">
-                  Submit another
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatus("idle");
+                    setSubmittedKid(null);
+                  }}
+                  className="btn-outline mt-6"
+                  disabled={members.length === 0}
+                >
+                  {members.length === 0 ? "All teammates done" : "Submit another"}
                 </button>
+              </div>
+            ) : members.length === 0 ? (
+              <div className="rounded-2xl border border-forest/30 bg-forest/5 p-10 text-center">
+                <CheckCircle2 size={40} className="mx-auto text-forest" />
+                <h2 className="mt-4 font-display text-3xl">All set</h2>
+                <p className="mt-2 text-muted-foreground">
+                  Every teammate on the roster already has consent on file. Contact a coach if you
+                  need to update anything.
+                </p>
               </div>
             ) : (
               <ConsentForm
