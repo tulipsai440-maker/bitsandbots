@@ -2,10 +2,13 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { sendOverdueAssignmentReminders } from "./lib/assignment-reminders";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
+
+type WorkerCtx = { waitUntil?: (p: Promise<unknown>) => void };
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
@@ -45,6 +48,14 @@ function isH3SwallowedErrorBody(body: string): boolean {
 }
 
 export default {
+  async scheduled(_event: unknown, _env: unknown, ctx: WorkerCtx) {
+    const work = sendOverdueAssignmentReminders().catch((err) => {
+      console.error("[cron] overdue assignment reminders failed", err);
+    });
+    ctx.waitUntil?.(work);
+    await work;
+  },
+
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();

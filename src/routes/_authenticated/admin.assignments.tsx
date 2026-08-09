@@ -16,7 +16,9 @@ import {
   type RosterMember,
 } from "@/lib/assignments";
 import { toast } from "sonner";
-import { ClipboardList, Copy, ExternalLink, Plus, Trash2, Paperclip } from "lucide-react";
+import { ClipboardList, Copy, ExternalLink, Mail, Plus, Trash2, Paperclip } from "lucide-react";
+import { runOverdueAssignmentReminders } from "@/lib/assignment-reminders.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/admin/assignments")({
   component: AdminAssignmentsPage,
@@ -46,6 +48,7 @@ function AdminAssignmentsPage() {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [needsAttachments, setNeedsAttachments] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [reminderBusy, setReminderBusy] = useState(false);
 
   async function load() {
     try {
@@ -71,22 +74,76 @@ function AdminAssignmentsPage() {
     load();
   }, []);
 
+  async function sendOverdueReminders() {
+    setReminderBusy(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Not signed in — refresh and try again.");
+
+      const result = await runOverdueAssignmentReminders({
+        data: { accessToken },
+      });
+
+      if (result.failures.length > 0) {
+        toast.error(
+          `Sent ${result.sent} overdue reminder(s). ${result.failures.length} failed — see console.`,
+        );
+        console.warn("[assignments] reminder failures", result.failures);
+      } else if (result.sent === 0) {
+        toast.message("No overdue reminders to send (due yesterday, not done, not already emailed).");
+      } else {
+        toast.success(`Sent ${result.sent} overdue reminder email(s) to parents (CC suresh440@gmail.com).`);
+      }
+    } catch (e) {
+      toast.error(assignmentsErrorMessage(e));
+    } finally {
+      setReminderBusy(false);
+    }
+  }
+
   return (
     <AdminReviewPage
       active="assignments"
       title="Assignments"
-      description="Create one task for the whole team (or selected kids). Teammates open /assignments with their name and 4-digit PIN."
+      description="Create one task for the whole team (or selected kids). Teammates open /assignments with their name and 4-digit PIN. Parents get an email the day after due date if a task is not done."
       toolbar={
-        <button
-          type="button"
-          className="btn-primary gap-2"
-          disabled={needsSetup}
-          onClick={() => setShowForm(true)}
-        >
-          <Plus size={16} /> New assignment
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn-outline gap-2"
+            disabled={needsSetup || reminderBusy}
+            onClick={sendOverdueReminders}
+            title="Email parents for tasks due yesterday that are still not done"
+          >
+            <Mail size={16} />
+            {reminderBusy ? "Sending…" : "Send overdue emails"}
+          </button>
+          <button
+            type="button"
+            className="btn-primary gap-2"
+            disabled={needsSetup}
+            onClick={() => setShowForm(true)}
+          >
+            <Plus size={16} /> New assignment
+          </button>
+        </div>
       }
     >
+      {!needsSetup && (
+        <div className="mb-6 rounded-2xl border border-forest/20 bg-forest/5 p-5 text-sm text-foreground">
+          <p className="font-medium">Overdue parent emails</p>
+          <p className="mt-1 text-muted-foreground">
+            Each day at ~10 AM Eastern, parents get a separate email if their kid did not finish a
+            task by the due date (sent the <strong className="text-foreground">next day</strong>).
+            Coach <strong className="text-foreground">suresh440@gmail.com</strong> is CC&apos;d on
+            every reminder. One-time: run{" "}
+            <code className="rounded bg-muted px-1">supabase/setup-assignment-reminders.sql</code> in
+            Supabase.
+          </p>
+        </div>
+      )}
+
       {needsSetup && (
         <div className="mb-6 rounded-2xl border border-amber-300/60 bg-amber-50 p-5 text-sm text-amber-950">
           <p className="font-medium">One-time setup required</p>

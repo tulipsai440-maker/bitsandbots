@@ -10,12 +10,21 @@ preview_urls = true
 # Keep dashboard-only vars/secrets that are not defined in this file.
 keep_vars = true
 
-# Add custom domain routes when Bits & Bots goes live, e.g.:
-# [[routes]]
-# pattern = "bitsandbots.org"
-# custom_domain = true
+# Zone routes (Worker intercepts before dead origin; avoids DNS delete requiring Zone.DNS Edit).
+# Prefer Custom Domains later: delete A/CNAME for apex+www in CF DNS, then use custom_domain = true.
+[[routes]]
+pattern = "fllbots.com/*"
+zone_name = "fllbots.com"
+
+[[routes]]
+pattern = "www.fllbots.com/*"
+zone_name = "fllbots.com"
 
 [vars]
-# Production Worker URL. Local `npm run dev` still uses http://localhost:8080 via Vite.
-SITE_ORIGIN = "https://bitsandbots.sravanthi440.workers.dev"
+# Production site origin. Local `npm run dev` still uses http://localhost:8080 via Vite.
+SITE_ORIGIN = "https://fllbots.com"
 SUPABASE_URL = "https://njhiqsbykiggxqkjrxse.supabase.co"
+
+# Daily overdue assignment emails to parents (day after due date). 15:00 UTC ≈ 10–11 AM Eastern.
+[triggers]
+crons = ["0 15 * * *"]
