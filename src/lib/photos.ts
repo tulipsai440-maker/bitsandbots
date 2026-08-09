@@ -49,7 +49,7 @@ export const MEETING_MAPS_URL =
 
 export const SITE_NAME = "Bits & Bots";
 /** Header / footer subtitle */
-export const SITE_TAGLINE = "Community Robotics Team · Collier County, FL";
+export const SITE_TAGLINE = "Community Robotics Team · Collier County";
 export const FOUNDED_YEAR = "2024";
 
 /** Sunday in-person team practice */
