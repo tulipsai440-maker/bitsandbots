@@ -19,6 +19,7 @@ export type AdminNavKey =
   | "team-admins"
   | "assignments"
   | "parent-contacts"
+  | "parent-consents"
   | "broadcast";
 
 export function AdminReviewPage({

@@ -35,6 +35,9 @@ export function AdminNav({ active }: { active: AdminNavKey }) {
       <Link to="/admin/parent-contacts" className={linkClass("parent-contacts")}>
         <Contact size={16} /> Parents
       </Link>
+      <Link to="/admin/parent-consents" className={linkClass("parent-consents")}>
+        <Contact size={16} /> Consents
+      </Link>
       <Link to="/admin/coaches" className={linkClass("coaches")}>
         <UserRound size={16} /> Coaches
       </Link>

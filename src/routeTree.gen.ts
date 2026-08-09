@@ -22,6 +22,7 @@ import { Route as EventsRouteImport } from './routes/events'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as OutreachRouteImport } from './routes/outreach'
+import { Route as ParentsconsentRouteImport } from './routes/parentsconsent'
 import { Route as QuickLinksRouteImport } from './routes/quick-links'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SponsorsRouteImport } from './routes/sponsors'
@@ -36,6 +37,7 @@ import { Route as AuthenticatedAdminEagleScoutsRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenticated/admin.events'
 import { Route as AuthenticatedAdminGalleryPhotosRouteImport } from './routes/_authenticated/admin.gallery-photos'
 import { Route as AuthenticatedAdminJoinNotificationsRouteImport } from './routes/_authenticated/admin.join-notifications'
+import { Route as AuthenticatedAdminParentConsentsRouteImport } from './routes/_authenticated/admin.parent-consents'
 import { Route as AuthenticatedAdminParentContactsRouteImport } from './routes/_authenticated/admin.parent-contacts'
 import { Route as AuthenticatedAdminScoutmastersRouteImport } from './routes/_authenticated/admin.scoutmasters'
 import { Route as AuthenticatedAdminSiteImagesRouteImport } from './routes/_authenticated/admin.site-images'
@@ -106,6 +108,11 @@ const JoinRoute = JoinRouteImport.update({
 const OutreachRoute = OutreachRouteImport.update({
   id: '/outreach',
   path: '/outreach',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentsconsentRoute = ParentsconsentRouteImport.update({
+  id: '/parentsconsent',
+  path: '/parentsconsent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuickLinksRoute = QuickLinksRouteImport.update({
@@ -188,6 +195,12 @@ const AuthenticatedAdminJoinNotificationsRoute =
     path: '/admin/join-notifications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminParentConsentsRoute =
+  AuthenticatedAdminParentConsentsRouteImport.update({
+    id: '/admin/parent-consents',
+    path: '/admin/parent-consents',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminParentContactsRoute =
   AuthenticatedAdminParentContactsRouteImport.update({
     id: '/admin/parent-contacts',
@@ -243,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
   '/outreach': typeof OutreachRoute
+  '/parentsconsent': typeof ParentsconsentRoute
   '/quick-links': typeof QuickLinksRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sponsors': typeof SponsorsRoute
@@ -257,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/gallery-photos': typeof AuthenticatedAdminGalleryPhotosRoute
   '/admin/join-notifications': typeof AuthenticatedAdminJoinNotificationsRoute
+  '/admin/parent-consents': typeof AuthenticatedAdminParentConsentsRoute
   '/admin/parent-contacts': typeof AuthenticatedAdminParentContactsRoute
   '/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
   '/admin/site-images': typeof AuthenticatedAdminSiteImagesRoute
@@ -278,6 +293,7 @@ export interface FileRoutesByTo {
   '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
   '/outreach': typeof OutreachRoute
+  '/parentsconsent': typeof ParentsconsentRoute
   '/quick-links': typeof QuickLinksRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sponsors': typeof SponsorsRoute
@@ -292,6 +308,7 @@ export interface FileRoutesByTo {
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/gallery-photos': typeof AuthenticatedAdminGalleryPhotosRoute
   '/admin/join-notifications': typeof AuthenticatedAdminJoinNotificationsRoute
+  '/admin/parent-consents': typeof AuthenticatedAdminParentConsentsRoute
   '/admin/parent-contacts': typeof AuthenticatedAdminParentContactsRoute
   '/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
   '/admin/site-images': typeof AuthenticatedAdminSiteImagesRoute
@@ -315,6 +332,7 @@ export interface FileRoutesById {
   '/gallery': typeof GalleryRoute
   '/join': typeof JoinRoute
   '/outreach': typeof OutreachRoute
+  '/parentsconsent': typeof ParentsconsentRoute
   '/quick-links': typeof QuickLinksRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sponsors': typeof SponsorsRoute
@@ -329,6 +347,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/events': typeof AuthenticatedAdminEventsRoute
   '/_authenticated/admin/gallery-photos': typeof AuthenticatedAdminGalleryPhotosRoute
   '/_authenticated/admin/join-notifications': typeof AuthenticatedAdminJoinNotificationsRoute
+  '/_authenticated/admin/parent-consents': typeof AuthenticatedAdminParentConsentsRoute
   '/_authenticated/admin/parent-contacts': typeof AuthenticatedAdminParentContactsRoute
   '/_authenticated/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
   '/_authenticated/admin/site-images': typeof AuthenticatedAdminSiteImagesRoute
@@ -352,6 +371,7 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/join'
     | '/outreach'
+    | '/parentsconsent'
     | '/quick-links'
     | '/sitemap.xml'
     | '/sponsors'
@@ -366,6 +386,7 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/gallery-photos'
     | '/admin/join-notifications'
+    | '/admin/parent-consents'
     | '/admin/parent-contacts'
     | '/admin/scoutmasters'
     | '/admin/site-images'
@@ -387,6 +408,7 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/join'
     | '/outreach'
+    | '/parentsconsent'
     | '/quick-links'
     | '/sitemap.xml'
     | '/sponsors'
@@ -401,6 +423,7 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/gallery-photos'
     | '/admin/join-notifications'
+    | '/admin/parent-consents'
     | '/admin/parent-contacts'
     | '/admin/scoutmasters'
     | '/admin/site-images'
@@ -423,6 +446,7 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/join'
     | '/outreach'
+    | '/parentsconsent'
     | '/quick-links'
     | '/sitemap.xml'
     | '/sponsors'
@@ -437,6 +461,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/events'
     | '/_authenticated/admin/gallery-photos'
     | '/_authenticated/admin/join-notifications'
+    | '/_authenticated/admin/parent-consents'
     | '/_authenticated/admin/parent-contacts'
     | '/_authenticated/admin/scoutmasters'
     | '/_authenticated/admin/site-images'
@@ -460,6 +485,7 @@ export interface RootRouteChildren {
   GalleryRoute: typeof GalleryRoute
   JoinRoute: typeof JoinRoute
   OutreachRoute: typeof OutreachRoute
+  ParentsconsentRoute: typeof ParentsconsentRoute
   QuickLinksRoute: typeof QuickLinksRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SponsorsRoute: typeof SponsorsRoute
@@ -557,6 +583,13 @@ declare module '@tanstack/react-router' {
       path: '/outreach'
       fullPath: '/outreach'
       preLoaderRoute: typeof OutreachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parentsconsent': {
+      id: '/parentsconsent'
+      path: '/parentsconsent'
+      fullPath: '/parentsconsent'
+      preLoaderRoute: typeof ParentsconsentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quick-links': {
@@ -657,6 +690,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminJoinNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/parent-consents': {
+      id: '/_authenticated/admin/parent-consents'
+      path: '/admin/parent-consents'
+      fullPath: '/admin/parent-consents'
+      preLoaderRoute: typeof AuthenticatedAdminParentConsentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/parent-contacts': {
       id: '/_authenticated/admin/parent-contacts'
       path: '/admin/parent-contacts'
@@ -720,6 +760,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminEventsRoute: typeof AuthenticatedAdminEventsRoute
   AuthenticatedAdminGalleryPhotosRoute: typeof AuthenticatedAdminGalleryPhotosRoute
   AuthenticatedAdminJoinNotificationsRoute: typeof AuthenticatedAdminJoinNotificationsRoute
+  AuthenticatedAdminParentConsentsRoute: typeof AuthenticatedAdminParentConsentsRoute
   AuthenticatedAdminParentContactsRoute: typeof AuthenticatedAdminParentContactsRoute
   AuthenticatedAdminScoutmastersRoute: typeof AuthenticatedAdminScoutmastersRoute
   AuthenticatedAdminSiteImagesRoute: typeof AuthenticatedAdminSiteImagesRoute
@@ -741,6 +782,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminGalleryPhotosRoute: AuthenticatedAdminGalleryPhotosRoute,
   AuthenticatedAdminJoinNotificationsRoute:
     AuthenticatedAdminJoinNotificationsRoute,
+  AuthenticatedAdminParentConsentsRoute: AuthenticatedAdminParentConsentsRoute,
   AuthenticatedAdminParentContactsRoute: AuthenticatedAdminParentContactsRoute,
   AuthenticatedAdminScoutmastersRoute: AuthenticatedAdminScoutmastersRoute,
   AuthenticatedAdminSiteImagesRoute: AuthenticatedAdminSiteImagesRoute,
@@ -767,6 +809,7 @@ const rootRouteChildren: RootRouteChildren = {
   GalleryRoute: GalleryRoute,
   JoinRoute: JoinRoute,
   OutreachRoute: OutreachRoute,
+  ParentsconsentRoute: ParentsconsentRoute,
   QuickLinksRoute: QuickLinksRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SponsorsRoute: SponsorsRoute,
