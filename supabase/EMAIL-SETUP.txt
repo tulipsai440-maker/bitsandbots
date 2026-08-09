@@ -23,7 +23,11 @@ OPTION B — Resend (better for production)
 PARENT BROADCAST (Admin → Broadcast)
   Without a domain (recommended now):
     Use “Open Gmail (BCC all)” — loads every unique parent email in BCC; click Send once.
-    Use “WhatsApp group” — message is copied; paste in the group.
+
+  WhatsApp auto-send (no opening the app):
+    Requires WhatsApp Business Cloud API + parent phones. See supabase/WHATSAPP-SETUP.txt.
+    Button: “Send WhatsApp to all parents”.
+    Group invite links still only support copy + open (manual paste) — Meta does not allow auto-send to a group via invite URL.
 
   With Resend auto-send to everyone:
     Verify a domain at https://resend.com/domains, then set

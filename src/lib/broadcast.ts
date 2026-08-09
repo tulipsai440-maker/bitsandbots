@@ -1,4 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  normalizeWhatsAppPhone,
+  uniquePhonesFromParentRows,
+} from "@/lib/broadcast-phones";
+
+export { normalizeWhatsAppPhone, uniquePhonesFromParentRows };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -50,6 +56,13 @@ export async function fetchParentBroadcastEmails(): Promise<string[]> {
   }
 
   return uniqueEmailsFromParentRows(data ?? []);
+}
+
+/** Unique parent phones from parent_contacts (admin RLS). */
+export async function fetchParentBroadcastPhones(): Promise<string[]> {
+  const { data, error } = await db.from("parent_contacts").select("phone");
+  if (error) throw error;
+  return uniquePhonesFromParentRows(data ?? []);
 }
 
 export async function fetchWhatsAppGroupUrl(): Promise<string> {

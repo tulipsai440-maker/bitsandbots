@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
+import { uniquePhonesFromParentRows } from "@/lib/broadcast-phones";
 
 const schema = z.object({
   subject: z.string().min(1, "Subject is required").max(200),
@@ -8,6 +9,14 @@ const schema = z.object({
   accessToken: z.string().min(20, "Not signed in"),
   /** If set, only these addresses are emailed (still must pass Resend rules). */
   onlyTo: z.array(z.string().email()).optional(),
+});
+
+const whatsappSchema = z.object({
+  subject: z.string().min(1, "Subject is required").max(200),
+  body: z.string().min(1, "Message is required").max(10000),
+  accessToken: z.string().min(20, "Not signed in"),
+  /** Prefer free-form text (24h window) or force an approved template. */
+  mode: z.enum(["text", "template"]).optional(),
 });
 
 function escapeHtml(s: string) {
@@ -76,6 +85,75 @@ async function loadParentEmails(): Promise<string[]> {
     if (email.includes("@")) unique.add(email);
   }
   return [...unique].sort();
+}
+
+async function loadParentPhones(): Promise<string[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const admin = supabaseAdmin as any;
+
+  const { data, error } = await admin.from("parent_contacts").select("phone");
+  if (error) {
+    console.error("[broadcast] parent phones", error.message);
+    throw new Error(
+      "Could not load parent phones. Run supabase/setup-parent-contacts.sql and add phones under Admin → Parents.",
+    );
+  }
+
+  return uniquePhonesFromParentRows(data ?? []);
+}
+
+function whatsappApiConfig() {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN?.trim();
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
+  const apiVersion = process.env.WHATSAPP_API_VERSION?.trim() || "v21.0";
+  const templateName = process.env.WHATSAPP_TEMPLATE_NAME?.trim() || "";
+  const templateLang = process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "en_US";
+
+  return { token, phoneNumberId, apiVersion, templateName, templateLang };
+}
+
+async function sendOneWhatsApp(
+  token: string,
+  phoneNumberId: string,
+  apiVersion: string,
+  to: string,
+  payload: Record<string, unknown>,
+) {
+  const res = await fetch(
+    `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        ...payload,
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error("[broadcast] WhatsApp error", to, res.status, detail);
+    let message = detail || `Failed to send to ${to}`;
+    try {
+      const parsed = JSON.parse(detail) as {
+        error?: { message?: string; error_user_msg?: string };
+      };
+      message =
+        parsed.error?.error_user_msg ||
+        parsed.error?.message ||
+        message;
+    } catch {
+      /* keep raw */
+    }
+    throw new Error(message);
+  }
 }
 
 async function sendOneResend(
@@ -187,5 +265,96 @@ export const sendParentBroadcast = createServerFn({ method: "POST" })
       sent,
       total: recipients.length,
       failures,
+    };
+  });
+
+/**
+ * Admin-only: WhatsApp Cloud API broadcast to unique parent phone numbers.
+ * Group invite links cannot auto-send — this messages each parent individually.
+ *
+ * Free-form text works only inside Meta’s 24-hour customer-care window.
+ * Outside that window, set WHATSAPP_TEMPLATE_NAME to an approved template
+ * (or pass mode: "template").
+ */
+export const sendBroadcastWhatsApp = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => whatsappSchema.parse(data))
+  .handler(async ({ data }) => {
+    await assertAdmin(data.accessToken);
+
+    const { token, phoneNumberId, apiVersion, templateName, templateLang } =
+      whatsappApiConfig();
+
+    if (!token || !phoneNumberId) {
+      throw new Error(
+        "WhatsApp Cloud API is not configured. Add WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID (see supabase/WHATSAPP-SETUP.txt), then restart / redeploy.",
+      );
+    }
+
+    const recipients = await loadParentPhones();
+    if (recipients.length === 0) {
+      throw new Error(
+        "No parent phone numbers found. Add phones under Admin → Parents first.",
+      );
+    }
+
+    const subject = data.subject.trim();
+    const body = data.body.trim();
+    const textBody = `*${subject}*\n\n${body}`.slice(0, 4096);
+
+    const useTemplate =
+      data.mode === "template" ||
+      (data.mode !== "text" && Boolean(templateName));
+
+    if (useTemplate && !templateName) {
+      throw new Error(
+        "Template mode needs WHATSAPP_TEMPLATE_NAME (an approved Meta template). See supabase/WHATSAPP-SETUP.txt.",
+      );
+    }
+
+    const payload: Record<string, unknown> = useTemplate
+      ? {
+          type: "template",
+          template: {
+            name: templateName,
+            language: { code: templateLang },
+            components: [
+              {
+                type: "body",
+                parameters: [
+                  { type: "text", text: subject.slice(0, 1024) },
+                  { type: "text", text: body.slice(0, 1024) },
+                ],
+              },
+            ],
+          },
+        }
+      : {
+          type: "text",
+          text: { preview_url: false, body: textBody },
+        };
+
+    const failures: string[] = [];
+    let sent = 0;
+
+    for (const to of recipients) {
+      try {
+        await sendOneWhatsApp(token, phoneNumberId, apiVersion, to, payload);
+        sent += 1;
+      } catch (err) {
+        failures.push(
+          `${to}: ${err instanceof Error ? err.message : "send failed"}`,
+        );
+      }
+    }
+
+    if (sent === 0) {
+      throw new Error(failures[0] ?? "No WhatsApp messages were sent.");
+    }
+
+    return {
+      sent,
+      total: recipients.length,
+      failures,
+      mode: useTemplate ? ("template" as const) : ("text" as const),
     };
   });

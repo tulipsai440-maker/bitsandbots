@@ -1,0 +1,60 @@
+WHATSAPP BROADCAST (Admin → Broadcast)
+======================================
+
+Goal: auto-send subject + message to parent phone numbers without opening WhatsApp.
+
+Honest limits
+-------------
+- A personal WhatsApp / group invite link (chat.whatsapp.com) CANNOT send messages
+  without opening the WhatsApp app. Meta does not allow that.
+- True auto-send uses WhatsApp Business Cloud API and messages each parent phone
+  from parent_contacts individually (not the group chat).
+- Free-form text only works inside Meta’s 24-hour customer-care window (after a
+  parent messages your business number). Outside that window you need an approved
+  message template.
+
+One-time Meta setup
+-------------------
+1. Create a Meta Business account and WhatsApp Business app:
+   https://developers.facebook.com/docs/whatsapp/cloud-api/get-started
+2. Add a WhatsApp business phone number and note:
+   - Permanent (or temporary) access token
+   - Phone number ID (not the display phone number)
+3. Optional for cold outreach: create + get approved a utility template with two
+   body variables {{1}} subject and {{2}} message (or adjust code to match).
+
+Local .env (never commit real tokens)
+-------------------------------------
+  WHATSAPP_ACCESS_TOKEN="EAAxxxx…"
+  WHATSAPP_PHONE_NUMBER_ID="1234567890"
+  # optional:
+  WHATSAPP_API_VERSION="v21.0"
+  WHATSAPP_TEMPLATE_NAME="bits_bots_update"   # when set, sends as template by default
+  WHATSAPP_TEMPLATE_LANG="en_US"
+
+Restart `npm run dev` after changing env.
+
+Production (Cloudflare Worker)
+------------------------------
+Worker → Settings → Variables / Secrets (keep out of git):
+  WHATSAPP_ACCESS_TOKEN
+  WHATSAPP_PHONE_NUMBER_ID
+  WHATSAPP_TEMPLATE_NAME   (optional)
+  WHATSAPP_TEMPLATE_LANG   (optional)
+  WHATSAPP_API_VERSION     (optional)
+
+Deploys use --keep-vars so dashboard secrets are preserved.
+
+How to test
+-----------
+1. Confirm phones under Admin → Parents (Broadcast shows unique phone count).
+2. Add the two required secrets locally or in Cloudflare.
+3. Admin → Broadcast → subject + message → “Send WhatsApp to all parents”.
+4. If Meta returns a template / 24h window error, approve a template and set
+   WHATSAPP_TEMPLATE_NAME, then retry.
+5. “Open WhatsApp group (manual)” still copies + opens the invite for paste-only.
+
+Parent phones
+-------------
+Stored on parent_contacts.phone. Seeded via supabase/reseed-parent-emails.sql.
+Edit anytime under Admin → Parents.

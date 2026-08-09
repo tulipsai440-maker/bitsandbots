@@ -33,7 +33,7 @@ Then: **Actions** → **Deploy Cloudflare Worker** → **Run workflow** (or push
 Worker **bitsandbots** → **Settings** → **Variables**:
 
 - `SITE_ORIGIN` = `https://bitsandbots.sravanthi440.workers.dev` (also set in `wrangler.toml`)
-- Keep secrets only in the dashboard (not in git): `BAND_ICAL_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, etc.
+- Keep secrets only in the dashboard (not in git): `BAND_ICAL_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, etc.
 - Deploys use `--keep-vars` / `keep_vars = true` so dashboard-only values are not wiped.
 
 ## Optional: Workers Builds (dashboard Git integration)

@@ -1,5 +1,5 @@
 # Merged into the Worker deploy config on build.
-# Secrets (BAND_ICAL_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY): keep in Cloudflare Dashboard only.
+# Secrets (BAND_ICAL_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, WHATSAPP_ACCESS_TOKEN): keep in Cloudflare Dashboard only.
 # Always deploy with: npm run deploy  (--keep-vars preserves dashboard secrets not listed here)
 
 name = "bitsandbots"
