@@ -38,9 +38,10 @@ function AboutPage() {
           <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
             <h2 className="font-display text-2xl text-foreground">About {SITE_NAME}</h2>
             <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-              We are a youth robotics team competing in {SITE_TAGLINE}. Each season we research a
-              real-world theme, design and program LEGO robots for the Robot Game, and practice Core
-              Values like discovery, innovation, impact, inclusion, teamwork, and fun.
+              We are a community robotics team from Collier County, Florida, competing in FIRST LEGO
+              League Challenge. Each season we research a real-world theme, design and program LEGO
+              robots for the Robot Game, and practice Core Values like discovery, innovation, impact,
+              inclusion, teamwork, and fun.
             </p>
           </div>
         </div>

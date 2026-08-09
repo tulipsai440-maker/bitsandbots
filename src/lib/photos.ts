@@ -48,7 +48,8 @@ export const MEETING_MAPS_URL =
   "https://www.google.com/maps/search/?api=1&query=Coaches+Home";
 
 export const SITE_NAME = "Bits & Bots";
-export const SITE_TAGLINE = "FIRST LEGO League";
+/** Header / footer subtitle (short — full: Community Robotics Team from Collier County, Florida) */
+export const SITE_TAGLINE = "Community Robotics · Collier County, FL";
 export const FOUNDED_YEAR = "2024";
 
 /** Sunday in-person team practice */

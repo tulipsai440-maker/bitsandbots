@@ -44,7 +44,9 @@ export function Header() {
           />
           <span className="flex min-w-0 flex-col leading-tight">
             <span className="font-display text-xl text-forest-deep md:text-2xl">{SITE_NAME}</span>
-            <span className="truncate text-xs text-muted-foreground sm:text-sm">{SITE_TAGLINE}</span>
+            <span className="max-w-[11rem] text-xs leading-snug text-muted-foreground sm:max-w-xs sm:text-sm md:max-w-none">
+              {SITE_TAGLINE}
+            </span>
           </span>
         </Link>
 
