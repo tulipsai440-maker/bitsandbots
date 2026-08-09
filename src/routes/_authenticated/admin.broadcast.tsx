@@ -100,7 +100,13 @@ function AdminBroadcastPage() {
       });
 
       setLastResult({ ...result, channel: "email" });
-      toast.success(`Email sent to ${result.sent} parent${result.sent === 1 ? "" : "s"}`);
+      if (result.failures.length > 0) {
+        toast.error(
+          `Email sent to ${result.sent} of ${result.total} parents. See failures below.`,
+        );
+      } else {
+        toast.success(`Email sent to ${result.sent} parent${result.sent === 1 ? "" : "s"}`);
+      }
     } catch (e) {
       toast.error(broadcastErrorMessage(e));
     } finally {

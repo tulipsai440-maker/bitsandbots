@@ -156,35 +156,37 @@ async function sendOneWhatsApp(
   }
 }
 
-async function sendBroadcastResend(
+async function sendOneResend(
   apiKey: string,
   fromAddress: string,
-  recipients: string[],
+  to: string,
   subject: string,
   text: string,
   html: string,
+  replyTo?: string,
 ) {
-  // One API call — parents in BCC so addresses stay private.
+  const body: Record<string, unknown> = {
+    from: fromAddress,
+    to: [to],
+    subject,
+    text,
+    html,
+  };
+  if (replyTo) body.reply_to = [replyTo];
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      from: fromAddress,
-      to: [fromAddress.match(/<([^>]+)>/)?.[1] ?? recipients[0]],
-      bcc: recipients,
-      subject,
-      text,
-      html,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    console.error("[broadcast] Resend error", res.status, detail);
-    let message = detail || "Failed to send broadcast email";
+    console.error("[broadcast] Resend error", to, res.status, detail);
+    let message = detail || `Failed to send to ${to}`;
     try {
       const parsed = JSON.parse(detail) as { message?: string };
       if (parsed.message) message = parsed.message;
@@ -198,11 +200,67 @@ async function sendBroadcastResend(
     }
     if (message.toLowerCase().includes("not verified")) {
       throw new Error(
-        "fllbots.com is not verified in Resend yet. Add the DNS records Resend shows at resend.com/domains (Cloudflare → DNS), then try again.",
+        "fllbots.com is not verified in Resend yet. Add the DNS records at resend.com/domains, then try again.",
       );
     }
     throw new Error(message);
   }
+
+  return res.json().catch(() => ({}));
+}
+
+/** Send one personalized email per parent via Resend batch API (reliable delivery). */
+async function sendBroadcastResend(
+  apiKey: string,
+  fromAddress: string,
+  recipients: string[],
+  subject: string,
+  text: string,
+  html: string,
+  replyTo?: string,
+) {
+  const batch = recipients.map((to) => {
+    const item: Record<string, unknown> = {
+      from: fromAddress,
+      to: [to],
+      subject,
+      text,
+      html,
+    };
+    if (replyTo) item.reply_to = [replyTo];
+    return item;
+  });
+
+  const res = await fetch("https://api.resend.com/emails/batch", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(batch),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error("[broadcast] Resend batch error", res.status, detail);
+    let message = detail || "Failed to send broadcast emails";
+    try {
+      const parsed = JSON.parse(detail) as { message?: string };
+      if (parsed.message) message = parsed.message;
+    } catch {
+      /* keep raw */
+    }
+    throw new Error(message);
+  }
+
+  const result = (await res.json().catch(() => null)) as {
+    data?: Array<{ id?: string }>;
+  } | null;
+  const delivered = result?.data?.filter((d) => d?.id).length ?? recipients.length;
+  if (delivered === 0) {
+    throw new Error("Resend accepted the request but no emails were queued.");
+  }
+  return delivered;
 }
 
 /** Admin-only: email every unique parent address via Resend. */
@@ -220,6 +278,8 @@ export const sendParentBroadcast = createServerFn({ method: "POST" })
 
     const fromAddress =
       process.env.RESEND_FROM?.trim() || "Bits & Bots <updates@fllbots.com>";
+    const replyTo =
+      process.env.RESEND_REPLY_TO?.trim() || "sravanthi440@gmail.com";
 
     let recipients = await loadParentEmails();
     if (data.onlyTo?.length) {
@@ -254,11 +314,28 @@ export const sendParentBroadcast = createServerFn({ method: "POST" })
     let sent = 0;
 
     try {
-      await sendBroadcastResend(apiKey, fromAddress, recipients, subject, text, html);
-      sent = recipients.length;
+      sent = await sendBroadcastResend(
+        apiKey,
+        fromAddress,
+        recipients,
+        subject,
+        text,
+        html,
+        replyTo,
+      );
     } catch (err) {
-      const message = err instanceof Error ? err.message : "send failed";
-      failures.push(message);
+      // Batch failed — fall back to one-by-one so partial delivery still works.
+      console.warn("[broadcast] batch send failed, falling back to individual sends", err);
+      for (const to of recipients) {
+        try {
+          await sendOneResend(apiKey, fromAddress, to, subject, text, html, replyTo);
+          sent += 1;
+        } catch (oneErr) {
+          failures.push(
+            `${to}: ${oneErr instanceof Error ? oneErr.message : "send failed"}`,
+          );
+        }
+      }
     }
 
     if (sent === 0) {
