@@ -1,6 +1,7 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "bitsandbots",
   "private": true,
+  "description": "Bits & Bots FIRST LEGO League team website",
   "sideEffects": false,
   "type": "module",
   "scripts": {

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://troop2001naples.org/sitemap.xml
+Sitemap: /sitemap.xml

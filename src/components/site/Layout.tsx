@@ -30,7 +30,7 @@ export function PageHero({
 
   return (
     <section className="relative overflow-hidden border-b border-border/60 bg-background">
-      <div className={cn("container-page py-16 md:py-24", centered && "text-center")}>
+      <div className={cn("container-page py-12 md:py-16", centered && "text-center")}>
         {eyebrow && <div className="eyebrow mb-4">{eyebrow}</div>}
         <h1 className={cn("max-w-3xl text-4xl leading-[1.05] text-foreground md:text-6xl", centered && "mx-auto")}>
           {title}

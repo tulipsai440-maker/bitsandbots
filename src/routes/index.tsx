@@ -1,169 +1,101 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/site/Layout";
-import { TroopPhoto } from "@/components/site/TroopPhoto";
-import { photos } from "@/lib/photos";
-import { ArrowRight, Calendar, ChevronRight, Clock, MapPin } from "lucide-react";
+import { TeamPhoto } from "@/components/site/TeamPhoto";
+import {
+  photos,
+  FOUNDED_YEAR,
+  MEETINGS_BLURB,
+  SITE_NAME,
+  SITE_TAGLINE,
+} from "@/lib/photos";
 import { useEffect, useState } from "react";
+import { ArrowRight, Clock } from "lucide-react";
 import { fetchUpcomingEvents, type EventRow } from "@/lib/events";
-import { fetchActiveAnnouncements, type AnnouncementRow } from "@/lib/announcements";
-import {
-  fetchApprovedEagleScoutCount,
-  fetchApprovedEagleScouts,
-  rankEagleScouts,
-  type EagleScoutRow,
-} from "@/lib/content";
-import {
-  GALLERY_STATIC_PHOTOS_PUBLIC,
-  GALLERY_UPLOADS_PUBLIC,
-} from "@/lib/gallery-config";
-import { fetchApprovedGalleryPhotos, type ApprovedGalleryPhoto } from "@/lib/gallery-uploads";
-import { galleryPhotos } from "@/lib/gallery-photos";
-import { formatMeetingDate, formatMeetingTime, getNextMeetingDate } from "@/lib/meeting";
+import { formatMeetingDate } from "@/lib/meeting";
 import {
   buildDefaultSiteImageOverrides,
   fetchSiteImageOverrides,
   resolveSiteImage,
   type SiteImageOverrides,
 } from "@/lib/site-images";
-
-type MosaicPhoto = { src: string; alt: string };
-
-function buildMosaicPhotos(uploaded: ApprovedGalleryPhoto[]): MosaicPhoto[] {
-  const merged: MosaicPhoto[] = [
-    ...(GALLERY_UPLOADS_PUBLIC
-      ? uploaded.map((p) => ({ src: p.url, alt: p.caption ?? "Troop 2001 photo" }))
-      : []),
-    ...(GALLERY_STATIC_PHOTOS_PUBLIC
-      ? [
-          { src: photos.hero, alt: "Naples Florida Gulf Coast" },
-          ...galleryPhotos.map((p) => ({ src: p.src, alt: "Troop 2001 photo" })),
-        ]
-      : []),
-  ];
-
-  const seen = new Set<string>();
-  return merged.filter((p) => {
-    if (seen.has(p.src)) return false;
-    seen.add(p.src);
-    return true;
-  }).slice(0, 7);
-}
+import { OUTREACH_ITEMS } from "@/lib/outreach";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Troop 2001 Naples — Scouts BSA in Naples, Florida" },
-      { name: "description", content: "Troop 2001 meets Wednesdays at 7 PM in Naples, Florida. Campouts, service projects, and Eagle Scout program since 2000." },
-      { property: "og:image", content: `https://troop2001naples.org${photos.ogLogo}` },
+      { title: `${SITE_NAME} — ${SITE_TAGLINE}` },
+      {
+        name: "description",
+        content: `${SITE_NAME} is a FIRST LEGO League team founded in ${FOUNDED_YEAR}. ${MEETINGS_BLURB}`,
+      },
+      { property: "og:image", content: photos.ogLogo },
     ],
   }),
-  loader: async () => {
-    const [eagleCount, eagles, uploadedPhotos, siteImages] = await Promise.all([
-      fetchApprovedEagleScoutCount(),
-      fetchApprovedEagleScouts().catch(() => [] as EagleScoutRow[]),
-      GALLERY_UPLOADS_PUBLIC
-        ? fetchApprovedGalleryPhotos().catch(() => [] as ApprovedGalleryPhoto[])
-        : Promise.resolve([] as ApprovedGalleryPhoto[]),
-      fetchSiteImageOverrides().catch(() => buildDefaultSiteImageOverrides()),
-    ]);
-
-    return {
-      eagleCount,
-      eagles,
-      mosaicPhotos: buildMosaicPhotos(uploadedPhotos),
-      siteImages,
-    };
-  },
   component: HomePage,
 });
 
 function HomePage() {
-  const { eagleCount, eagles, mosaicPhotos, siteImages } = Route.useLoaderData();
-
   return (
     <SiteLayout>
-      <Hero eagleCount={eagleCount} siteImages={siteImages} />
+      <Hero />
       <NextUpStrip />
-      <EaglePreviewWall eagles={eagles} eagleCount={eagleCount} siteImages={siteImages} />
-      <AdventureSection siteImages={siteImages} />
-      <EventsAndAnnouncements />
-      <PhotoMosaic photos={mosaicPhotos} />
-      <QuickLinksPreview />
+      <SeasonStory />
+      <WhatWeDo />
       <CTA />
     </SiteLayout>
   );
 }
 
-function Hero({ eagleCount, siteImages }: { eagleCount: number | null; siteImages: SiteImageOverrides }) {
-  const hero = resolveSiteImage("hero", siteImages);
-  // Retry from the browser when the server-rendered count is unavailable.
-  const [count, setCount] = useState(eagleCount);
-  useEffect(() => {
-    if (count !== null) return;
-    fetchApprovedEagleScoutCount().then(setCount);
-  }, [count]);
+function Hero() {
+  const defaults = buildDefaultSiteImageOverrides();
+  const [hero, setHero] = useState(() => resolveSiteImage("hero", defaults));
 
-  const showEagleStat = typeof count === "number" && count > 0;
+  useEffect(() => {
+    let cancelled = false;
+    fetchSiteImageOverrides()
+      .then((overrides) => {
+        if (!cancelled) setHero(resolveSiteImage("hero", overrides));
+      })
+      .catch(() => {
+        /* keep bundled default */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section className="relative isolate overflow-hidden bg-forest-deep">
-      <TroopPhoto
+      <TeamPhoto
+        key={hero.url}
         src={hero.url}
-        alt={hero.alt}
-        width={1920}
-        height={1080}
+        alt={hero.alt || `${SITE_NAME} FIRST LEGO League team`}
+        width={1024}
+        height={453}
         loading="eager"
-        className="absolute inset-0 h-full w-full object-cover"
+        className="animate-hero-media absolute inset-0 h-[118%] w-full object-cover object-[center_5%] translate-y-0"
         label="Hero"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-navy/80 via-forest-deep/55 to-forest-deep/95" />
+      <div className="absolute inset-0 bg-gradient-to-b from-navy/35 via-transparent via-35% to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-forest-deep from-0% via-forest-deep/88 via-40% to-transparent to-72%" />
       <div className="relative">
-        <div className="container-page flex min-h-[86vh] flex-col items-center justify-end pb-16 pt-32 text-center text-cream md:min-h-[92vh] md:pb-24">
-          <div className="max-w-3xl">
-            <p className="font-display text-lg text-cream/90 md:text-xl">Troop 2001 · Naples, Florida</p>
-            <h1 className="mt-3 font-display text-5xl leading-[1.05] text-cream md:text-6xl">
-              Scouting here since 2000.
+        <div className="container-page flex min-h-[78vh] flex-col items-center justify-end pb-14 pt-24 text-center text-cream md:min-h-[86vh] md:pb-20">
+          <div className="animate-rise max-w-3xl">
+            <h1 className="font-display text-6xl leading-[0.95] tracking-tight text-cream md:text-8xl">
+              {SITE_NAME}
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-cream/85 md:text-lg">
-              We meet every Wednesday at 7 PM at North Collier Fire Station #45. Scouts camp frequently,
-              serve the community, and work toward Eagle Scout with volunteer leaders who know them by name.
+            <p className="mt-4 font-display text-xl text-cream/90 md:text-2xl">{SITE_TAGLINE}</p>
+            <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-cream/80 md:text-lg">
+              We research the season challenge, build robots that score on the table, and practice
+              Core Values every Sunday—then take that energy into outreach.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Link to="/join" className="btn-primary bg-gold !text-forest-deep hover:!bg-gold hover:brightness-110">
-                Join Troop 2001 <ArrowRight size={16} />
+            <div className="mt-9 flex flex-wrap justify-center gap-3">
+              <Link to="/about" className="btn-primary">
+                Meet the team <ArrowRight size={16} />
               </Link>
-              <Link to="/about" className="btn-outline !border-cream/30 !text-cream hover:!bg-cream/10">
-                About the troop
+              <Link to="/videos" className="btn-outline !border-cream/40 !text-cream hover:!bg-cream/10">
+                Watch BIOGLOW videos
               </Link>
-            </div>
-          </div>
-
-          <div
-            className={`mt-16 grid w-full gap-6 border-t border-cream/15 pt-8 text-left sm:grid-cols-2 ${
-              showEagleStat ? "max-w-5xl md:grid-cols-4" : "max-w-4xl md:grid-cols-3"
-            }`}
-          >
-            <Stat label="Chartered" value="2000" />
-            {showEagleStat && (
-              <Link to="/eagle-scouts" className="group">
-                <div className="text-sm text-cream/65">Eagle Scouts</div>
-                <div className="mt-1 font-display text-2xl text-gold md:text-3xl">
-                  {count}
-                  <span className="ml-1.5 inline-block text-base text-cream/70 transition-transform group-hover:translate-x-0.5">
-                    →
-                  </span>
-                </div>
-              </Link>
-            )}
-            <Stat label="Weekly meeting" value="Wednesdays · 7:00 PM" />
-            <div>
-              <div className="flex items-center gap-1.5 text-sm text-cream/65">
-                <MapPin size={14} /> Meeting place
-              </div>
-              <div className="mt-1 font-display text-lg leading-tight text-cream md:text-xl">
-                North Collier Fire Station #45<br/>
-                <span className="text-base text-cream/85 md:text-lg">1885 Veterans Park Dr, Naples, FL 34109</span>
-              </div>
             </div>
           </div>
         </div>
@@ -172,350 +104,138 @@ function Hero({ eagleCount, siteImages }: { eagleCount: number | null; siteImage
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-sm text-cream/65">{label}</div>
-      <div className="mt-1 font-display text-2xl text-cream md:text-3xl">{value}</div>
-    </div>
-  );
+function formatEventTimeRange(event: EventRow): string {
+  const start = new Date(event.starts_at);
+  const startLabel = start.toLocaleString("en-US", { hour: "numeric", minute: "2-digit" });
+  if (!event.ends_at) return startLabel;
+  const end = new Date(event.ends_at);
+  const endLabel = end.toLocaleString("en-US", { hour: "numeric", minute: "2-digit" });
+  return `${startLabel}–${endLabel}`;
 }
 
 function NextUpStrip() {
-  const meeting = getNextMeetingDate();
+  const [event, setEvent] = useState<EventRow | null>(null);
+
+  useEffect(() => {
+    fetchUpcomingEvents(1)
+      .then((rows) => setEvent(rows[0] ?? null))
+      .catch(() => setEvent(null));
+  }, []);
+
+  if (!event) return null;
 
   return (
-    <section className="border-b border-border/60 bg-sand">
+    <section className="animate-rise border-b border-border/60 bg-background">
       <div className="container-page flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-forest text-cream">
             <Clock size={18} />
           </div>
           <div>
-            <div className="text-sm font-medium text-foreground">Next meeting</div>
+            <div className="text-sm font-medium text-foreground">Next: {event.title}</div>
             <div className="mt-0.5 text-sm text-muted-foreground">
-              {formatMeetingDate(meeting)} · {formatMeetingTime()} · North Collier Fire Station #45
+              {formatMeetingDate(new Date(event.starts_at))} · {formatEventTimeRange(event)}
+              {event.location ? ` · ${event.location}` : ""}
             </div>
           </div>
         </div>
 
         <Link to="/calendar" className="text-sm font-medium text-forest hover:underline sm:shrink-0">
-          Campouts and events on the calendar →
+          Full calendar →
         </Link>
       </div>
     </section>
   );
 }
 
-function eagleInitials(name: string): string {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
+function SeasonStory() {
+  const [images, setImages] = useState<SiteImageOverrides>(() => buildDefaultSiteImageOverrides());
+  const feature = OUTREACH_ITEMS[0];
+  const photo = resolveSiteImage("outreachMentoring", images);
 
-function EaglePreviewWall({
-  eagles,
-  eagleCount,
-  siteImages,
-}: {
-  eagles: EagleScoutRow[];
-  eagleCount: number | null;
-  siteImages: SiteImageOverrides;
-}) {
-  const trailToEagle = resolveSiteImage("trailToEagle", siteImages);
-  const ranked = rankEagleScouts(eagles.filter((e) => e.status === "approved"));
-  const preview = ranked.slice(-8).reverse();
-  const total = eagleCount ?? ranked.length;
-
-  if (preview.length === 0) {
-    return (
-      <section className="py-24">
-        <div className="container-page grid gap-12 md:grid-cols-2 md:items-center">
-          <div className="relative overflow-hidden rounded-2xl">
-            <TroopPhoto
-              src={trailToEagle.url}
-              alt={trailToEagle.alt}
-              width={1600}
-              height={1100}
-              className="h-full w-full object-cover"
-              label="Eagle Scout"
-            />
-          </div>
-          <div>
-            <h2 className="font-display text-4xl text-foreground md:text-5xl">Eagle Scouts</h2>
-            <p className="mt-4 max-w-lg text-muted-foreground">
-              Scouts work through ranks with adult mentors who track merit badges, leadership roles,
-              and Eagle service projects.
-            </p>
-            <div className="mt-8">
-              <Link to="/eagle-scouts" className="btn-primary">
-                Eagle Scout roll <ChevronRight size={16} />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="py-24">
-      <div className="container-page">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="font-display text-4xl text-foreground md:text-5xl">Eagle Scouts</h2>
-            <p className="mt-3 max-w-2xl text-muted-foreground">
-              {total > 0
-                ? `${total} Eagle Scout${total === 1 ? "" : "s"} on our roll. Recent awards shown below.`
-                : "Recent Eagle Scouts from Troop 2001."}
-            </p>
-          </div>
-          <Link to="/eagle-scouts" className="btn-outline">
-            Full roll of honor <ArrowRight size={16} />
-          </Link>
-        </div>
-
-        <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {preview.map((eagle) => (
-            <Link
-              key={eagle.id}
-              to="/eagle-scouts"
-              className="group overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-forest/40"
-            >
-              <div className="flex items-start gap-3">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-forest via-forest-deep to-navy font-display text-lg text-cream">
-                  {eagleInitials(eagle.name)}
-                </div>
-                <div className="min-w-0">
-                  <div className="truncate font-medium text-foreground group-hover:text-forest">{eagle.name}</div>
-                  <div className="mt-0.5 text-sm text-muted-foreground">Eagle · {eagle.year}</div>
-                  <div className="mt-1 font-display text-sm tabular-nums text-gold">#{eagle.rank}</div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function AdventureSection({ siteImages }: { siteImages: SiteImageOverrides }) {
-  const cards = [
-    {
-      key: "camping" as const,
-      title: "Camping",
-      copy: "Monthly campouts in Florida and nearby states.",
-    },
-    {
-      key: "hiking" as const,
-      title: "Hiking & backpacking",
-      copy: "Day hikes through multi-day treks, depending on the season.",
-    },
-    {
-      key: "aquatics" as const,
-      title: "Aquatics",
-      copy: "Canoeing, kayaking, and swimming as part of summer program.",
-    },
-  ];
-  return (
-    <section className="border-y border-border/60 bg-sand py-24">
-      <div className="container-page">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div className="max-w-2xl">
-            <h2 className="font-display text-4xl text-foreground md:text-5xl">Campouts and activities</h2>
-            <p className="mt-4 text-muted-foreground">
-              The calendar changes every year, but scouts can count on regular outdoor weekends,
-              service days, and summer camp.
-            </p>
-          </div>
-          <Link to="/events" className="btn-outline">View events <ArrowRight size={16} /></Link>
-        </div>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {cards.map((c) => {
-            const image = resolveSiteImage(c.key, siteImages);
-            return (
-              <article key={c.title} className="group overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border transition-transform hover:-translate-y-1">
-                <div className="aspect-[4/3] overflow-hidden">
-                  <TroopPhoto src={image.url} alt={image.alt} width={1400} height={900} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" label={c.title} />
-                </div>
-                <div className="p-6">
-                  <h3 className="font-display text-2xl">{c.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">{c.copy}</p>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function EventsAndAnnouncements() {
-  const [events, setEvents] = useState<EventRow[]>([]);
-  const [announcements, setAnnouncements] = useState<AnnouncementRow[]>([]);
-  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    Promise.all([
-      fetchUpcomingEvents(4).catch(() => [] as EventRow[]),
-      fetchActiveAnnouncements().catch(() => [] as AnnouncementRow[]),
-    ]).then(([ev, ann]) => {
-      setEvents(ev);
-      setAnnouncements(ann);
-      setLoading(false);
-    });
+    fetchSiteImageOverrides()
+      .then(setImages)
+      .catch(() => {
+        /* defaults */
+      });
   }, []);
-  return (
-    <section className="py-24">
-      <div className="container-page grid gap-12 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <h2 className="font-display text-4xl md:text-5xl">Upcoming events</h2>
-          <ul className="mt-8 divide-y divide-border rounded-2xl border border-border bg-card">
-            {events.map((e) => {
-              const d = new Date(e.starts_at);
-              const date = d.toLocaleString("en-US", { month: "short", day: "numeric" });
-              const time = d.toLocaleString("en-US", { hour: "numeric", minute: "2-digit" });
-              return (
-                <li key={e.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-4 p-5 md:gap-6">
-                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-forest text-cream">
-                    <Calendar size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs text-muted-foreground">{date} · {time}</div>
-                    <div className="font-display text-lg text-foreground md:text-xl">{e.title}</div>
-                    {e.location && <div className="truncate text-sm text-muted-foreground">{e.location}</div>}
-                  </div>
-                  <Link to="/calendar" className="shrink-0 text-sm font-medium text-forest hover:underline">Calendar</Link>
-                </li>
-              );
-            })}
-            {loading && <li className="p-6 text-sm text-muted-foreground">Loading events…</li>}
-            {!loading && events.length === 0 && (
-              <li className="p-6 text-sm text-muted-foreground">No upcoming events yet.</li>
-            )}
-          </ul>
-          <div className="mt-6">
-            <Link to="/calendar" className="btn-outline">See full calendar <ArrowRight size={16} /></Link>
-          </div>
-        </div>
-
-        <aside id="announcements" className="lg:col-span-2">
-          <div className="rounded-2xl border border-border bg-forest-deep p-8 text-cream">
-            <h3 className="font-display text-2xl text-cream">Announcements</h3>
-            <ul className="mt-6 space-y-5 text-sm text-cream/85">
-              {announcements.map((a) => (
-                <li key={a.id} className="border-b border-cream/10 pb-5 last:border-0 last:pb-0">
-                  {a.title && a.title !== a.body && (
-                    <div className="font-medium text-cream">{a.title}</div>
-                  )}
-                  <p className={a.title && a.title !== a.body ? "mt-1 text-cream/80" : ""}>{a.body}</p>
-                </li>
-              ))}
-              {!loading && announcements.length === 0 && (
-                <li className="text-cream/60">No announcements at the moment.</li>
-              )}
-            </ul>
-          </div>
-        </aside>
-      </div>
-    </section>
-  );
-}
-
-function mosaicTileClass(index: number, total: number): string {
-  const base = "group relative overflow-hidden rounded-xl bg-forest-deep/10";
-  if (total === 1) return `${base} col-span-2 aspect-[16/10] md:col-span-12 md:row-span-6 md:aspect-auto md:min-h-[28rem]`;
-  if (index === 0) return `${base} col-span-2 row-span-2 aspect-[16/10] md:col-span-7 md:row-span-4 md:aspect-auto md:min-h-0`;
-  if (index === 1) return `${base} aspect-square md:col-span-5 md:row-span-2 md:aspect-auto`;
-  if (index === 2) return `${base} aspect-square md:col-span-5 md:row-span-2 md:aspect-auto`;
-  return `${base} aspect-square md:col-span-4 md:row-span-2 md:aspect-auto`;
-}
-
-function PhotoMosaic({ photos: mosaicPhotos }: { photos: MosaicPhoto[] }) {
-  if (mosaicPhotos.length === 0) return null;
 
   return (
-    <section className="border-y border-border/60 bg-forest-deep py-24 text-cream">
-      <div className="container-page">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="font-display text-4xl text-cream md:text-5xl">Photos from the troop</h2>
-            <p className="mt-3 max-w-xl text-sm text-cream/75">
-              Campouts, courts of honor, and service projects. Parents can share photos from the gallery page.
-            </p>
-          </div>
-          <Link
-            to="/gallery"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-gold hover:gap-2.5 transition-all"
-          >
-            Open the gallery <ArrowRight size={15} />
+    <section className="relative overflow-hidden py-16 md:py-24">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,oklch(0.74_0.13_82_/_0.12),transparent_55%),radial-gradient(ellipse_at_bottom_right,oklch(0.38_0.09_145_/_0.08),transparent_50%)]" />
+      <div className="container-page relative grid items-center gap-10 md:grid-cols-2 md:gap-14">
+        <div className="animate-rise order-2 md:order-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-forest">This season</p>
+          <h2 className="mt-3 font-display text-4xl leading-[1.05] text-foreground md:text-5xl">
+            Built for the challenge—shared beyond the table
+          </h2>
+          <p className="mt-5 text-base leading-relaxed text-muted-foreground md:text-lg">
+            Bits &amp; Bots is a FIRST LEGO League Challenge team. We split practice between the
+            Innovation Project, Robot Design &amp; Code, and Core Values—then mentor newer teams and
+            run workshops so more kids can try FLL.
+          </p>
+          <Link to="/outreach" className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-forest hover:underline">
+            How we show up in the community <ArrowRight size={16} />
           </Link>
         </div>
-
-        <div className="mt-8 grid grid-cols-2 gap-2 md:grid-cols-12 md:grid-rows-6 md:gap-3 md:min-h-[28rem]">
-          {mosaicPhotos.map((photo, index) => (
-            <Link
-              key={`${photo.src}-${index}`}
-              to="/gallery"
-              className={mosaicTileClass(index, mosaicPhotos.length)}
-            >
-              <TroopPhoto
-                src={photo.src}
-                alt={photo.alt}
-                width={1400}
-                height={900}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                label="Troop photo"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-forest-deep/50 via-transparent to-transparent opacity-80" />
-            </Link>
-          ))}
+        <div className="animate-rise order-1 overflow-hidden rounded-[1.75rem] md:order-2">
+          <img
+            src={photo.url}
+            alt={photo.alt || feature.imageAlt}
+            className="aspect-[4/3] w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function QuickLinksPreview() {
-  const links = [
-    { label: "Health Forms", href: "https://filestore.scouting.org/filestore/healthsafety/pdf/680-001_ab.pdf" },
-    { label: "Online Payments", href: "/payments" },
-    { label: "Scoutbook", href: "/quick-links" },
-    { label: "TroopTrack", href: "/quick-links" },
-    { label: "Youth Protection", href: "/quick-links" },
-    { label: "Merit Badges", href: "/quick-links" },
+function WhatWeDo() {
+  const pillars = [
+    {
+      title: "Innovation Project",
+      copy: "Dig into the season theme, find a real problem worth solving, and present a solution we’re proud to defend.",
+    },
+    {
+      title: "Robot Design & Code",
+      copy: "Design mechanisms, write mission runs, and keep refining until the robot does the job on its own.",
+    },
+    {
+      title: "Core Values",
+      copy: "Discovery, Innovation, Impact, Inclusion, Teamwork, and Fun—how we treat each other when the run fails and when it lands.",
+      href: "/core-values" as const,
+    },
   ];
+
   return (
-    <section className="py-24">
+    <section className="border-y border-border/50 bg-background py-16 md:py-20">
       <div className="container-page">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="font-display text-4xl md:text-5xl">Quick links</h2>
-            <p className="mt-2 text-muted-foreground">Forms, payments, and scout resources.</p>
-          </div>
-          <Link to="/quick-links" className="btn-outline">All quick links <ArrowRight size={16} /></Link>
+        <div className="animate-rise max-w-2xl">
+          <h2 className="font-display text-4xl text-foreground md:text-5xl">How FLL Challenge works for us</h2>
+          <p className="mt-4 text-muted-foreground md:text-lg">
+            Three parts. One team. Every meeting leans into at least one of them.
+          </p>
         </div>
-        <div className="mt-10 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-          {links.map((l) => {
-            const external = l.href.startsWith("http");
-            const El = external ? "a" : Link;
-            return (
-              <El
-                key={l.label}
-                {...(external
-                  ? { href: l.href, target: "_blank", rel: "noopener noreferrer" }
-                  : { to: l.href })}
-                className="group flex items-center justify-between rounded-xl border border-border bg-card p-5 transition-colors hover:border-forest"
-              >
-                <span className="font-medium">{l.label}</span>
-                <ArrowRight size={16} className="text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-forest" />
-              </El>
-            );
-          })}
+        <div className="mt-12 grid gap-10 md:grid-cols-3 md:gap-12">
+          {pillars.map((c, index) => (
+            <article
+              key={c.title}
+              className="animate-rise border-t border-forest/25 pt-6"
+              style={{ animationDelay: `${120 + index * 90}ms` }}
+            >
+              <p className="font-display text-sm text-forest">0{index + 1}</p>
+              <h3 className="mt-2 font-display text-2xl md:text-3xl">{c.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">{c.copy}</p>
+              {"href" in c && c.href ? (
+                <Link to={c.href} className="mt-4 inline-block text-sm font-medium text-forest hover:underline">
+                  Read our Core Values →
+                </Link>
+              ) : null}
+            </article>
+          ))}
         </div>
       </div>
     </section>
@@ -524,18 +244,22 @@ function QuickLinksPreview() {
 
 function CTA() {
   return (
-    <section className="pb-24">
+    <section className="pb-16 pt-16 md:pb-24 md:pt-20">
       <div className="container-page">
-        <div className="relative overflow-hidden rounded-3xl bg-forest px-8 py-16 text-cream md:px-14 md:py-20">
+        <div className="animate-rise relative overflow-hidden rounded-[2rem] bg-forest px-8 py-14 text-cream md:px-14 md:py-16">
+          <div className="pointer-events-none absolute -right-16 top-0 h-56 w-56 rounded-full bg-gold/20 blur-3xl" />
           <div className="relative max-w-2xl">
-            <h2 className="font-display text-4xl text-cream md:text-5xl">Visit us on a Wednesday</h2>
-            <p className="mt-4 text-cream/85">
-              Meetings start at 7 PM at North Collier Fire Station #45. Scouts and parents are
-              welcome—no appointment needed.
+            <h2 className="font-display text-4xl text-cream md:text-5xl">Come to a practice</h2>
+            <p className="mt-4 text-cream/85 md:text-lg">
+              {MEETINGS_BLURB} Watch a mission run, hear an Innovation idea, or just say hello.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/join" className="btn-primary bg-gold !text-forest-deep hover:brightness-110">How to join</Link>
-              <Link to="/about" className="btn-outline !border-cream/30 !text-cream hover:!bg-cream/10">About the troop</Link>
+              <Link to="/calendar" className="btn-primary bg-gold !text-forest-deep hover:brightness-110">
+                Calendar
+              </Link>
+              <Link to="/about" className="btn-outline !border-cream/40 !text-cream hover:!bg-cream/10">
+                Our Team
+              </Link>
             </div>
           </div>
         </div>

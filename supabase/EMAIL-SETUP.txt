@@ -15,11 +15,24 @@ OPTION A — Works now (no API key)
 OPTION B — Resend (better for production)
   1. Sign up at https://resend.com with suresh440@gmail.com
   2. Create API key → add to .env:
-       RESEND_API_KEY="re_..."
-       RESEND_FROM="Troop 2001 Naples <onboarding@resend.dev>"
+       RESEND_API_KEY="re_xxxxxxxx"   # from Resend dashboard — never commit real keys
+       RESEND_FROM="Bits & Bots <onboarding@resend.dev>"
   3. Restart npm run dev
   Resend takes priority over FormSubmit when configured.
 
+PARENT BROADCAST (Admin → Broadcast)
+  Without a domain (recommended now):
+    Use “Open Gmail (BCC all)” — loads every unique parent email in BCC; click Send once.
+    Use “WhatsApp group” — message is copied; paste in the group.
+
+  With Resend auto-send to everyone:
+    Verify a domain at https://resend.com/domains, then set
+      RESEND_FROM="Bits & Bots <hello@your-verified-domain.com>"
+    and restart. Until then Resend can only email your Resend account address.
+
+  Optional once: run supabase/setup-broadcast.sql to store the WhatsApp group link.
+
 PRODUCTION
-  Set SITE_ORIGIN to your live URL, e.g.:
-    SITE_ORIGIN="https://troop2001naples.org"
+  Set SITE_ORIGIN to your live Worker URL (also in wrangler.toml [vars]):
+    SITE_ORIGIN="https://bitsandbots.sravanthi440.workers.dev"
+  Or your custom domain once attached.

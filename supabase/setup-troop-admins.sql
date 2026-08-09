@@ -1,9 +1,12 @@
--- Troop Admins management (run once in the Supabase SQL Editor)
+-- Team Admins management (run once in the Supabase SQL Editor)
 -- =============================================================
 -- Adds three functions so admins can grant and remove admin access from
--- Admin → Troop Admins on the website, instead of running SQL every time.
+-- Admin → Team Admins on the website, instead of running SQL every time.
 --
--- SQL Editor: https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/sql/new
+-- SQL Editor: https://supabase.com/dashboard/project/njhiqsbykiggxqkjrxse/sql/new
+--
+-- Function names keep the historical list_troop_users / grant_troop_admin
+-- identifiers (DB RPC names). UI copy says Team Admins.
 --
 -- These run as SECURITY DEFINER (they can read auth.users), but each one first
 -- checks that the CALLER is already an admin, so a regular signed-in account
@@ -25,7 +28,7 @@ SET search_path = public
 AS $$
 BEGIN
   IF NOT public.has_role(auth.uid(), 'admin') THEN
-    RAISE EXCEPTION 'Only troop admins can view accounts';
+    RAISE EXCEPTION 'Only team admins can view accounts';
   END IF;
 
   RETURN QUERY
@@ -53,7 +56,7 @@ SET search_path = public
 AS $$
 BEGIN
   IF NOT public.has_role(auth.uid(), 'admin') THEN
-    RAISE EXCEPTION 'Only troop admins can grant admin access';
+    RAISE EXCEPTION 'Only team admins can grant admin access';
   END IF;
 
   INSERT INTO public.user_roles (user_id, role)
@@ -73,7 +76,7 @@ DECLARE
   admin_count integer;
 BEGIN
   IF NOT public.has_role(auth.uid(), 'admin') THEN
-    RAISE EXCEPTION 'Only troop admins can remove admin access';
+    RAISE EXCEPTION 'Only team admins can remove admin access';
   END IF;
 
   IF target_user_id = auth.uid() THEN

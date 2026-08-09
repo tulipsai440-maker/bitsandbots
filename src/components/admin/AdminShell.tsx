@@ -7,14 +7,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { LogOut } from "lucide-react";
 
 export type AdminNavKey =
+  | "calendar"
+  | "team"
+  | "coaches"
+  | "sponsors"
   | "events"
-  | "eagle-scouts"
-  | "scoutmasters"
   | "announcements"
   | "gallery-photos"
   | "site-images"
   | "join-notifications"
-  | "troop-admins";
+  | "team-admins"
+  | "assignments"
+  | "parent-contacts"
+  | "broadcast";
 
 export function AdminReviewPage({
   active,
@@ -52,14 +57,21 @@ export function AdminReviewPage({
   if (!isAdmin) {
     return (
       <SiteLayout>
-        <PageHero eyebrow="Admin" title="Admin access required" description="Your account is signed in but not yet an admin." />
+        <PageHero
+          eyebrow="Admin"
+          title="Admin access required"
+          description="Signed in successfully — admin is a role in the database, not a special password."
+        />
         <div className="container-page pb-20">
           <div className="rounded-2xl border border-border bg-card p-8">
             <p className="text-sm text-muted-foreground">
-              Your account was created successfully, but creating an account does not grant admin
-              access on its own. Ask a current troop admin to open{" "}
-              <strong>Admin → Troop Admins</strong> and select <strong>Make admin</strong> next to
-              your email address. Refresh this page once they have done that.
+              Your password only controls sign-in. Admin access requires{" "}
+              <code className="rounded bg-muted px-1">user_roles.role = &apos;admin&apos;</code> for
+              this account. Ask a current coach/admin to open{" "}
+              <strong>Admin → Team Admins</strong> and select <strong>Make admin</strong> next to
+              your email, or have them run{" "}
+              <code className="rounded bg-muted px-1">supabase/grant-admin.sql</code> in the
+              Supabase SQL Editor. Sign in as the same email they granted, then refresh this page.
             </p>
             <button onClick={signOut} className="btn-outline mt-6 gap-2">
               <LogOut size={16} /> Sign out

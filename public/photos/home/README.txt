@@ -1,7 +1,2 @@
-Home page section photos (JPG or WebP):
-  eagle.jpg       — Eagle Scout section
-  adventure.jpg   — Adventure cards / slideshow
-  canoe.jpg
-  camping.jpg
-  hiking.jpg
-  flag.jpg
+Home page section photos (JPG or WebP) — legacy filenames; prefer site/hero-bits-and-bots.png
+and Admin → Site Images for current Bits & Bots pages.

@@ -19,14 +19,14 @@ async function loadRecipients(): Promise<string[]> {
     const emails = await fetchActiveJoinNotifyEmailAddresses();
     if (emails.length === 0) {
       throw new Error(
-        "No notification emails are set up yet. A troop leader must add recipients in Admin → Join Notifications.",
+        "No notification emails are set up yet. A coach must add recipients in Admin → Join Notifications.",
       );
     }
     return emails;
   } catch (err) {
     if (isJoinNotifyTableMissingError(err)) {
       throw new Error(
-        "Join notification emails are not set up yet. A troop leader must run the database setup in Admin → Join Notifications.",
+        "Join notification emails are not set up yet. A coach must run the database setup in Admin → Join Notifications.",
       );
     }
     throw err;
@@ -43,13 +43,13 @@ async function sendOne(recipient: string, form: JoinFormData, origin: string): P
       Referer: `${origin}/join`,
     },
     body: JSON.stringify({
-      _subject: `Troop 2001 Join Request — ${form.scoutName}`,
+      _subject: `Bits & Bots Join Request — ${form.scoutName}`,
       _template: "table",
       _captcha: "false",
       _replyto: form.parentEmail,
       "Parent Name": form.parentName,
-      "Scout Name": form.scoutName,
-      "Scout Age": form.scoutAge,
+      "Youth Name": form.scoutName,
+      "Youth Age": form.scoutAge,
       Grade: form.grade,
       School: form.school,
       "Parent Email": form.parentEmail,

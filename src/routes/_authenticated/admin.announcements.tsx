@@ -56,7 +56,11 @@ function AdminAnnouncementsPage() {
   if (!isAdmin) {
     return (
       <SiteLayout>
-        <PageHero eyebrow="Admin" title="Admin access required" description="Your account is signed in but not yet an admin." />
+        <PageHero
+          eyebrow="Admin"
+          title="Admin access required"
+          description="Signed in successfully — admin is a role in the database, not a special password."
+        />
         <div className="container-page pb-20">
           <button onClick={signOut} className="btn-outline mt-6 gap-2">
             <LogOut size={16} /> Sign out

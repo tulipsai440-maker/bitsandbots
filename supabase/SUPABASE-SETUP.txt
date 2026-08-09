@@ -1,26 +1,25 @@
-Troop 2001 — YOUR Supabase project
-==================================
+Bits & Bots — YOUR Supabase project
+===================================
 
-Project: xohaeezxzbeyzpjbngkj
-Dashboard: https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj
+Project: njhiqsbykiggxqkjrxse
+URL: https://njhiqsbykiggxqkjrxse.supabase.co
+Dashboard: https://supabase.com/dashboard/project/njhiqsbykiggxqkjrxse
 
 STEP 1 — Copy API keys
 ----------------------
 Open: Settings → API
-https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/settings/api
+https://supabase.com/dashboard/project/njhiqsbykiggxqkjrxse/settings/api
 
 Copy into .env:
-  SUPABASE_URL=https://xohaeezxzbeyzpjbngkj.supabase.co
-  SUPABASE_PROJECT_ID=xohaeezxzbeyzpjbngkj
+  SUPABASE_URL=https://njhiqsbykiggxqkjrxse.supabase.co
+  SUPABASE_PROJECT_ID=njhiqsbykiggxqkjrxse
   SUPABASE_PUBLISHABLE_KEY=<anon or publishable key from dashboard>
   (same three values with VITE_ prefix)
 
 STEP 2 — Fix auth redirect URLs (IMPORTANT)
 ---------------------------------------------
-Email confirmation links use these settings — NOT Lovable.
-
 Authentication → URL Configuration:
-https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/auth/url-configuration
+https://supabase.com/dashboard/project/njhiqsbykiggxqkjrxse/auth/url-configuration
 
 Set:
   Site URL: http://localhost:8080
@@ -28,38 +27,56 @@ Set:
     http://localhost:8080/**
     http://localhost:8080/auth
 
-When you deploy, add your production URL too (e.g. https://troop2001naples.org/**).
+When you deploy, add your production URL too.
 
 STEP 3 — Enable email sign-up
 -----------------------------
 Authentication → Providers → Email → ON
-https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/auth/providers
+https://supabase.com/dashboard/project/njhiqsbykiggxqkjrxse/auth/providers
 
 Optional for local dev: turn OFF "Confirm email" so sign-up works instantly.
 
 STEP 4 — Run database setup (one paste)
 ---------------------------------------
 SQL Editor → paste ALL of bootstrap-new-project.sql → Run
-https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/sql/new
+https://supabase.com/dashboard/project/njhiqsbykiggxqkjrxse/sql/new
 
-Also run fix-eagle-scouts-rls.sql if Eagle Scouts page errors.
-Also run setup-join-notify-emails.sql for Join Notifications admin tab.
-Also run setup-troop-admins.sql for the Troop Admins admin tab.
-Also run setup-gallery-uploads.sql for gallery photo uploads + Photo Review admin tab.
-Also run setup-site-images.sql for Admin → Site Images (homepage hero and section photos).
+Also run setup-assignments.sql for Admin → Assignments and the kid portal at /assignments.
+Also run setup-assignment-attachments.sql so kids can upload files on tasks.
+Also run setup-team-and-coaches.sql for Our Team (`team_members`) and Coaches (`coaches`) tables.
+Also run setup-sponsors.sql for Sponsors (`sponsors`) table.
+Also run setup-profile-photos-storage.sql for team/coach/sponsor photo uploads in Admin.
+Also run setup-gallery-uploads.sql for gallery photo uploads.
+Also run setup-site-images.sql for Admin → Site Images.
+Also run setup-troop-admins.sql for Admin → Team Admins (grants via UI).
+Also run setup-join-notify-emails.sql if you use join notification emails.
 
 STEP 5 — Create your account
 ----------------------------
 Restart dev server (npm run dev), open http://localhost:8080/auth
-Sign up with tulipsai440@gmail.com and a strong password.
+Sign up with your email and a strong password.
 
-If email confirmation is on, the link should open http://localhost:8080/auth
-(not Lovable). Or run confirm-user-tulipsai440.sql to confirm email and set admin access.
+STEP 6 — Make yourself admin (NOT about password)
+-------------------------------------------------
+Admin access is a database role, not a special password.
+  - Password = can sign in at /auth
+  - Admin = row in public.user_roles with role = 'admin'
 
-STEP 6 — Make yourself admin
-----------------------------
-SQL Editor → run confirm-user-tulipsai440.sql
+SQL Editor → open grant-admin.sql
+Replace REPLACE-WITH-THEIR-EMAIL@example.com with your signup email → Run
+(For trivarn440@gmail.com use grant-admin-trivarn440.sql instead.)
 
-Sign in at http://localhost:8080/auth with tulipsai440@gmail.com and your admin password.
+Verify in SQL Editor (expect 1 row):
+  SELECT u.email, r.role
+  FROM public.user_roles r
+  JOIN auth.users u ON u.id = r.user_id
+  WHERE lower(u.email) = lower('YOUR-EMAIL@example.com')
+    AND r.role = 'admin';
 
-Then visit http://localhost:8080/admin/eagle-scouts (or /admin/scoutmasters, /admin/announcements)
+Sign in at http://localhost:8080/auth as that same email, then open
+/admin/calendar (or other admin pages) and refresh.
+If you still see "Admin access required", you are signed in as a different
+account or the role row is missing — re-run the verify SELECT above.
+
+Also run setup-troop-admins.sql once if you want Admin → Team Admins
+(UI for granting admin without SQL).

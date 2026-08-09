@@ -14,6 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar: {
+        Row: {
+          id: string
+          event_date: string
+          title: string
+          agenda: string | null
+          location: string | null
+          start_time: string | null
+          end_time: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          event_date: string
+          title: string
+          agenda?: string | null
+          location?: string | null
+          start_time?: string | null
+          end_time?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          event_date?: string
+          title?: string
+          agenda?: string | null
+          location?: string | null
+          start_time?: string | null
+          end_time?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          photo_url: string | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          photo_url?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          photo_url?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      coaches: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          photo_url: string | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          photo_url?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          photo_url?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sponsors: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          logo_url: string | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name?: string
+          description?: string | null
+          logo_url?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          logo_url?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           band_url: string | null

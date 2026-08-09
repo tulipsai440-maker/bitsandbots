@@ -15,21 +15,27 @@ export function getBandIcalUrl(): string | null {
 
 export function inferEventType(title: string, description: string | null): string {
   const text = `${title} ${description ?? ""}`.toLowerCase();
-  if (text.includes("campout") || text.includes(" camp") || text.includes("camping") || text.includes("woodruff") || text.includes("shakedown")) return "Campout";
-  if (text.includes("court of honor") || text.includes("ceremony") || text.includes("coh")) return "Ceremony";
-  if (text.includes("meeting") || text.includes("troop night") || text.includes("plc")) return "Meeting";
+  if (text.includes("zoom")) return "Zoom";
+  if (text.includes("practice") || text.includes("build") || text.includes("robot")) return "Practice";
+  if (text.includes("competition") || text.includes("tournament") || text.includes("qualifier")) {
+    return "Competition";
+  }
+  if (text.includes("outreach") || text.includes("expo") || text.includes("demo")) return "Outreach";
+  if (text.includes("meeting") || text.includes("check-in") || text.includes("check in")) return "Meeting";
   if (text.includes("deadline") || text.includes("due")) return "Deadline";
-  if (text.includes("service project") || text.includes("service day")) return "Service";
   return "Other";
 }
 
 /** Skip Band auto-events (birthdays, band anniversaries) */
-export function isTroopEvent(title: string, description: string | null): boolean {
+export function isTeamEvent(title: string, description: string | null): boolean {
   const text = `${title} ${description ?? ""}`.toLowerCase();
   if (text.includes("birthday")) return false;
   if (text.includes("band was created")) return false;
   return true;
 }
+
+/** @deprecated Use isTeamEvent */
+export const isTroopEvent = isTeamEvent;
 
 function unfoldIcsLines(raw: string): string[] {
   const folded = raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n[ \t]/g, "");
@@ -98,7 +104,7 @@ export function parseBandIcal(raw: string): EventRow[] {
     const summary = unescapeIcsText(readProp(block, "SUMMARY") ?? "Untitled event");
     const descriptionRaw = readProp(block, "DESCRIPTION");
     const description = descriptionRaw ? unescapeIcsText(descriptionRaw) : null;
-    if (!isTroopEvent(summary, description)) continue;
+    if (!isTeamEvent(summary, description)) continue;
     const locationRaw = readProp(block, "LOCATION");
     const location = locationRaw ? unescapeIcsText(locationRaw) : null;
     const url = readProp(block, "URL");

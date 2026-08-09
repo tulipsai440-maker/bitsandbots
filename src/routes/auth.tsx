@@ -12,10 +12,10 @@ function authCallbackUrl(): string {
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — Troop 2001 Naples" },
-      { name: "description", content: "Sign in to Troop 2001 Naples admin." },
-      { property: "og:title", content: "Sign in — Troop 2001 Naples" },
-      { property: "og:description", content: "Troop 2001 admin sign in." },
+      { title: "Sign in — Bits & Bots" },
+      { name: "description", content: "Sign in to Bits & Bots admin." },
+      { property: "og:title", content: "Sign in — Bits & Bots" },
+      { property: "og:description", content: "Bits & Bots admin sign in." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -35,13 +35,13 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/admin/events" });
+      if (data.session) navigate({ to: "/admin/calendar" });
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session) {
         toast.success("Signed in successfully.");
-        navigate({ to: "/admin/events" });
+        navigate({ to: "/admin/calendar" });
       }
       if (event === "PASSWORD_RECOVERY") {
         setMessage({
@@ -92,7 +92,7 @@ function AuthPage() {
         setMode("signin");
         return;
       }
-      navigate({ to: "/admin/events" });
+      navigate({ to: "/admin/calendar" });
     } catch (err) {
       const text = authErrorMessage(err);
       setMessage({ type: "error", text });
@@ -106,12 +106,12 @@ function AuthPage() {
     <SiteLayout>
       <section className="py-20">
         <div className="container-page max-w-md">
-          <div className="eyebrow">Troop Admin</div>
+          <div className="eyebrow">Team Admin</div>
           <h1 className="mt-3 font-display text-4xl">Sign in</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Access the admin area to manage events, Eagle Scouts, scoutmasters, and announcements.
-            First-time admin? Create an account, confirm your email, then ask a leader to grant admin
-            access in Supabase.
+            Access the admin area to manage calendar, team, coaches, and announcements. Password
+            only signs you in — admin access is a separate database role. First time? Create an
+            account, confirm your email, then ask a coach to grant admin in Team Admins or via SQL.
           </p>
           {isDev && projectRef && (
             <p className="mt-2 text-xs text-muted-foreground">

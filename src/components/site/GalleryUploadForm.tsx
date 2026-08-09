@@ -98,7 +98,7 @@ export function GalleryUploadForm() {
         <CheckCircle2 className="mx-auto text-forest" size={36} />
         <h3 className="mt-4 font-display text-2xl">Thank you for sharing!</h3>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-          Your photos were sent to a troop leader for review. Once approved, they will appear in the
+          Your photos were sent for review. Once approved, they will appear in the
           gallery above.
         </p>
         <button type="button" onClick={() => setStatus("idle")} className="btn-outline mt-6">
@@ -112,9 +112,9 @@ export function GalleryUploadForm() {
 
   return (
     <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
-      <h3 className="font-display text-2xl">Share your troop photos</h3>
+      <h3 className="font-display text-2xl">Share your team photos</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        Have photos from a campout, ceremony, or service project? Send them here and a troop leader
+        Have photos from a practice, build session, or FLL event? Send them here and a coach
         will review them before they appear in the gallery.
       </p>
 
@@ -215,7 +215,7 @@ export function GalleryUploadForm() {
           />
           <span className="text-muted-foreground">
             I took these photos or have permission to share them, and I have permission from the
-            parents or guardians of any scouts pictured to publish them on this website.
+            parents or guardians of any teammates pictured to publish them on this website.
           </span>
         </label>
 
@@ -232,7 +232,7 @@ export function GalleryUploadForm() {
 
         <p className="text-xs leading-relaxed text-muted-foreground">
           Photos are resized in your browser before uploading, so large phone photos are fine. Your
-          name and email are only visible to troop leaders and are never published.
+          name and email are only visible to coaches and are never published.
         </p>
       </form>
     </div>

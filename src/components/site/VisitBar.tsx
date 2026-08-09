@@ -1,7 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Clock, MapPin, X } from "lucide-react";
 import { useState } from "react";
-import { MEETING_MAPS_URL } from "@/lib/photos";
+import {
+  PRACTICE_PLACE,
+  PRACTICE_SUMMARY,
+  ZOOM_PLACE,
+  ZOOM_SUMMARY,
+} from "@/lib/photos";
 
 export function VisitBar() {
   const [dismissed, setDismissed] = useState(false);
@@ -12,22 +17,20 @@ export function VisitBar() {
       <div className="container-page flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-gold">
-            <Clock size={12} /> Wednesday meetings · 7 PM
+            <Clock size={12} /> Meetings
           </div>
           <p className="mt-1 text-sm leading-snug text-cream/90">
-            North Collier Fire Station #45
+            {PRACTICE_SUMMARY} · {PRACTICE_PLACE}
+          </p>
+          <p className="mt-0.5 text-sm leading-snug text-cream/75">
+            {ZOOM_SUMMARY} · {ZOOM_PLACE}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <a
-              href={MEETING_MAPS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/calendar"
               className="inline-flex items-center gap-1 rounded-full bg-gold px-3 py-1.5 text-xs font-semibold text-forest-deep"
             >
-              <MapPin size={12} /> Directions
-            </a>
-            <Link to="/join" className="inline-flex rounded-full border border-cream/30 px-3 py-1.5 text-xs font-medium">
-              Join us
+              <MapPin size={12} /> Calendar
             </Link>
           </div>
         </div>

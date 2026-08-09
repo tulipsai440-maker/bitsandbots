@@ -2,29 +2,30 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
 import {
   ExternalLink,
-  FileText,
-  CreditCard,
   Globe,
-  Shield,
-  Award,
   BookOpen,
-  MapPin,
   ClipboardList,
   Newspaper,
   Images,
+  Trophy,
+  Lightbulb,
+  Play,
+  FileText,
 } from "lucide-react";
 import type { ComponentType } from "react";
+import { SITE_NAME } from "@/lib/photos";
+import { BIOGLOW_DOCUMENTS, BIOGLOW_PLAYLIST_URL, BIOGLOW_RESOURCES_URL } from "@/lib/season-videos";
 
 export const Route = createFileRoute("/quick-links")({
   head: () => ({
     meta: [
-      { title: "Quick Links — Troop 2001 Naples" },
+      { title: `Quick Links — ${SITE_NAME}` },
       {
         name: "description",
-        content: "Essential scouting resources: health forms, payments, Scoutbook, TroopTrack, and more.",
+        content: `Helpful FIRST LEGO League links and resources for ${SITE_NAME} families.`,
       },
-      { property: "og:title", content: "Troop 2001 Quick Links" },
-      { property: "og:description", content: "Essential scouting resources for Troop 2001 families." },
+      { property: "og:title", content: `${SITE_NAME} Quick Links` },
+      { property: "og:description", content: `Essential FLL resources for ${SITE_NAME} families.` },
     ],
   }),
   component: QuickLinksPage,
@@ -39,82 +40,70 @@ type LinkItem = {
 
 const links: LinkItem[] = [
   {
-    label: "Health Forms",
-    href: "https://filestore.scouting.org/filestore/healthsafety/pdf/680-001_ab.pdf",
-    icon: FileText,
-    desc: "Annual Health & Medical Record — Parts A & B (PDF from Scouting America).",
+    label: "BIOGLOW videos",
+    href: "/videos",
+    icon: Play,
+    desc: "Season intro, missions, field setup, role videos, and official PDFs.",
   },
   {
-    label: "Scouting America",
-    href: "https://www.scouting.org/",
-    icon: Globe,
-    desc: "National Scouting America website.",
-  },
-  {
-    label: "Gulf Coast Council",
-    href: "https://www.gulfcoastcouncil.org/",
-    icon: MapPin,
-    desc: "Our local Scouts BSA council.",
-  },
-  {
-    label: "Scoutbook",
-    href: "https://scoutbook.scouting.org/",
+    label: "Season resources",
+    href: BIOGLOW_RESOURCES_URL,
     icon: BookOpen,
-    desc: "Advancement tracking and unit management.",
+    desc: "Official LEGO Education materials for Future Edition (grades 3–8).",
   },
-  {
-    label: "TroopTrack",
-    href: "https://www.trooptrack.com/",
-    icon: ClipboardList,
-    desc: "Attendance, calendar, and communications.",
-  },
-  {
-    label: "Youth Protection Training",
-    href: "https://www.scouting.org/training/youth-protection/",
-    icon: Shield,
-    desc: "Required training for adult leaders.",
-  },
-  {
-    label: "Merit Badge Resources",
-    href: "https://www.scouting.org/skills/merit-badges/",
-    icon: Award,
-    desc: "Merit badge worksheets, pamphlets, and counselors.",
-  },
-  {
-    label: "Guide to Safe Scouting",
-    href: "https://www.scouting.org/health-and-safety/gss/",
-    icon: Shield,
-    desc: "Health and safety guidelines for all activities.",
-  },
-  {
-    label: "Online Payments",
-    href: "/payments",
-    icon: CreditCard,
-    desc: "Pay dues and camp fees with Zelle or Venmo.",
-  },
-  {
-    label: "Camping Checklist",
-    href: "https://www.scouting.org/outdoor-programs/camping/",
-    icon: ClipboardList,
-    desc: "Official camping resources and packing guidance from Scouting America.",
-  },
-  {
-    label: "Forms",
-    href: "https://www.scouting.org/resources/forms/",
+  ...BIOGLOW_DOCUMENTS.map((doc) => ({
+    label: doc.title,
+    href: doc.href,
     icon: FileText,
-    desc: "National BSA forms library — applications, permits, and more.",
+    desc: doc.blurb,
+  })),
+  {
+    label: "Full BIOGLOW playlist",
+    href: BIOGLOW_PLAYLIST_URL,
+    icon: Play,
+    desc: "Official FIRST LEGO League YouTube playlist for Future Edition.",
   },
   {
-    label: "Newsletter",
-    href: "/#announcements",
+    label: "FIRST LEGO League",
+    href: "https://www.firstlegoleague.org/",
+    icon: Trophy,
+    desc: "Official FLL program site — seasons, challenges, and team resources.",
+  },
+  {
+    label: "FIRST Inspires",
+    href: "https://www.firstinspires.org/",
+    icon: Globe,
+    desc: "Home of FIRST robotics programs for youth of all ages.",
+  },
+  {
+    label: "Season Challenge",
+    href: "https://www.firstinspires.org/robotics/fll",
+    icon: Lightbulb,
+    desc: "Learn about the current FIRST LEGO League challenge theme.",
+  },
+  {
+    label: "Core Values",
+    href: "https://www.firstinspires.org/robotics/fll/core-values",
+    icon: BookOpen,
+    desc: "Discovery, Innovation, Impact, Inclusion, Teamwork, and Fun.",
+  },
+  {
+    label: "Team Resources",
+    href: "https://www.firstinspires.org/resource-library",
+    icon: ClipboardList,
+    desc: "Guides, updates, and materials for FLL teams and coaches.",
+  },
+  {
+    label: "Team calendar",
+    href: "/calendar",
     icon: Newspaper,
-    desc: "Troop updates on the home page announcements sidebar.",
+    desc: "Upcoming practices, Zoom calls, and team events.",
   },
   {
     label: "Photo Gallery",
     href: "/gallery",
     icon: Images,
-    desc: "Photos from campouts, ceremonies, and service projects.",
+    desc: "Photos from practices, builds, and events.",
   },
 ];
 
@@ -167,7 +156,7 @@ function QuickLinksPage() {
       <PageHero
         title="Quick links"
         align="center"
-        description="Forms, payments, Scoutbook, and other resources for Troop 2001 families."
+        description={`FIRST LEGO League resources and helpful links for ${SITE_NAME} families.`}
       />
       <section className="py-16">
         <div className="container-page grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

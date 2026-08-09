@@ -1,9 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
-const BASE_URL = "https://troop2001naples.org";
+const BASE_URL = process.env.SITE_ORIGIN?.replace(/\/$/, "") || "http://localhost:8080";
 
-const paths = ["/", "/about", "/eagle-scouts", "/calendar", "/events", "/gallery", "/join", "/quick-links"];
+const paths = [
+  "/",
+  "/about",
+  "/coaches",
+  "/outreach",
+  "/sponsors",
+  "/core-values",
+  "/calendar",
+  "/events",
+  "/gallery",
+  "/videos",
+  "/join",
+  "/quick-links",
+];
 
 export const Route = createFileRoute("/sitemap.xml")({
   server: {

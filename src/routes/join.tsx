@@ -3,14 +3,27 @@ import { SiteLayout, PageHero } from "@/components/site/Layout";
 import { useEffect, useState } from "react";
 import { CheckCircle2, Send } from "lucide-react";
 import { fetchJoinContactEmail, sendJoinEmailFromBrowser } from "@/lib/join-client-email";
+import {
+  PRACTICE_PLACE,
+  PRACTICE_SUMMARY,
+  SITE_NAME,
+  ZOOM_PLACE,
+  ZOOM_SUMMARY,
+} from "@/lib/photos";
 
 export const Route = createFileRoute("/join")({
   head: () => ({
     meta: [
-      { title: "Join Troop 2001 Naples — Scouts BSA" },
-      { name: "description", content: "Contact Troop 2001 with a short form. A leader will reply and invite you to a Wednesday meeting." },
-      { property: "og:title", content: "Join Troop 2001 Naples" },
-      { property: "og:description", content: "Send a message to join Troop 2001 in Naples, Florida." },
+      { title: `Join ${SITE_NAME} — FIRST LEGO League` },
+      {
+        name: "description",
+        content: `Contact ${SITE_NAME} with a short form. A coach will reply and invite you to a team practice.`,
+      },
+      { property: "og:title", content: `Join ${SITE_NAME}` },
+      {
+        property: "og:description",
+        content: `Send a message to join ${SITE_NAME}, a FIRST LEGO League team.`,
+      },
     ],
   }),
   component: JoinPage,
@@ -58,7 +71,7 @@ function JoinPage() {
         setError(
           contactEmail
             ? `Network blocked the email request. Try again on home Wi‑Fi, or email ${contactEmail} directly.`
-            : "Network blocked the email request. Try again on home Wi‑Fi, or contact the troop directly.",
+            : `Network blocked the email request. Try again on home Wi‑Fi, or contact ${SITE_NAME} directly.`,
         );
       } else {
         setError(msg);
@@ -69,8 +82,8 @@ function JoinPage() {
   return (
     <SiteLayout>
       <PageHero
-        title="Join Troop 2001"
-        description="Send a short message and a troop leader will follow up. You can also visit any Wednesday meeting at 7 PM."
+        title={`Join ${SITE_NAME}`}
+        description="Send a short message and a coach will follow up. You can also visit a Sunday team practice."
       />
       <section className="py-16">
         <div className="container-page grid gap-12 lg:grid-cols-[1fr_1.4fr]">
@@ -78,14 +91,16 @@ function JoinPage() {
             <div className="rounded-2xl border border-border bg-card p-8">
               <h2 className="font-display text-xl">What happens next</h2>
               <ul className="mt-4 space-y-4 text-sm text-foreground/85">
-                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> A troop leader replies within a few days.</li>
-                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> We'll invite you to a Wednesday meeting to visit.</li>
-                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> No uniform or gear needed for your first visit.</li>
-                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> Youth ages 11 (or 5th grade) through 17 are eligible for Scouts BSA.</li>
+                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> A coach replies within a few days.</li>
+                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> We&apos;ll invite you to a Sunday practice to visit.</li>
+                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> No special gear needed for your first visit.</li>
+                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> FIRST LEGO League Challenge is typically for ages 9–16 (grades 4–8).</li>
               </ul>
               <div className="mt-8 rounded-xl bg-sand p-5 text-sm">
-                <div className="font-medium">Meets every Wednesday · 7:00 PM</div>
-                <div className="mt-1 text-muted-foreground">North Collier Fire Station #45<br/>1885 Veterans Park Dr, Naples, FL 34109</div>
+                <div className="font-medium">Team practice · {PRACTICE_SUMMARY}</div>
+                <div className="mt-1 text-muted-foreground">{PRACTICE_PLACE}</div>
+                <div className="mt-3 font-medium">Zoom call · {ZOOM_SUMMARY}</div>
+                <div className="mt-1 text-muted-foreground">{ZOOM_PLACE}</div>
               </div>
             </div>
           </aside>
@@ -96,7 +111,7 @@ function JoinPage() {
                 <CheckCircle2 size={40} className="mx-auto text-forest" />
                 <h2 className="mt-4 font-display text-3xl">Message received</h2>
                 <p className="mt-2 text-muted-foreground">
-                  Thanks for reaching out! A troop leader will be in touch shortly.
+                  Thanks for reaching out! A coach will be in touch shortly.
                 </p>
                 <button onClick={() => setStatus("idle")} className="btn-outline mt-6">Send another</button>
               </div>
@@ -104,8 +119,8 @@ function JoinPage() {
               <form onSubmit={onSubmit} className="grid gap-5 rounded-2xl border border-border bg-card p-8">
                 <div className="grid gap-5 md:grid-cols-2">
                   <Field label="Parent Name" required value={form.parentName} onChange={onChange("parentName")} />
-                  <Field label="Scout Name" required value={form.scoutName} onChange={onChange("scoutName")} />
-                  <Field label="Scout Age" required type="number" min={10} max={18} value={form.scoutAge} onChange={onChange("scoutAge")} />
+                  <Field label="Youth Name" required value={form.scoutName} onChange={onChange("scoutName")} />
+                  <Field label="Youth Age" required type="number" min={8} max={18} value={form.scoutAge} onChange={onChange("scoutAge")} />
                   <Field label="Grade" required value={form.grade} onChange={onChange("grade")} />
                   <Field label="School" required value={form.school} onChange={onChange("school")} />
                   <Field label="Parent Phone" required type="tel" value={form.parentPhone} onChange={onChange("parentPhone")} />
@@ -118,7 +133,7 @@ function JoinPage() {
                     value={form.questions}
                     onChange={onChange("questions")}
                     className="rounded-lg border border-input bg-background px-4 py-3 text-sm outline-none transition-shadow focus:ring-2 focus:ring-forest/30"
-                    placeholder="Anything you'd like the troop to know?"
+                    placeholder={`Anything you'd like the ${SITE_NAME} coaches to know?`}
                   />
                 </label>
 
@@ -138,7 +153,7 @@ function JoinPage() {
                 )}
 
                 <div className="flex items-center justify-between gap-4">
-                  <p className="text-xs text-muted-foreground">Submissions are sent securely to the troop.</p>
+                  <p className="text-xs text-muted-foreground">Submissions are sent securely to the coaches.</p>
                   <button
                     type="submit"
                     disabled={status === "submitting"}

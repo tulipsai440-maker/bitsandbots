@@ -1,18 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
-import { TroopPhoto } from "@/components/site/TroopPhoto";
+import { TeamPhoto } from "@/components/site/TeamPhoto";
 import { ArrowRight, Calendar } from "lucide-react";
 import { fetchUpcomingEvents, type EventRow } from "@/lib/events";
-import { photoForEventType } from "@/lib/photos";
+import { MEETINGS_BLURB, photoForEventType, SITE_NAME } from "@/lib/photos";
 
 export const Route = createFileRoute("/events")({
   head: () => ({
     meta: [
-      { title: "Events — Troop 2001 Naples" },
-      { name: "description", content: "Campouts, ceremonies, and adventures from Troop 2001 Naples." },
-      { property: "og:title", content: "Troop 2001 Events" },
-      { property: "og:description", content: "Campouts, ceremonies, and adventures." },
+      { title: `Events — ${SITE_NAME}` },
+      { name: "description", content: `Upcoming ${SITE_NAME} meetings. ${MEETINGS_BLURB}` },
+      { property: "og:title", content: `${SITE_NAME} Events` },
+      { property: "og:description", content: "Team practice and Zoom check-ins." },
     ],
   }),
   component: EventsPage,
@@ -43,9 +43,9 @@ function EventsPage() {
   return (
     <SiteLayout>
       <PageHero
-        title="Upcoming events"
+        title="Upcoming meetings"
         align="center"
-        description="Campouts, meetings, Courts of Honor, and other troop activities."
+        description="Team practice on Sundays and Zoom check-ins on Wednesdays."
       />
       <section className="py-16">
         <div className="container-page">
@@ -54,16 +54,14 @@ function EventsPage() {
             <div className="rounded-2xl border border-border bg-card p-10 text-center">
               <p className="font-display text-2xl text-foreground">Nothing on the schedule right now.</p>
               <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-                New campouts, ceremonies, and service projects are posted here as they are planned.
-                In the meantime, scouts and parents are welcome at our weekly meeting — Wednesdays at
-                7:00 PM at North Collier Fire Station #45.
+                {MEETINGS_BLURB}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <Link to="/calendar" className="btn-outline inline-flex gap-2">
                   View calendar <ArrowRight size={16} />
                 </Link>
-                <Link to="/join" className="btn-primary inline-flex gap-2">
-                  Join Troop 2001 <ArrowRight size={16} />
+                <Link to="/about" className="btn-primary inline-flex gap-2">
+                  Our Team <ArrowRight size={16} />
                 </Link>
               </div>
             </div>
@@ -72,7 +70,7 @@ function EventsPage() {
             {events.slice(0, 5).map((e) => (
               <article key={e.id} className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-transform hover:-translate-y-0.5">
                 <div className="relative h-24 overflow-hidden bg-sand sm:h-28">
-                  <TroopPhoto
+                  <TeamPhoto
                     src={photoForEventType(e.type)}
                     alt={`${e.type} event — ${e.title}`}
                     width={640}

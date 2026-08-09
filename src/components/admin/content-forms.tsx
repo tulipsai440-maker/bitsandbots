@@ -212,7 +212,7 @@ export function ScoutmasterForm({
             className="mt-1 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-forest file:px-3 file:py-2 file:text-sm file:font-medium file:text-cream hover:file:bg-forest/90"
           />
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Upload a Class A uniform headshot (JPG, PNG, or WebP, max 5 MB). Portrait, shoulders up, tan shirt and neckerchief.
+            Upload a headshot photo (JPG, PNG, or WebP, max 5 MB).
           </p>
           {previewUrl && (
             <div className="mt-3 flex items-start gap-4">

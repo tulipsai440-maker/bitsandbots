@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const schema = z.object({
   parentName: z.string().min(1, "Parent name is required").max(120),
-  scoutName: z.string().min(1, "Scout name is required").max(120),
+  scoutName: z.string().min(1, "Youth name is required").max(120),
   scoutAge: z.string().min(1).max(3),
   grade: z.string().min(1).max(40),
   school: z.string().min(1).max(120),
@@ -28,14 +28,14 @@ async function loadNotifyRecipients(): Promise<string[]> {
   if (error) {
     console.error("[join] Could not load notify emails", error.message);
     throw new Error(
-      "Join notification emails are not set up yet. A troop leader must add recipients in Admin → Join Notifications.",
+      "Join notification emails are not set up yet. A coach must add recipients in Admin → Join Notifications.",
     );
   }
 
   const emails = (data ?? []).map((row) => row.email.trim()).filter(Boolean);
   if (emails.length === 0) {
     throw new Error(
-      "No notification emails are set up yet. A troop leader must add recipients in Admin → Join Notifications.",
+      "No notification emails are set up yet. A coach must add recipients in Admin → Join Notifications.",
     );
   }
   return emails;
@@ -59,7 +59,7 @@ async function sendViaResend(
       from: fromAddress,
       to: recipients,
       reply_to: data.parentEmail,
-      subject: `Troop 2001 Join Request — ${data.scoutName}`,
+      subject: `Bits & Bots Join Request — ${data.scoutName}`,
       text: summary,
       html,
     }),
@@ -68,7 +68,7 @@ async function sendViaResend(
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     console.error("[join] Resend error", res.status, detail);
-    throw new Error("Email service failed. Please try again or contact the troop.");
+    throw new Error("Email service failed. Please try again or contact the coaches.");
   }
 }
 
@@ -90,11 +90,11 @@ export const submitJoinRequest = createServerFn({ method: "POST" })
     }
 
     const recipients = await loadNotifyRecipients();
-    const fromAddress = process.env.RESEND_FROM || "Troop 2001 Naples <onboarding@resend.dev>";
+    const fromAddress = process.env.RESEND_FROM || "Bits & Bots <onboarding@resend.dev>";
 
     const summary = [
       `Parent: ${data.parentName}`,
-      `Scout:  ${data.scoutName} (age ${data.scoutAge}, grade ${data.grade})`,
+      `Youth:  ${data.scoutName} (age ${data.scoutAge}, grade ${data.grade})`,
       `School: ${data.school}`,
       `Email:  ${data.parentEmail}`,
       `Phone:  ${data.parentPhone}`,
@@ -105,14 +105,14 @@ export const submitJoinRequest = createServerFn({ method: "POST" })
 
     const html = `
       <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-        <h2 style="font-family:Georgia,serif;color:#1f3d1f;margin:0 0 8px">New Troop 2001 Join Request</h2>
-        <p style="color:#666;margin:0 0 16px">Submitted from Troop 2001 Naples</p>
+        <h2 style="font-family:Georgia,serif;color:#1f3d1f;margin:0 0 8px">New Bits &amp; Bots Join Request</h2>
+        <p style="color:#666;margin:0 0 16px">Submitted from Bits &amp; Bots</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px">
           <tbody>
             ${[
               ["Parent Name", data.parentName],
-              ["Scout Name", data.scoutName],
-              ["Scout Age", data.scoutAge],
+              ["Youth Name", data.scoutName],
+              ["Youth Age", data.scoutAge],
               ["Grade", data.grade],
               ["School", data.school],
               ["Parent Email", data.parentEmail],

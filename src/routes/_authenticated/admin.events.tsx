@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authenticated/admin/events")({
   component: AdminEventsPage,
 });
 
-const TYPES = ["Meeting", "Ceremony", "Campout", "Deadline", "Service", "Other"] as const;
+const TYPES = ["Practice", "Zoom", "Meeting", "Competition", "Outreach", "Deadline", "Other"] as const;
 
 function toLocalInput(iso: string | null): string {
   if (!iso) return "";
@@ -69,11 +69,17 @@ function AdminEventsPage() {
   if (!isAdmin) {
     return (
       <SiteLayout>
-        <PageHero eyebrow="Admin" title="Admin access required" description="Your account is signed in but not yet an admin." />
+        <PageHero
+          eyebrow="Admin"
+          title="Admin access required"
+          description="Signed in successfully — admin is a role in the database, not a special password."
+        />
         <div className="container-page pb-20">
           <div className="rounded-2xl border border-border bg-card p-8">
             <p className="text-sm text-muted-foreground">
-              Ask a current troop leader to grant your account admin access. Once granted, refresh this page.
+              Your password only controls sign-in. Ask a coach to grant{" "}
+              <code className="rounded bg-muted px-1">user_roles.role = &apos;admin&apos;</code>{" "}
+              (Admin → Team Admins or grant-admin.sql), then refresh.
             </p>
             <button onClick={signOut} className="btn-outline mt-6 gap-2"><LogOut size={16} /> Sign out</button>
           </div>
@@ -87,7 +93,7 @@ function AdminEventsPage() {
       <PageHero
         eyebrow="Admin"
         title="Manage events"
-        description="Public Calendar and Events pages use the Band app feed while BAND_ICAL_URL is set. Events added here are stored in Supabase only and won't appear on the website — update the troop schedule in Band instead."
+        description="Public Calendar and Events pages use the Band app feed while BAND_ICAL_URL is set. Events added here are stored in Supabase only and won't appear on the website — update the team schedule in Band instead."
       />
       <section className="py-12">
         <div className="container-page">

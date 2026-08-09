@@ -1,6 +1,6 @@
 Site image defaults for the homepage hero and activity cards.
 
-- hero-naples.png — Gulf Coast / Naples hero background
-- camping-tents.png — Camping activity card
+- hero-bits-and-bots.png — Bits & Bots team hero background
+- camping-tents.png — optional activity card
 
 Admins can replace these under Admin → Site Images after running supabase/setup-site-images.sql.

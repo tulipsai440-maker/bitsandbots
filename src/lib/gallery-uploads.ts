@@ -465,6 +465,67 @@ export async function rejectGalleryPhoto(photo: PendingGalleryPhoto): Promise<vo
   }
 }
 
+/**
+ * Admin-only: upload photos straight into the public gallery (no pending review).
+ */
+export async function addApprovedGalleryPhotos(
+  files: File[],
+  options?: { caption?: string },
+): Promise<number> {
+  if (files.length === 0) throw new Error("Choose at least one photo to add.");
+  if (files.length > MAX_FILES_PER_SUBMISSION) {
+    throw new Error(`Please add up to ${MAX_FILES_PER_SUBMISSION} photos at a time.`);
+  }
+
+  for (const file of files) {
+    const problem = validateGalleryFile(file);
+    if (problem) throw new Error(problem);
+  }
+
+  const { data: userData } = await supabase.auth.getUser();
+  const caption = options?.caption?.trim() || null;
+  const submittedByName =
+    userData.user?.user_metadata?.full_name?.trim() ||
+    userData.user?.email?.split("@")[0] ||
+    "Coach";
+  const now = new Date().toISOString();
+
+  let saved = 0;
+  for (const file of files) {
+    const { blob, width, height, mime, extension } = await resizeForUpload(file);
+    const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage.from(APPROVED_BUCKET).upload(path, blob, {
+      contentType: mime,
+      cacheControl: "3600",
+      upsert: false,
+    });
+    if (uploadError) throw toError(uploadError);
+
+    const { error: rowError } = await supabase.from("gallery_photos").insert({
+      status: "approved",
+      pending_path: null,
+      approved_path: path,
+      caption,
+      width,
+      height,
+      submitted_by_name: submittedByName,
+      submitted_by_email: userData.user?.email ?? null,
+      consent_confirmed: true,
+      reviewed_at: now,
+      reviewed_by: userData.user?.id ?? null,
+    });
+
+    if (rowError) {
+      await supabase.storage.from(APPROVED_BUCKET).remove([path]);
+      throw toError(rowError);
+    }
+    saved += 1;
+  }
+
+  return saved;
+}
+
 /** Removes an approved photo from the public gallery and deletes the file. */
 export async function deleteApprovedGalleryPhoto(id: string, approvedPath: string): Promise<void> {
   const { error } = await supabase.from("gallery_photos").delete().eq("id", id);

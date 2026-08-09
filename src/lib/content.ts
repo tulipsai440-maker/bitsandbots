@@ -23,7 +23,7 @@ function parseEagleYear(year: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-/** Oldest Eagle first (#1 = first Eagle Scout of the troop), then alphabetical within the same year. */
+/** Oldest year first, then alphabetical within the same year. */
 export function sortEagleScoutsForDisplay(eagles: EagleScoutRow[]): EagleScoutRow[] {
   return [...eagles].sort((a, b) => {
     const yearDiff = parseEagleYear(a.year) - parseEagleYear(b.year);
@@ -227,7 +227,7 @@ export async function submitEagleScoutSuggestion(input: {
 }
 
 const SUBMIT_FAILED_MESSAGE =
-  "We couldn't send that submission right now. Please try again in a moment, or mention it to a troop leader at a Wednesday meeting.";
+  "We couldn't send that submission right now. Please try again in a moment, or mention it to a coach at a team practice.";
 
 /** Public visitors see a friendly message; the technical cause goes to the console for admins. */
 function parsePostgrestError(body: string, status: number): string {

@@ -93,5 +93,5 @@ BEFORE UPDATE ON public.join_notify_emails
 FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 INSERT INTO public.join_notify_emails (email, label, sort_order)
-VALUES ('suresh440@gmail.com', 'Troop leader', 1)
+VALUES ('suresh440@gmail.com', 'Coach', 1)
 ON CONFLICT (email) DO NOTHING;`;

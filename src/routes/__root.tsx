@@ -13,9 +13,9 @@ import appCss from "../styles.css?url";
 import { Header } from "../components/site/Header";
 import { Footer } from "../components/site/Footer";
 import { Toaster } from "../components/ui/sonner";
-import { photos } from "@/lib/photos";
+import { photos, SITE_NAME, SITE_TAGLINE, FOUNDED_YEAR, MEETINGS_BLURB } from "@/lib/photos";
 
-const SITE_URL = "https://troop2001naples.org";
+const SITE_URL = "https://github.com/tulipsai440-maker/bitsandbots";
 
 function NotFoundComponent() {
   return (
@@ -66,20 +66,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Troop 2001 Naples — Scouts BSA in Naples, Florida" },
-      { name: "description", content: "Troop 2001 Naples meets Wednesdays at North Collier Fire Station #45. Campouts, service projects, and Eagle Scout program since 2000." },
-      { name: "author", content: "Troop 2001 Naples" },
+      { title: `${SITE_NAME} — ${SITE_TAGLINE}` },
+      {
+        name: "description",
+        content: `${SITE_NAME} is a FIRST LEGO League team founded in ${FOUNDED_YEAR}. ${MEETINGS_BLURB}`,
+      },
+      { name: "author", content: SITE_NAME },
       { name: "theme-color", content: "#1f3d1f" },
-      { property: "og:title", content: "Troop 2001 Naples — Scouts BSA" },
-      { property: "og:description", content: "Scouts BSA in Naples, Florida since 2000. Wednesday meetings at 7 PM." },
+      { property: "og:title", content: `${SITE_NAME} — ${SITE_TAGLINE}` },
+      {
+        property: "og:description",
+        content: `A FIRST LEGO League team founded in ${FOUNDED_YEAR}. ${MEETINGS_BLURB}`,
+      },
       { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "Troop 2001 Naples" },
+      { property: "og:site_name", content: SITE_NAME },
       { property: "og:url", content: SITE_URL },
-      { property: "og:image", content: `${SITE_URL}${photos.ogLogo}` },
-      { property: "og:image:alt", content: "Boy Scouts of America Troop 2001 Naples logo" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:image", content: `${SITE_URL}${photos.ogLogo}` },
-      { name: "twitter:image:alt", content: "Boy Scouts of America Troop 2001 Naples logo" },
+      { property: "og:image", content: photos.ogLogo },
+      { property: "og:image:alt", content: `${SITE_NAME} team photo` },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: photos.ogLogo },
+      { name: "twitter:image:alt", content: `${SITE_NAME} team photo` },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -91,7 +97,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@500;600;700&display=swap",
       },
     ],
   }),

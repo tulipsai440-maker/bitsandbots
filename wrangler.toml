@@ -1,21 +1,21 @@
 # Merged into the Worker deploy config on build.
-# Secrets (BAND_ICAL_URL, SUPABASE_SERVICE_ROLE_KEY): keep in Cloudflare Dashboard only.
-# Always deploy with: npm run deploy  (--keep-vars preserves dashboard secrets)
+# Secrets (BAND_ICAL_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY): keep in Cloudflare Dashboard only.
+# Always deploy with: npm run deploy  (--keep-vars preserves dashboard secrets not listed here)
 
-name = "tulipsai440-maker-pixel-perfect-ui"
+name = "bitsandbots"
 compatibility_date = "2026-07-21"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 preview_urls = true
+# Keep dashboard-only vars/secrets that are not defined in this file.
+keep_vars = true
 
-[[routes]]
-pattern = "troop2001naples.org"
-custom_domain = true
-
-[[routes]]
-pattern = "www.troop2001naples.org"
-custom_domain = true
+# Add custom domain routes when Bits & Bots goes live, e.g.:
+# [[routes]]
+# pattern = "bitsandbots.org"
+# custom_domain = true
 
 [vars]
-SITE_ORIGIN = "https://troop2001naples.org"
-SUPABASE_URL = "https://xohaeezxzbeyzpjbngkj.supabase.co"
+# Production Worker URL. Local `npm run dev` still uses http://localhost:8080 via Vite.
+SITE_ORIGIN = "https://bitsandbots.sravanthi440.workers.dev"
+SUPABASE_URL = "https://njhiqsbykiggxqkjrxse.supabase.co"

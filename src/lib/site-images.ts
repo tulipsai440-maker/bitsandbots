@@ -1,14 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
-import { photos } from "@/lib/photos";
 
 export const SITE_IMAGES_BUCKET = "site-images";
 
 export type SiteImageKey =
   | "hero"
-  | "camping"
-  | "hiking"
-  | "aquatics"
-  | "trailToEagle";
+  | "outreachMentoring"
+  | "outreachIndiaFest"
+  | "outreachSteamExpo";
 
 export type SiteImageSlot = {
   key: SiteImageKey;
@@ -23,41 +21,33 @@ export const SITE_IMAGE_SLOTS: SiteImageSlot[] = [
   {
     key: "hero",
     label: "Homepage hero",
-    description: "Background for the landing page hero. Naples / Gulf Coast theme works well.",
-    defaultUrl: "/photos/site/hero-naples.png",
-    defaultAlt: "Naples Florida Gulf Coast beach at sunset",
+    description: "Background for the landing page hero. Team group photo works well.",
+    defaultUrl: "/photos/site/hero-bits-and-bots.png",
+    defaultAlt: "Bits & Bots FIRST LEGO League team group photo",
     aspect: "16/9",
   },
   {
-    key: "camping",
-    label: "Camping card",
-    description: "Campouts and activities section — camping tile on the homepage.",
-    defaultUrl: "/photos/site/camping-tents.png",
-    defaultAlt: "Scout camp tents in a wooded clearing",
+    key: "outreachMentoring",
+    label: "Outreach — Mentoring teams",
+    description: "Photo for the mentoring / founding new FLL teams story.",
+    defaultUrl: "/photos/outreach/mentoring-teams.png",
+    defaultAlt: "Mentors and youth building LEGO robots together",
     aspect: "4/3",
   },
   {
-    key: "hiking",
-    label: "Hiking card",
-    description: "Campouts and activities section — hiking tile on the homepage.",
-    defaultUrl: photos.outdoorAdventure.hiking,
-    defaultAlt: "Scouts hiking on a trail",
+    key: "outreachIndiaFest",
+    label: "Outreach — India Fest",
+    description: "Photo for India Fest workshop coverage.",
+    defaultUrl: "/photos/outreach/india-fest.png",
+    defaultAlt: "Community festival STEM activity tables",
     aspect: "4/3",
   },
   {
-    key: "aquatics",
-    label: "Aquatics card",
-    description: "Campouts and activities section — aquatics tile on the homepage.",
-    defaultUrl: photos.outdoorAdventure.waterSports,
-    defaultAlt: "Scouts canoeing on the water",
-    aspect: "4/3",
-  },
-  {
-    key: "trailToEagle",
-    label: "Trail to Eagle",
-    description: "Eagle Scouts preview section when the roll is empty.",
-    defaultUrl: photos.trailToEagle,
-    defaultAlt: "Eagle Scout medal on uniform",
+    key: "outreachSteamExpo",
+    label: "Outreach — STEAM Expo",
+    description: "Photo for Collier County STEAM Expo workshops.",
+    defaultUrl: "/photos/outreach/steam-expo.png",
+    defaultAlt: "STEAM expo robotics and science stations",
     aspect: "4/3",
   },
 ];
@@ -326,22 +316,18 @@ export async function uploadSiteImageOverride(
 }
 
 export async function resetSiteImageOverride(key: SiteImageKey): Promise<void> {
-  const { data, error: selectError } = await supabase
+  const { data: existing } = await supabase
     .from("site_images")
     .select("storage_path")
     .eq("key", key)
     .maybeSingle();
-  if (selectError) throw selectError;
 
-  if (data?.storage_path) {
-    const { error: removeError } = await supabase.storage
-      .from(SITE_IMAGES_BUCKET)
-      .remove([data.storage_path]);
-    if (removeError) throw removeError;
+  if (existing?.storage_path) {
+    await supabase.storage.from(SITE_IMAGES_BUCKET).remove([existing.storage_path]);
   }
 
-  const { error: deleteError } = await supabase.from("site_images").delete().eq("key", key);
-  if (deleteError) throw deleteError;
+  const { error } = await supabase.from("site_images").delete().eq("key", key);
+  if (error) throw error;
 }
 
 export async function fetchSiteImageRowsForAdmin(): Promise<

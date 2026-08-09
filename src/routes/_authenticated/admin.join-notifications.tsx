@@ -69,7 +69,11 @@ function AdminJoinNotificationsPage() {
   if (!isAdmin) {
     return (
       <SiteLayout>
-        <PageHero eyebrow="Admin" title="Admin access required" description="Your account is signed in but not yet an admin." />
+        <PageHero
+          eyebrow="Admin"
+          title="Admin access required"
+          description="Signed in successfully — admin is a role in the database, not a special password."
+        />
         <div className="container-page pb-20">
           <button onClick={signOut} className="btn-outline mt-6 gap-2">
             <LogOut size={16} /> Sign out
@@ -204,7 +208,7 @@ function AdminJoinNotificationsPage() {
 
 function JoinNotifySetupBanner({ onRetry }: { onRetry: () => void }) {
   const sqlEditorUrl =
-    "https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/sql/new";
+    "https://supabase.com/dashboard/project/njhiqsbykiggxqkjrxse/sql/new";
 
   async function copySql() {
     try {
@@ -310,7 +314,7 @@ function JoinNotifyEmailForm({
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             className={field}
-            placeholder="Troop leader"
+            placeholder="Coach"
           />
         </div>
         <div>

@@ -72,7 +72,7 @@ export function isTroopAdminsSetupMissing(error: unknown): boolean {
   );
 }
 
-export const TROOP_ADMINS_SETUP_SQL = `-- Troop Admins management (run once in the Supabase SQL Editor)
+export const TROOP_ADMINS_SETUP_SQL = `-- Team Admins management (run once in the Supabase SQL Editor)
 CREATE OR REPLACE FUNCTION public.list_troop_users()
 RETURNS TABLE (
   id uuid,
@@ -88,7 +88,7 @@ SET search_path = public
 AS $$
 BEGIN
   IF NOT public.has_role(auth.uid(), 'admin') THEN
-    RAISE EXCEPTION 'Only troop admins can view accounts';
+    RAISE EXCEPTION 'Only team admins can view accounts';
   END IF;
 
   RETURN QUERY
@@ -115,7 +115,7 @@ SET search_path = public
 AS $$
 BEGIN
   IF NOT public.has_role(auth.uid(), 'admin') THEN
-    RAISE EXCEPTION 'Only troop admins can grant admin access';
+    RAISE EXCEPTION 'Only team admins can grant admin access';
   END IF;
 
   INSERT INTO public.user_roles (user_id, role)
@@ -134,7 +134,7 @@ DECLARE
   admin_count integer;
 BEGIN
   IF NOT public.has_role(auth.uid(), 'admin') THEN
-    RAISE EXCEPTION 'Only troop admins can remove admin access';
+    RAISE EXCEPTION 'Only team admins can remove admin access';
   END IF;
 
   IF target_user_id = auth.uid() THEN

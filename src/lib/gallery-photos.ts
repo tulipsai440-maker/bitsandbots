@@ -8,12 +8,4 @@ export type GalleryPhoto = {
   height: number;
 };
 
-export const galleryPhotos: GalleryPhoto[] = [
-  { src: "/photos/gallery/Gallert%206.webp", thumb: "/photos/gallery/Gallert%206-thumb.webp", width: 1800, height: 1350 },
-  { src: "/photos/gallery/Gallery%201.webp", thumb: "/photos/gallery/Gallery%201-thumb.webp", width: 1800, height: 1350 },
-  { src: "/photos/gallery/Gallery%202.webp", thumb: "/photos/gallery/Gallery%202-thumb.webp", width: 1284, height: 855 },
-  { src: "/photos/gallery/Gallery%204.webp", thumb: "/photos/gallery/Gallery%204-thumb.webp", width: 1800, height: 1350 },
-  { src: "/photos/gallery/Gallery%205.webp", thumb: "/photos/gallery/Gallery%205-thumb.webp", width: 1800, height: 1350 },
-  { src: "/photos/gallery/Gallery%207.webp", thumb: "/photos/gallery/Gallery%207-thumb.webp", width: 960, height: 720 },
-  { src: "/photos/gallery/Gallery%209.webp", thumb: "/photos/gallery/Gallery%209-thumb.webp", width: 725, height: 488 },
-];
+export const galleryPhotos: GalleryPhoto[] = [];

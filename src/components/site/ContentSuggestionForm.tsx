@@ -84,12 +84,12 @@ export function ContentSuggestionForm(props: Props) {
                 <input required value={eagle.year} onChange={(e) => setEagle((f) => ({ ...f, year: e.target.value }))} className={fieldClass} />
               </div>
               <div>
-                <label className={labelClass}>Scout name</label>
+                <label className={labelClass}>Name</label>
                 <input required value={eagle.name} onChange={(e) => setEagle((f) => ({ ...f, name: e.target.value }))} className={fieldClass} />
               </div>
             </div>
             <div>
-              <label className={labelClass}>Eagle project</label>
+              <label className={labelClass}>Project / notes</label>
               <textarea required value={eagle.project} onChange={(e) => setEagle((f) => ({ ...f, project: e.target.value }))} className={fieldClass} rows={3} />
             </div>
             <div>

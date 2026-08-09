@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
-import { TroopPhoto } from "@/components/site/TroopPhoto";
+import { TeamPhoto } from "@/components/site/TeamPhoto";
 import { GalleryUploadForm } from "@/components/site/GalleryUploadForm";
 import { galleryPhotos } from "@/lib/gallery-photos";
 import {
@@ -12,24 +12,23 @@ import {
   fetchApprovedGalleryPhotos,
   type ApprovedGalleryPhoto,
 } from "@/lib/gallery-uploads";
-import { photos } from "@/lib/photos";
+import { photos, SITE_NAME } from "@/lib/photos";
 import { ArrowRight, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 
 export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
-      { title: "Photo Gallery — Troop 2001 Naples" },
+      { title: `Photo Gallery — ${SITE_NAME}` },
       {
         name: "description",
-        content:
-          "Photos from Troop 2001 Naples campouts, ceremonies, service projects, and troop meetings.",
+        content: `Photos from ${SITE_NAME} practices, builds, and FIRST LEGO League events.`,
       },
-      { property: "og:title", content: "Troop 2001 Naples Photo Gallery" },
+      { property: "og:title", content: `${SITE_NAME} Photo Gallery` },
       {
         property: "og:description",
-        content: "Photos from campouts, ceremonies, and service projects.",
+        content: "Photos from practices, builds, and FLL events.",
       },
-      { property: "og:image", content: `https://troop2001naples.org${photos.ogLogo}` },
+      { property: "og:image", content: photos.ogLogo },
     ],
   }),
   loader: async () => {
@@ -137,8 +136,8 @@ function GalleryPage() {
         align="center"
         description={
           total > 0
-            ? "Approved photos from troop events and parent uploads."
-            : "Photos from troop events will appear here after admin review."
+            ? "Approved photos from practices, builds, and FLL events."
+            : "Team photos will appear here after admin review."
         }
       />
 
@@ -154,7 +153,7 @@ function GalleryPage() {
             <div className="rounded-2xl border border-border bg-card p-10 text-center">
               <p className="font-display text-2xl text-foreground">No photos yet.</p>
               <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-                Share photos below — a troop leader approves them before they appear here.
+                Share photos below — a coach approves them before they appear here.
               </p>
               <Link to="/events" className="btn-outline mt-6 inline-flex gap-2">
                 See upcoming events <ArrowRight size={16} />
@@ -171,11 +170,11 @@ function GalleryPage() {
                     className="group relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-sand shadow-sm transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest"
                     aria-label={`Open photo ${index + 1} of ${total}`}
                   >
-                    <TroopPhoto
+                    <TeamPhoto
                       src={photo.thumb}
-                      alt={photo.caption ?? `Troop 2001 Naples activity photo ${index + 1}`}
+                      alt={photo.caption ?? `${SITE_NAME} team photo ${index + 1}`}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      label="Troop photo"
+                      label="Team photo"
                     />
                     <span className="pointer-events-none absolute inset-0 bg-forest-deep/0 transition-colors group-hover:bg-forest-deep/15" />
                   </button>
@@ -240,7 +239,7 @@ function GalleryPage() {
           <figure className="max-h-full w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
             <img
               src={active.src}
-              alt={active.caption ?? `Troop 2001 Naples activity photo ${(openIndex ?? 0) + 1}`}
+              alt={active.caption ?? `${SITE_NAME} team photo ${(openIndex ?? 0) + 1}`}
               width={active.width ?? undefined}
               height={active.height ?? undefined}
               className="mx-auto max-h-[80vh] w-auto rounded-2xl object-contain shadow-2xl"

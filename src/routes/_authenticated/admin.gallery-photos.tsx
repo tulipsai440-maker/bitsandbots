@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AdminReviewPage } from "@/components/admin/AdminShell";
 import {
+  addApprovedGalleryPhotos,
   approveGalleryPhoto,
   deleteApprovedGalleryPhoto,
   fetchApprovedGalleryRows,
@@ -9,17 +10,19 @@ import {
   galleryErrorMessage,
   GALLERY_UPLOADS_SETUP_SQL,
   isGalleryUploadsSetupMissing,
+  MAX_FILES_PER_SUBMISSION,
   rejectGalleryPhoto,
+  validateGalleryFile,
   type PendingGalleryPhoto,
 } from "@/lib/gallery-uploads";
 import { toast } from "sonner";
-import { AlertTriangle, Check, Copy, ExternalLink, Trash2, X } from "lucide-react";
+import { AlertTriangle, Check, Copy, ExternalLink, ImagePlus, Trash2, Upload, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/gallery-photos")({
   component: AdminGalleryPhotosPage,
 });
 
-const SQL_EDITOR_URL = "https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/sql/new";
+const SQL_EDITOR_URL = "https://supabase.com/dashboard/project/njhiqsbykiggxqkjrxse/sql/new";
 
 type ApprovedRow = Awaited<ReturnType<typeof fetchApprovedGalleryRows>>[number];
 
@@ -43,7 +46,7 @@ function formatDate(value: string): string {
 function AdminGalleryPhotosPage() {
   const [pending, setPending] = useState<PendingGalleryPhoto[]>([]);
   const [approved, setApproved] = useState<ApprovedRow[]>([]);
-  const [tab, setTab] = useState<"pending" | "approved">("pending");
+  const [tab, setTab] = useState<"pending" | "approved">("approved");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [needsSetup, setNeedsSetup] = useState(false);
@@ -125,22 +128,22 @@ function AdminGalleryPhotosPage() {
   return (
     <AdminReviewPage
       active="gallery-photos"
-      title="Photo Review"
-      description="Photos submitted from the gallery page stay private until you approve them."
+      title="Gallery photos"
+      description="Add photos straight to the public gallery, or review parent submissions."
       toolbar={
         needsSetup ? undefined : (
           <div className="inline-flex rounded-full border border-border bg-card p-1">
             <button
-              onClick={() => setTab("pending")}
-              className={`rounded-full px-4 py-2 text-sm ${tab === "pending" ? "bg-gold font-medium text-forest-deep" : "text-muted-foreground"}`}
-            >
-              Pending {pending.length > 0 ? `(${pending.length})` : ""}
-            </button>
-            <button
               onClick={() => setTab("approved")}
-              className={`rounded-full px-4 py-2 text-sm ${tab === "approved" ? "bg-muted font-medium text-foreground" : "text-muted-foreground"}`}
+              className={`rounded-full px-4 py-2 text-sm ${tab === "approved" ? "bg-gold font-medium text-forest-deep" : "text-muted-foreground"}`}
             >
               In the gallery {approved.length > 0 ? `(${approved.length})` : ""}
+            </button>
+            <button
+              onClick={() => setTab("pending")}
+              className={`rounded-full px-4 py-2 text-sm ${tab === "pending" ? "bg-muted font-medium text-foreground" : "text-muted-foreground"}`}
+            >
+              Pending {pending.length > 0 ? `(${pending.length})` : ""}
             </button>
           </div>
         )
@@ -164,6 +167,15 @@ function AdminGalleryPhotosPage() {
             </a>
           </div>
         </div>
+      )}
+
+      {!needsSetup && !error && (
+        <AdminDirectUpload
+          onUploaded={async () => {
+            setTab("approved");
+            await load();
+          }}
+        />
       )}
 
       {loading && <p className="text-muted-foreground">Loading photos…</p>}
@@ -234,9 +246,9 @@ function AdminGalleryPhotosPage() {
         <>
           {approved.length === 0 ? (
             <div className="rounded-2xl border border-border bg-card p-10 text-center">
-              <p className="font-display text-xl text-foreground">No approved submissions yet.</p>
+              <p className="font-display text-xl text-foreground">No photos in the gallery yet.</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                The gallery is still showing only the built-in troop photos.
+                Use “Add to gallery” above to publish photos right away.
               </p>
             </div>
           ) : (
@@ -275,6 +287,124 @@ function AdminGalleryPhotosPage() {
         </>
       )}
     </AdminReviewPage>
+  );
+}
+
+function AdminDirectUpload({ onUploaded }: { onUploaded: () => Promise<void> }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [caption, setCaption] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function onPick(list: FileList | null) {
+    if (!list) return;
+    const incoming = Array.from(list);
+    const next: File[] = [];
+    for (const file of incoming.slice(0, MAX_FILES_PER_SUBMISSION)) {
+      const problem = validateGalleryFile(file);
+      if (problem) {
+        toast.error(problem);
+        continue;
+      }
+      next.push(file);
+    }
+    if (incoming.length > MAX_FILES_PER_SUBMISSION) {
+      toast.error(`Up to ${MAX_FILES_PER_SUBMISSION} photos at a time.`);
+    }
+    setFiles(next);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  async function publish() {
+    if (files.length === 0) {
+      toast.error("Choose at least one photo.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const count = await addApprovedGalleryPhotos(files, { caption });
+      toast.success(
+        count === 1 ? "Photo added to the gallery" : `${count} photos added to the gallery`,
+      );
+      setFiles([]);
+      setCaption("");
+      await onUploaded();
+    } catch (e) {
+      console.error("[gallery-photos] Direct upload failed", e);
+      toast.error(galleryErrorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mb-8 rounded-2xl border border-border bg-card p-5 md:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl text-foreground">Add to gallery</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Uploads go live on /gallery immediately — no review step.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+          className="btn-outline gap-2"
+        >
+          <ImagePlus size={16} /> Choose photos
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          className="hidden"
+          onChange={(e) => onPick(e.target.files)}
+        />
+      </div>
+
+      {files.length > 0 && (
+        <div className="mt-4 space-y-4">
+          <ul className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+            {files.map((file) => (
+              <li
+                key={`${file.name}-${file.size}`}
+                className="rounded-full border border-border bg-background px-3 py-1"
+              >
+                {file.name}
+              </li>
+            ))}
+          </ul>
+          <label className="block text-sm">
+            <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              Caption (optional)
+            </span>
+            <input
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              placeholder="Same caption applied to all photos in this batch"
+              maxLength={200}
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={publish} disabled={busy} className="btn-primary gap-2">
+              <Upload size={16} />
+              {busy ? "Publishing…" : `Publish ${files.length} photo${files.length === 1 ? "" : "s"}`}
+            </button>
+            <button
+              type="button"
+              onClick={() => setFiles([])}
+              disabled={busy}
+              className="btn-outline"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

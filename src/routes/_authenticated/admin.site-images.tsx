@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AdminReviewPage } from "@/components/admin/AdminShell";
-import { TroopPhoto } from "@/components/site/TroopPhoto";
+import { TeamPhoto } from "@/components/site/TeamPhoto";
 import {
   fetchSiteImageRowsForAdmin,
   isSiteImagesSetupMissing,
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/admin/site-images")({
   component: AdminSiteImagesPage,
 });
 
-const SQL_EDITOR_URL = "https://supabase.com/dashboard/project/xohaeezxzbeyzpjbngkj/sql/new";
+const SQL_EDITOR_URL = "https://supabase.com/dashboard/project/njhiqsbykiggxqkjrxse/sql/new";
 
 async function copySetupSql() {
   try {
@@ -90,7 +90,7 @@ function AdminSiteImagesPage() {
     <AdminReviewPage
       active="site-images"
       title="Site images"
-      description="Replace homepage hero and section photos. Gallery parent uploads are managed separately under Photo Review."
+      description="Replace homepage hero and outreach photos. Team/coach/sponsor portraits are managed on their own admin pages."
     >
       {needsSetup && (
         <div className="mb-8 rounded-2xl border border-amber-300/60 bg-amber-50 p-6 text-sm text-amber-950">
@@ -130,7 +130,7 @@ function AdminSiteImagesPage() {
               <div
                 className={`overflow-hidden bg-sand ${row.aspect === "16/9" ? "aspect-video" : "aspect-[4/3]"}`}
               >
-                <TroopPhoto
+                <TeamPhoto
                   src={row.url}
                   alt={row.alt}
                   className="h-full w-full object-cover"
