@@ -11,7 +11,7 @@ Grant: `supabase/grant-admin.sql` or `supabase/grant-admin-trivarn440.sql`.
 ## Deploy (Git → Cloudflare)
 
 - Live: https://bitsandbots.sravanthi440.workers.dev
-- Manual: `npm run deploy` (= build + `wrangler deploy --keep-vars` from `.output`)
+- Manual: `npm run deploy` (= build + `wrangler deploy --config .output/server/wrangler.json --keep-vars`)
 - Auto: GitHub Action on push to `main` — see `.github/DEPLOY.md` and `.github/workflows/deploy.yml`
 - Production `SITE_ORIGIN`: `https://bitsandbots.sravanthi440.workers.dev` (in `wrangler.toml` `[vars]`; confirm in Cloudflare dashboard)
 - Never commit `.env`, `cloudflare-token.txt`, or service-role / Resend keys

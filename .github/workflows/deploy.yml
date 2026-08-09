@@ -18,10 +18,10 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -37,12 +37,11 @@ jobs:
           VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
         run: npm run build
 
-      - name: Deploy Worker from .output
-        uses: cloudflare/wrangler-action@v3
+      - name: Deploy Worker (.output/server)
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: .output
-          # Preserve dashboard secrets (BAND_ICAL_URL, service role, Resend, etc.)
-          command: deploy --keep-vars
-          packageManager: npm
+          # Nitro emits entry + wrangler.json under .output/server (root wrangler.toml has no `main`).
+          # Preserve dashboard secrets (BAND_ICAL_URL, service role, Resend, etc.).
+          command: deploy --config .output/server/wrangler.json --keep-vars

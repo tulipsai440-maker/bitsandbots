@@ -10,7 +10,7 @@ This repo uses a **GitHub Action** (`.github/workflows/deploy.yml`):
 
 1. Push to `main`
 2. Action runs `npm run build` (Nitro `cloudflare-module` → `.output`)
-3. Action runs `wrangler deploy --keep-vars` from `.output`
+3. Action runs `wrangler deploy --config .output/server/wrangler.json --keep-vars`
 
 Workers Builds (Cloudflare dashboard Git connect) is an optional alternative; see below.
 
@@ -46,7 +46,7 @@ Requires a one-time GitHub App install (cannot finish from CLI alone):
 4. Select repo **bitsandbots**, production branch **main**
 5. Build settings:
    - **Build command:** `npm run build`
-   - **Deploy command:** `cd .output && npx wrangler deploy --keep-vars`
+   - **Deploy command:** `npx wrangler deploy --config .output/server/wrangler.json --keep-vars`
    - **Root directory:** `/`
 6. Add build env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`
 7. Save → push to `main` (or **Retry deployment**)
