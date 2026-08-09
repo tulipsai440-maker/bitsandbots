@@ -3,16 +3,12 @@ import { useEffect, useState } from "react";
 import { AdminReviewPage } from "@/components/admin/AdminShell";
 import {
   broadcastErrorMessage,
-  copyOtherParentEmails,
   fetchParentBroadcastEmails,
   fetchParentBroadcastPhones,
   fetchWhatsAppGroupUrl,
   formatBroadcastMessage,
   isBroadcastSetupMissing,
-  openParentBroadcastInEmailApp,
   openWhatsAppGroupWithMessage,
-  otherParentEmails,
-  RESEND_TEST_INBOX,
   saveWhatsAppGroupUrl,
 } from "@/lib/broadcast";
 import { sendBroadcastWhatsApp, sendParentBroadcast } from "@/lib/broadcast.functions";
@@ -32,9 +28,9 @@ function AdminBroadcastPage() {
   const [whatsappUrl, setWhatsappUrl] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [busy, setBusy] = useState<
-    "email" | "gmail" | "me-copy" | "whatsapp" | "whatsapp-group" | "save-wa" | null
-  >(null);
+  const [busy, setBusy] = useState<"email" | "whatsapp" | "whatsapp-group" | "save-wa" | null>(
+    null,
+  );
   const [needsSetup, setNeedsSetup] = useState(false);
   const [lastResult, setLastResult] = useState<{
     sent: number;
@@ -79,73 +75,6 @@ function AdminBroadcastPage() {
     load();
   }, []);
 
-  async function sendToMeAndCopyOthers() {
-    if (!subject.trim() || !body.trim()) {
-      toast.error("Add a subject and message first.");
-      return;
-    }
-
-    setBusy("me-copy");
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error("Not signed in — refresh and try again.");
-
-      const result = await sendParentBroadcast({
-        data: {
-          subject: subject.trim(),
-          body: body.trim(),
-          accessToken,
-          onlyTo: [RESEND_TEST_INBOX],
-        },
-      });
-
-      setLastResult({ ...result, channel: "email" });
-
-      const others = otherParentEmails(emails);
-      let copied = 0;
-      if (others.length > 0) {
-        copied = await copyOtherParentEmails(emails);
-      }
-
-      if (result.sent > 0 && copied > 0) {
-        toast.success(
-          `Emailed ${RESEND_TEST_INBOX}. Copied ${copied} other parent emails to clipboard.`,
-        );
-      } else if (result.sent > 0) {
-        toast.success(`Emailed ${RESEND_TEST_INBOX}. No other parent emails to copy.`);
-      } else {
-        toast.error(result.failures[0] ?? "Could not send test email.");
-      }
-    } catch (e) {
-      toast.error(broadcastErrorMessage(e));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function openEmailApp() {
-    if (!subject.trim() || !body.trim()) {
-      toast.error("Add a subject and message first.");
-      return;
-    }
-    if (emails.length === 0) {
-      toast.error("No parent emails yet — add them under Admin → Parents.");
-      return;
-    }
-    setBusy("gmail");
-    try {
-      openParentBroadcastInEmailApp(emails, subject, body);
-      toast.success(
-        `Opened Gmail with ${emails.length} parents in BCC — review and click Send`,
-      );
-    } catch (e) {
-      toast.error(broadcastErrorMessage(e));
-    } finally {
-      setBusy(null);
-    }
-  }
-
   async function sendEmail() {
     if (!subject.trim() || !body.trim()) {
       toast.error("Add a subject and message first.");
@@ -171,14 +100,7 @@ function AdminBroadcastPage() {
       });
 
       setLastResult({ ...result, channel: "email" });
-
-      if (result.failures.length > 0) {
-        toast.error(
-          `Resend delivered ${result.sent} of ${result.total}. Use “Open Gmail (BCC all)” until you have a domain.`,
-        );
-      } else {
-        toast.success(`Email sent to ${result.sent} parent${result.sent === 1 ? "" : "s"}`);
-      }
+      toast.success(`Email sent to ${result.sent} parent${result.sent === 1 ? "" : "s"}`);
     } catch (e) {
       toast.error(broadcastErrorMessage(e));
     } finally {
@@ -220,7 +142,7 @@ function AdminBroadcastPage() {
 
       if (result.failures.length > 0) {
         toast.error(
-          `WhatsApp delivered ${result.sent} of ${result.total}. Check failures below (templates often required outside the 24h window).`,
+          `WhatsApp delivered ${result.sent} of ${result.total}. Check failures below.`,
         );
       } else {
         toast.success(
@@ -290,16 +212,8 @@ function AdminBroadcastPage() {
     <AdminReviewPage
       active="broadcast"
       title="Broadcast"
-      description="Message all parents by email, WhatsApp Cloud API (auto-send to phones), or the group link (manual paste)."
+      description="Email all parents with one click, or send WhatsApp messages automatically."
     >
-      <div className="mb-6 rounded-2xl border border-forest/20 bg-forest/5 p-5 text-sm text-foreground">
-        <p className="font-medium">No domain yet</p>
-        <p className="mt-1 text-muted-foreground">
-          Use <strong className="text-foreground">Email me + copy others</strong> — Resend sends to{" "}
-          {RESEND_TEST_INBOX}, and the remaining parent emails are copied (no Gmail popup). Or use{" "}
-          <strong className="text-foreground">Open Gmail (BCC all)</strong> to send everyone in one go.
-        </p>
-      </div>
       {needsSetup && (
         <div className="mb-6 rounded-2xl border border-amber-300/60 bg-amber-50 p-5 text-sm text-amber-950">
           <p className="font-medium">Optional: save WhatsApp link in the database</p>
@@ -326,8 +240,8 @@ function AdminBroadcastPage() {
               {phones.length} unique phone{phones.length === 1 ? "" : "s"}
             </p>
             <p className="mt-1 text-muted-foreground">
-              Pulled from <code className="rounded bg-muted px-1">parent_contacts</code> only —
-              duplicates removed. Rows without email/phone are skipped for that channel.
+              Pulled from <code className="rounded bg-muted px-1">parent_contacts</code> — duplicates
+              removed.
             </p>
           </div>
           <button
@@ -375,24 +289,11 @@ function AdminBroadcastPage() {
           <button
             type="button"
             className="btn-primary gap-2"
-            disabled={busy !== null}
-            onClick={sendToMeAndCopyOthers}
-          >
-            <Mail size={16} />
-            {busy === "me-copy"
-              ? "Working…"
-              : `Email me + copy others (${otherParentEmails(emails).length})`}
-          </button>
-          <button
-            type="button"
-            className="btn-outline gap-2"
             disabled={busy !== null || emails.length === 0}
-            onClick={openEmailApp}
+            onClick={sendEmail}
           >
             <Mail size={16} />
-            {busy === "gmail"
-              ? "Opening…"
-              : `Open Gmail (BCC all ${emails.length})`}
+            {busy === "email" ? "Sending…" : `Send email (${emails.length})`}
           </button>
           <button
             type="button"
@@ -404,7 +305,7 @@ function AdminBroadcastPage() {
             <MessageCircle size={16} />
             {busy === "whatsapp"
               ? "Sending…"
-              : `Send WhatsApp to all parents (${phones.length})`}
+              : `Send WhatsApp (${phones.length})`}
           </button>
           <button
             type="button"
@@ -414,17 +315,7 @@ function AdminBroadcastPage() {
             title="Opens the group invite — paste & send manually"
           >
             <MessageCircle size={16} />
-            {busy === "whatsapp-group" ? "Opening…" : "Open WhatsApp group (manual)"}
-          </button>
-          <button
-            type="button"
-            className="btn-outline gap-2"
-            disabled={busy !== null || emails.length === 0}
-            onClick={sendEmail}
-            title="Needs a verified domain in Resend to reach everyone"
-          >
-            <Mail size={16} />
-            {busy === "email" ? "Sending…" : "Resend all (needs domain)"}
+            {busy === "whatsapp-group" ? "Opening…" : "Open WhatsApp group"}
           </button>
           <button
             type="button"
@@ -435,23 +326,7 @@ function AdminBroadcastPage() {
             <Copy size={16} /> Copy message
           </button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          “Email me + copy others” sends via Resend to {RESEND_TEST_INBOX} and copies the rest to
-          your clipboard (comma-separated). No Gmail window.
-        </p>
-        <p className="text-xs text-muted-foreground">
-          WhatsApp auto-send uses Meta’s Business Cloud API to each parent phone — a group invite
-          link cannot send without opening WhatsApp. Free-form text works within 24 hours of a
-          parent messaging your business number; otherwise approve a template (
-          <code className="rounded bg-muted px-1">WHATSAPP_TEMPLATE_NAME</code>). Setup:{" "}
-          <code className="rounded bg-muted px-1">supabase/WHATSAPP-SETUP.txt</code>.
-        </p>
-        {phones.length === 0 && (
-          <p className="text-xs text-amber-800">
-            No parent phones on file yet. Add them under Admin → Parents before using WhatsApp
-            auto-send.
-          </p>
-        )}
+
         {lastResult && (
           <div
             className={`mt-4 rounded-xl border p-4 text-sm ${
@@ -467,52 +342,38 @@ function AdminBroadcastPage() {
             </p>
             {lastResult.failures.length > 0 && (
               <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
-                {lastResult.failures.slice(0, 8).map((f) => (
+                {lastResult.failures.map((f) => (
                   <li key={f} className="break-words">
                     {f}
                   </li>
                 ))}
-                {lastResult.failures.length > 8 && (
-                  <li>…and {lastResult.failures.length - 8} more</li>
-                )}
               </ul>
             )}
             {lastResult.channel === "email" &&
-              lastResult.failures.some((f) => f.toLowerCase().includes("verify a domain")) && (
-              <p className="mt-3 text-xs">
-                Fix: verify a domain at{" "}
-                <a
-                  href="https://resend.com/domains"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline"
-                >
-                  resend.com/domains
-                </a>
-                , then set{" "}
-                <code className="rounded bg-white/70 px-1">RESEND_FROM</code> to an address on that
-                domain (e.g. <code className="rounded bg-white/70 px-1">Bits &amp; Bots &lt;hello@yourdomain.com&gt;</code>
-                ) and restart the server.
-              </p>
-            )}
-            {lastResult.channel === "whatsapp" && lastResult.failures.length > 0 && (
-              <p className="mt-3 text-xs">
-                Common fix: outside the 24h window Meta rejects free-form text. Create/approve a
-                utility template in Meta Business Manager, set{" "}
-                <code className="rounded bg-white/70 px-1">WHATSAPP_TEMPLATE_NAME</code>, and
-                redeploy. See <code className="rounded bg-white/70 px-1">supabase/WHATSAPP-SETUP.txt</code>.
-              </p>
-            )}
+              lastResult.failures.some((f) => f.toLowerCase().includes("not verified")) && (
+                <p className="mt-3 text-xs">
+                  Add DNS records at{" "}
+                  <a
+                    href="https://resend.com/domains"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline"
+                  >
+                    resend.com/domains
+                  </a>{" "}
+                  → Cloudflare → DNS for fllbots.com. See{" "}
+                  <code className="rounded bg-white/70 px-1">supabase/EMAIL-SETUP.txt</code>.
+                </p>
+              )}
           </div>
         )}
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6">
-        <h2 className="font-display text-xl">WhatsApp group link (manual only)</h2>
+        <h2 className="font-display text-xl">WhatsApp group link (manual)</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Invite links cannot auto-send. Use this only to open the group and paste. For true
-          auto-send, use <strong className="text-foreground">Send WhatsApp to all parents</strong>{" "}
-          above (Cloud API + phone numbers).
+          Invite links cannot auto-send. Use <strong className="text-foreground">Send WhatsApp</strong>{" "}
+          above for automatic delivery to parent phone numbers.
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <input

@@ -156,14 +156,15 @@ async function sendOneWhatsApp(
   }
 }
 
-async function sendOneResend(
+async function sendBroadcastResend(
   apiKey: string,
   fromAddress: string,
-  to: string,
+  recipients: string[],
   subject: string,
   text: string,
   html: string,
 ) {
+  // One API call — parents in BCC so addresses stay private.
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -172,7 +173,8 @@ async function sendOneResend(
     },
     body: JSON.stringify({
       from: fromAddress,
-      to: [to],
+      to: [fromAddress.match(/<([^>]+)>/)?.[1] ?? recipients[0]],
+      bcc: recipients,
       subject,
       text,
       html,
@@ -181,8 +183,8 @@ async function sendOneResend(
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    console.error("[broadcast] Resend error", to, res.status, detail);
-    let message = detail || `Failed to send to ${to}`;
+    console.error("[broadcast] Resend error", res.status, detail);
+    let message = detail || "Failed to send broadcast email";
     try {
       const parsed = JSON.parse(detail) as { message?: string };
       if (parsed.message) message = parsed.message;
@@ -191,7 +193,12 @@ async function sendOneResend(
     }
     if (message.toLowerCase().includes("only send testing emails")) {
       throw new Error(
-        "Resend test mode: can only email your Resend account address until you verify a domain at resend.com/domains and set RESEND_FROM to that domain.",
+        "Resend test mode: verify fllbots.com at resend.com/domains and set RESEND_FROM to an @fllbots.com address.",
+      );
+    }
+    if (message.toLowerCase().includes("not verified")) {
+      throw new Error(
+        "fllbots.com is not verified in Resend yet. Add the DNS records Resend shows at resend.com/domains (Cloudflare → DNS), then try again.",
       );
     }
     throw new Error(message);
@@ -212,7 +219,7 @@ export const sendParentBroadcast = createServerFn({ method: "POST" })
     }
 
     const fromAddress =
-      process.env.RESEND_FROM?.trim() || "Bits & Bots <onboarding@resend.dev>";
+      process.env.RESEND_FROM?.trim() || "Bits & Bots <updates@fllbots.com>";
 
     let recipients = await loadParentEmails();
     if (data.onlyTo?.length) {
@@ -246,15 +253,12 @@ export const sendParentBroadcast = createServerFn({ method: "POST" })
     const failures: string[] = [];
     let sent = 0;
 
-    for (const to of recipients) {
-      try {
-        await sendOneResend(apiKey, fromAddress, to, subject, text, html);
-        sent += 1;
-      } catch (err) {
-        failures.push(
-          `${to}: ${err instanceof Error ? err.message : "send failed"}`,
-        );
-      }
+    try {
+      await sendBroadcastResend(apiKey, fromAddress, recipients, subject, text, html);
+      sent = recipients.length;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "send failed";
+      failures.push(message);
     }
 
     if (sent === 0) {

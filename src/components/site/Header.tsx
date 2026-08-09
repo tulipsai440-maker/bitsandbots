@@ -6,11 +6,16 @@ import { SITE_NAME, SITE_TAGLINE } from "@/lib/photos";
 import { BIOGLOW_RESOURCES_URL } from "@/lib/season-videos";
 
 type NavItem =
-  | { kind: "internal"; to: "/about" | "/calendar" | "/videos" | "/gallery" | "/outreach"; label: string }
+  | {
+      kind: "internal";
+      to: "/about" | "/coaches" | "/calendar" | "/videos" | "/gallery" | "/outreach";
+      label: string;
+    }
   | { kind: "external"; href: string; label: string };
 
 const nav: NavItem[] = [
   { kind: "internal", to: "/about", label: "Our Team" },
+  { kind: "internal", to: "/coaches", label: "Coaches" },
   { kind: "internal", to: "/calendar", label: "Calendar" },
   { kind: "internal", to: "/videos", label: "Videos" },
   { kind: "external", href: BIOGLOW_RESOURCES_URL, label: "Resources" },

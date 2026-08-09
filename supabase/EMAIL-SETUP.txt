@@ -1,42 +1,44 @@
+PARENT BROADCAST (Admin → Broadcast)
+====================================
+
+One button: **Send email** — emails every unique parent address via Resend (BCC).
+
+REQUIRED: verify fllbots.com in Resend (one-time)
+-------------------------------------------------
+1. Open https://resend.com/domains
+2. Click **fllbots.com** (or **Add domain** → `fllbots.com`)
+3. Copy the DNS records Resend shows (SPF TXT, DKIM CNAMEs, optional MX)
+
+4. Open Cloudflare → **fllbots.com** → **DNS** → **Records**
+5. For each Resend record, click **Add record**:
+   - Match **Type**, **Name**, and **Content** exactly from Resend
+   - Leave **Proxy status** = DNS only (grey cloud) for email records
+6. Back in Resend, click **Verify** — status should turn **Verified**
+
+7. Set sender address (local `.env` + Cloudflare Worker secret):
+     RESEND_FROM="Bits & Bots <updates@fllbots.com>"
+
+8. Redeploy or restart dev server after changing secrets.
+
+Test: Admin → Broadcast → subject + message → **Send email (N)**.
+
+WhatsApp auto-send
+------------------
+See supabase/WHATSAPP-SETUP.txt — button **Send WhatsApp (N)**.
+
+Optional once: run supabase/setup-broadcast.sql to store the WhatsApp group link.
+
 JOIN FORM EMAIL
-=============
+===============
 
 Recipient: suresh440@gmail.com
 
 OPTION A — Works now (no API key)
-  The form uses FormSubmit.co automatically when RESEND_API_KEY is not set.
+  FormSubmit.co when RESEND_API_KEY is not set. Activate once via email link.
 
-  ONE-TIME SETUP:
-  1. Submit the Join form once at http://localhost:8080/join
-  2. Check suresh440@gmail.com for email from FormSubmit
-  3. Click "Activate Form" in that email
-  4. Submit the Join form again — join requests will arrive by email
-
-OPTION B — Resend (better for production)
-  1. Sign up at https://resend.com with suresh440@gmail.com
-  2. Create API key → add to .env:
-       RESEND_API_KEY="re_xxxxxxxx"   # from Resend dashboard — never commit real keys
-       RESEND_FROM="Bits & Bots <onboarding@resend.dev>"
-  3. Restart npm run dev
-  Resend takes priority over FormSubmit when configured.
-
-PARENT BROADCAST (Admin → Broadcast)
-  Without a domain (recommended now):
-    Use “Open Gmail (BCC all)” — loads every unique parent email in BCC; click Send once.
-
-  WhatsApp auto-send (no opening the app):
-    Requires WhatsApp Business Cloud API + parent phones. See supabase/WHATSAPP-SETUP.txt.
-    Button: “Send WhatsApp to all parents”.
-    Group invite links still only support copy + open (manual paste) — Meta does not allow auto-send to a group via invite URL.
-
-  With Resend auto-send to everyone:
-    Verify a domain at https://resend.com/domains, then set
-      RESEND_FROM="Bits & Bots <hello@your-verified-domain.com>"
-    and restart. Until then Resend can only email your Resend account address.
-
-  Optional once: run supabase/setup-broadcast.sql to store the WhatsApp group link.
+OPTION B — Resend
+  RESEND_API_KEY + RESEND_FROM in .env (see above for fllbots.com).
 
 PRODUCTION
-  Set SITE_ORIGIN to your live Worker URL (also in wrangler.toml [vars]):
-    SITE_ORIGIN="https://bitsandbots.sravanthi440.workers.dev"
-  Or your custom domain once attached.
+==========
+SITE_ORIGIN="https://fllbots.com" (in wrangler.toml [vars] + Cloudflare dashboard).
