@@ -1,6 +1,5 @@
-Site image defaults for the homepage hero and activity cards.
+Site image defaults for activity cards. Homepage hero is uploaded in Admin → Site Images (no bundled default).
 
-- hero-bits-and-bots.png — Bits & Bots team hero background
 - camping-tents.png — optional activity card
 
-Admins can replace these under Admin → Site Images after running supabase/setup-site-images.sql.
+Admins can replace outreach and hero images under Admin → Site Images after running supabase/setup-site-images.sql.

@@ -21,8 +21,8 @@ export const SITE_IMAGE_SLOTS: SiteImageSlot[] = [
   {
     key: "hero",
     label: "Homepage hero",
-    description: "Background for the landing page hero. Team group photo works well.",
-    defaultUrl: "/photos/site/hero-bits-and-bots.png",
+    description: "Background for the landing page hero. Upload in Admin — no bundled default.",
+    defaultUrl: "",
     defaultAlt: "Bits & Bots FIRST LEGO League team group photo",
     aspect: "16/9",
   },

@@ -35,6 +35,8 @@ export const Route = createFileRoute("/")({
   head: ({ loaderData }) => {
     const siteImages = loaderData?.siteImages ?? buildDefaultSiteImageOverrides();
     const hero = resolveSiteImage("hero", siteImages);
+    const links =
+      hero.isOverride && hero.url ? [{ rel: "preload" as const, as: "image" as const, href: hero.url }] : [];
     return {
       meta: [
         { title: `${SITE_NAME} — ${SITE_TAGLINE}` },
@@ -42,9 +44,9 @@ export const Route = createFileRoute("/")({
           name: "description",
           content: `${SITE_NAME} is a FIRST LEGO League team founded in ${FOUNDED_YEAR}. ${MEETINGS_BLURB}`,
         },
-        { property: "og:image", content: hero.url },
+        ...(hero.url ? [{ property: "og:image", content: hero.url }] : []),
       ],
-      links: [{ rel: "preload", as: "image", href: hero.url }],
+      links,
     };
   },
   component: HomePage,
@@ -68,16 +70,18 @@ function HomePage() {
 function Hero({ hero }: { hero: SiteImageOverride }) {
   return (
     <section className="relative isolate overflow-hidden bg-forest-deep">
-      <TeamPhoto
-        src={hero.url}
-        alt={hero.alt || `${SITE_NAME} FIRST LEGO League team`}
-        width={1024}
-        height={453}
-        loading="eager"
-        fetchPriority="high"
-        className="animate-hero-media absolute inset-0 h-[118%] w-full object-cover object-[center_5%] translate-y-0"
-        label="Hero"
-      />
+      {hero.isOverride && hero.url ? (
+        <TeamPhoto
+          src={hero.url}
+          alt={hero.alt || `${SITE_NAME} FIRST LEGO League team`}
+          width={1024}
+          height={453}
+          loading="eager"
+          fetchPriority="high"
+          className="animate-hero-media absolute inset-0 h-[118%] w-full object-cover object-[center_5%] translate-y-0"
+          label="Hero"
+        />
+      ) : null}
       <div className="absolute inset-0 bg-gradient-to-b from-navy/35 via-transparent via-35% to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-forest-deep from-0% via-forest-deep/88 via-40% to-transparent to-72%" />
       <div className="relative">

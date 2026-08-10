@@ -7,7 +7,7 @@ Project folder:
 Useful locations:
 
   logo/fll-logo.png            — header & footer logo
-  site/hero-bits-and-bots.png  — home page hero
+  site/  — legacy; homepage hero is uploaded in Admin → Site Images
   gallery/                     — Photo Gallery page at /gallery
   events/                      — Events page banners by type
   outreach/                    — Outreach page photos
