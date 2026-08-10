@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { MEDIA_CONSENT_VERSION } from "@/lib/parent-consent";
-import { fetchTeamMembers } from "@/lib/team-members";
+import {
+  fetchConsentEligibleMembers as loadConsentEligibleMembers,
+  MEDIA_CONSENT_VERSION,
+} from "@/lib/parent-consent";
 
 const emailOrEmpty = z.union([z.literal(""), z.string().email("Enter a valid email address")]);
 
@@ -21,30 +23,9 @@ const schema = z.object({
 });
 
 /** Public: teammates who still need a consent (already-signed kids are omitted). */
-export const fetchConsentEligibleMembers = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin = supabaseAdmin as any;
-
-  const members = await fetchTeamMembers();
-
-  const { data, error } = await admin.from("parent_media_consents").select("team_member_id");
-  if (error) {
-    if (
-      error.message.includes("parent_media_consents") ||
-      error.message.includes("schema cache")
-    ) {
-      return members;
-    }
-    console.error("[parent-consent] list consented", error.message);
-    return members;
-  }
-
-  const consented = new Set(
-    (data ?? []).map((row: { team_member_id: string }) => row.team_member_id),
-  );
-  return members.filter((m) => !consented.has(m.id));
-});
+export const fetchConsentEligibleMembers = createServerFn({ method: "GET" }).handler(async () =>
+  loadConsentEligibleMembers(),
+);
 
 /** Public: submit parent media consent (stored via service role). */
 export const submitParentMediaConsent = createServerFn({ method: "POST" })

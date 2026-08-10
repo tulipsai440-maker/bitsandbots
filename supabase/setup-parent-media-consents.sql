@@ -25,6 +25,22 @@ CREATE TABLE IF NOT EXISTS public.parent_media_consents (
 CREATE INDEX IF NOT EXISTS parent_media_consents_member_idx
   ON public.parent_media_consents (team_member_id, created_at DESC);
 
+CREATE UNIQUE INDEX IF NOT EXISTS parent_media_consents_one_per_member
+  ON public.parent_media_consents (team_member_id);
+
+-- Public read: which teammates already signed (ids only — safe for anon)
+CREATE OR REPLACE FUNCTION public.list_media_consented_member_ids()
+RETURNS SETOF uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT DISTINCT team_member_id FROM public.parent_media_consents;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.list_media_consented_member_ids() TO anon, authenticated;
+
 GRANT ALL ON public.parent_media_consents TO service_role;
 GRANT SELECT ON public.parent_media_consents TO authenticated;
 

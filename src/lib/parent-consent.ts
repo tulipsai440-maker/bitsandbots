@@ -1,3 +1,6 @@
+import { supabase } from "@/integrations/supabase/client";
+import { fetchTeamMembers, type TeamMember } from "@/lib/team-members";
+
 /** Media consent copy shown on /parentsconsent */
 export const MEDIA_CONSENT_VERSION = "2026-media-v1";
 
@@ -27,6 +30,24 @@ export type ParentMediaConsentInput = {
   agreesSocialMedia: boolean;
 };
 
+/** Teammates still needing consent — uses public RPC (ids only) so it works in browser loaders too. */
+export async function fetchConsentEligibleMembers(): Promise<TeamMember[]> {
+  const members = await fetchTeamMembers();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc("list_media_consented_member_ids");
+  if (error) {
+    if (isParentConsentSetupMissing(error)) {
+      return members;
+    }
+    console.error("[parent-consent] list consented ids", error.message);
+    return members;
+  }
+
+  const consented = new Set((data ?? []) as string[]);
+  return members.filter((member) => !consented.has(member.id));
+}
+
 export function parentConsentErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (error && typeof error === "object" && "message" in error) {
@@ -39,7 +60,9 @@ export function isParentConsentSetupMissing(error: unknown): boolean {
   const message = parentConsentErrorMessage(error).toLowerCase();
   return (
     message.includes("parent_media_consents") ||
+    message.includes("list_media_consented_member_ids") ||
     message.includes("schema cache") ||
-    message.includes("could not find the table")
+    message.includes("could not find the table") ||
+    message.includes("could not find the function")
   );
 }

@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Send } from "lucide-react";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
 import { type TeamMember } from "@/lib/team-members";
 import {
+  fetchConsentEligibleMembers,
   MEDIA_CONSENT_INTRO,
   MEDIA_CONSENT_TERMS,
   isParentConsentSetupMissing,
@@ -27,12 +28,9 @@ export const Route = createFileRoute("/parentsconsent")({
       },
     ],
   }),
-  loader: async () => {
-    const { fetchConsentEligibleMembers } = await import("@/lib/parent-consent.functions");
-    return {
-      members: await fetchConsentEligibleMembers(),
-    };
-  },
+  loader: async () => ({
+    members: await fetchConsentEligibleMembers(),
+  }),
   component: ParentsConsentPage,
 });
 
@@ -60,6 +58,12 @@ function ParentsConsentPage() {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [submittedKid, setSubmittedKid] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchConsentEligibleMembers()
+      .then(setMembers)
+      .catch((err) => console.error("[parentsconsent]", parentConsentErrorMessage(err)));
+  }, []);
 
   const onChange =
     <K extends keyof ParentMediaConsentInput>(key: K) =>
