@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/site/Layout";
 import { TeamPhoto } from "@/components/site/TeamPhoto";
 import {
-  photos,
   FOUNDED_YEAR,
   MEETINGS_BLURB,
   SITE_NAME,
@@ -16,63 +15,66 @@ import {
   buildDefaultSiteImageOverrides,
   fetchSiteImageOverrides,
   resolveSiteImage,
+  type SiteImageOverride,
   type SiteImageOverrides,
 } from "@/lib/site-images";
 import { OUTREACH_ITEMS } from "@/lib/outreach";
 
+async function loadSiteImages(): Promise<SiteImageOverrides> {
+  try {
+    return await fetchSiteImageOverrides();
+  } catch {
+    return buildDefaultSiteImageOverrides();
+  }
+}
+
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: `${SITE_NAME} — ${SITE_TAGLINE}` },
-      {
-        name: "description",
-        content: `${SITE_NAME} is a FIRST LEGO League team founded in ${FOUNDED_YEAR}. ${MEETINGS_BLURB}`,
-      },
-      { property: "og:image", content: photos.ogLogo },
-    ],
+  loader: async () => ({
+    siteImages: await loadSiteImages(),
   }),
+  head: ({ loaderData }) => {
+    const siteImages = loaderData?.siteImages ?? buildDefaultSiteImageOverrides();
+    const hero = resolveSiteImage("hero", siteImages);
+    return {
+      meta: [
+        { title: `${SITE_NAME} — ${SITE_TAGLINE}` },
+        {
+          name: "description",
+          content: `${SITE_NAME} is a FIRST LEGO League team founded in ${FOUNDED_YEAR}. ${MEETINGS_BLURB}`,
+        },
+        { property: "og:image", content: hero.url },
+      ],
+      links: [{ rel: "preload", as: "image", href: hero.url }],
+    };
+  },
   component: HomePage,
 });
 
 function HomePage() {
+  const { siteImages } = Route.useLoaderData();
+  const hero = resolveSiteImage("hero", siteImages);
+
   return (
     <SiteLayout>
-      <Hero />
+      <Hero hero={hero} />
       <NextUpStrip />
-      <SeasonStory />
+      <SeasonStory siteImages={siteImages} />
       <WhatWeDo />
       <CTA />
     </SiteLayout>
   );
 }
 
-function Hero() {
-  const defaults = buildDefaultSiteImageOverrides();
-  const [hero, setHero] = useState(() => resolveSiteImage("hero", defaults));
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchSiteImageOverrides()
-      .then((overrides) => {
-        if (!cancelled) setHero(resolveSiteImage("hero", overrides));
-      })
-      .catch(() => {
-        /* keep bundled default */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
+function Hero({ hero }: { hero: SiteImageOverride }) {
   return (
     <section className="relative isolate overflow-hidden bg-forest-deep">
       <TeamPhoto
-        key={hero.url}
         src={hero.url}
         alt={hero.alt || `${SITE_NAME} FIRST LEGO League team`}
         width={1024}
         height={453}
         loading="eager"
+        fetchPriority="high"
         className="animate-hero-media absolute inset-0 h-[118%] w-full object-cover object-[center_5%] translate-y-0"
         label="Hero"
       />
@@ -148,18 +150,9 @@ function NextUpStrip() {
   );
 }
 
-function SeasonStory() {
-  const [images, setImages] = useState<SiteImageOverrides>(() => buildDefaultSiteImageOverrides());
+function SeasonStory({ siteImages }: { siteImages: SiteImageOverrides }) {
   const feature = OUTREACH_ITEMS[0];
-  const photo = resolveSiteImage("outreachMentoring", images);
-
-  useEffect(() => {
-    fetchSiteImageOverrides()
-      .then(setImages)
-      .catch(() => {
-        /* defaults */
-      });
-  }, []);
+  const photo = resolveSiteImage("outreachMentoring", siteImages);
 
   return (
     <section className="relative overflow-hidden py-16 md:py-24">

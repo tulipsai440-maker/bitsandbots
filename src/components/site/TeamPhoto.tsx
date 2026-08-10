@@ -8,10 +8,20 @@ type Props = {
   width?: number;
   height?: number;
   loading?: "lazy" | "eager";
+  fetchPriority?: "high" | "low" | "auto";
   label?: string;
 };
 
-export function TeamPhoto({ src, alt, className, width, height, loading = "lazy", label }: Props) {
+export function TeamPhoto({
+  src,
+  alt,
+  className,
+  width,
+  height,
+  loading = "lazy",
+  fetchPriority,
+  label,
+}: Props) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {
@@ -36,6 +46,7 @@ export function TeamPhoto({ src, alt, className, width, height, loading = "lazy"
       width={width}
       height={height}
       loading={loading}
+      fetchPriority={fetchPriority}
       className={className}
       onError={() => setFailed(true)}
     />
