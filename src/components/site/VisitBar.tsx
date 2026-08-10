@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Clock, MapPin, X } from "lucide-react";
+import { Clock, ClipboardList, MapPin, X } from "lucide-react";
 import { useState } from "react";
 import {
   PRACTICE_PLACE,
@@ -31,6 +31,12 @@ export function VisitBar() {
               className="inline-flex items-center gap-1 rounded-full bg-gold px-3 py-1.5 text-xs font-semibold text-forest-deep"
             >
               <MapPin size={12} /> Calendar
+            </Link>
+            <Link
+              to="/assignments"
+              className="inline-flex items-center gap-1 rounded-full border border-cream/30 bg-cream/10 px-3 py-1.5 text-xs font-semibold text-cream"
+            >
+              <ClipboardList size={12} /> Assignments
             </Link>
           </div>
         </div>

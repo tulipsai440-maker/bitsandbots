@@ -25,7 +25,7 @@ const nav: NavItem[] = [
 ];
 
 const navLinkClass =
-  "rounded-full px-3.5 py-2 text-sm text-foreground/80 transition-colors hover:bg-muted hover:text-foreground";
+  "rounded-full px-2.5 py-2 text-sm text-foreground/80 transition-colors hover:bg-muted hover:text-foreground xl:px-3.5";
 
 export function Header() {
   const [open, setOpen] = useState(false);
@@ -51,7 +51,7 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden min-w-0 flex-1 flex-wrap items-center justify-end gap-0.5 lg:flex xl:gap-1">
           {nav.map((item) =>
             item.kind === "external" ? (
               <a
@@ -79,7 +79,7 @@ export function Header() {
         </nav>
 
         <button
-          className="grid h-10 w-10 place-items-center rounded-full border border-border md:hidden"
+          className="grid h-10 w-10 place-items-center rounded-full border border-border lg:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle menu"
           aria-expanded={open}
@@ -89,7 +89,7 @@ export function Header() {
       </div>
 
       {open && (
-        <div className="border-t border-border/60 bg-background md:hidden">
+        <div className="border-t border-border/60 bg-background lg:hidden">
           <div className="container-page flex flex-col py-2">
             {nav.map((item) =>
               item.kind === "external" ? (
