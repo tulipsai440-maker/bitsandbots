@@ -150,6 +150,7 @@ export const DEFAULT_NAV_LINKS: NavLinkItem[] = [
   { kind: "internal", label: "Resources", to: "/resources" },
   { kind: "internal", label: "Gallery", to: "/gallery" },
   { kind: "internal", label: "Outreach", to: "/outreach" },
+  { kind: "internal", label: "Sponsors", to: "/sponsors" },
 ];
 
 export const DEFAULT_FOOTER_EXPLORE_LINKS: NavLinkItem[] = [
@@ -402,6 +403,19 @@ function isLegacyResourcesNavItem(item: NavLinkItem): boolean {
   return item.label === "Resources";
 }
 
+const SPONSORS_NAV_LINK: NavLinkItem = { kind: "internal", label: "Sponsors", to: "/sponsors" };
+
+function ensureSponsorsAfterOutreach(links: NavLinkItem[]): NavLinkItem[] {
+  if (links.some((item) => item.kind === "internal" && item.to === "/sponsors")) {
+    return links;
+  }
+  const outreachIndex = links.findIndex((item) => item.kind === "internal" && item.to === "/outreach");
+  const insertAt = outreachIndex >= 0 ? outreachIndex + 1 : links.length;
+  const next = [...links];
+  next.splice(insertAt, 0, SPONSORS_NAV_LINK);
+  return next;
+}
+
 function mergeNavLinksForResources(links: NavLinkItem[], fallback: NavLinkItem[]): NavLinkItem[] {
   const base = links.length ? links : fallback;
   let changed = false;
@@ -433,8 +447,16 @@ function normalizeInternalPath(path: string): string {
   return path;
 }
 
-function parseNavLinks(value: unknown, fallback: NavLinkItem[]): NavLinkItem[] {
-  if (!Array.isArray(value)) return fallback;
+function parseNavLinks(
+  value: unknown,
+  fallback: NavLinkItem[],
+  options?: { ensureSponsorsAfterOutreach?: boolean },
+): NavLinkItem[] {
+  if (!Array.isArray(value)) {
+    return options?.ensureSponsorsAfterOutreach
+      ? ensureSponsorsAfterOutreach(fallback)
+      : fallback;
+  }
   const parsed = value.filter(
     (item): item is NavLinkItem =>
       !!item &&
@@ -447,7 +469,11 @@ function parseNavLinks(value: unknown, fallback: NavLinkItem[]): NavLinkItem[] {
   const mapped = parsed.map((item) =>
     item.kind === "internal" ? { ...item, to: normalizeInternalPath(item.to) } : item,
   );
-  return mergeNavLinksForResources(mapped, fallback);
+  let result = mergeNavLinksForResources(mapped, fallback);
+  if (options?.ensureSponsorsAfterOutreach) {
+    result = ensureSponsorsAfterOutreach(result);
+  }
+  return result;
 }
 
 function parsePillars(value: unknown): HomepagePillar[] {
@@ -631,7 +657,7 @@ function mapSettingsRow(row: Record<string, unknown>): SiteSettings {
     genericCoachBio: String(row.generic_coach_bio ?? DEFAULT_SITE_SETTINGS.genericCoachBio),
     genericMemberBio: String(row.generic_member_bio ?? DEFAULT_SITE_SETTINGS.genericMemberBio),
     footerMeetTeamLabel: String(row.footer_meet_team_label ?? DEFAULT_SITE_SETTINGS.footerMeetTeamLabel),
-    navLinks: parseNavLinks(row.nav_links, DEFAULT_NAV_LINKS),
+    navLinks: parseNavLinks(row.nav_links, DEFAULT_NAV_LINKS, { ensureSponsorsAfterOutreach: true }),
     footerExploreLinks: parseNavLinks(row.footer_explore_links, DEFAULT_FOOTER_EXPLORE_LINKS),
     footerExternalLinks: parseNavLinks(row.footer_external_links, DEFAULT_FOOTER_EXTERNAL_LINKS),
     visitBarLinks: parseNavLinks(row.visit_bar_links, DEFAULT_VISIT_BAR_LINKS),
