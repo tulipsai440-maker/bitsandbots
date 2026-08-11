@@ -201,7 +201,6 @@ export function GalleryUploadForm() {
             id="gallery-caption"
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
-            placeholder="Summer camp at Sea Base, 2026"
             className={fieldClass}
           />
         </div>
