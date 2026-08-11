@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { useLayoutEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { Header } from "../components/site/Header";
@@ -24,6 +25,8 @@ import { SiteSettingsProvider } from "@/lib/site-settings-context";
 import { AdminEditProvider } from "@/components/admin/inline-edit/AdminEditProvider";
 import { BrandColorStyles } from "@/components/site/BrandColorStyles";
 import { DemoBanner } from "@/components/site/DemoBanner";
+import { setClientTenantStatus } from "@/lib/tenant/context";
+import { resolveTenantFromHost } from "@/lib/tenant/resolve";
 import { normalizeBrandColor } from "@/lib/brand-colors";
 import {
   buildDefaultSiteImageOverrides,
@@ -174,6 +177,17 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { siteSettings, outreachStories, siteImages, tenantStatus } = Route.useLoaderData();
+
+  useLayoutEffect(() => {
+    if (tenantStatus) {
+      setClientTenantStatus(tenantStatus);
+      return;
+    }
+    void resolveTenantFromHost(window.location.host).then((ctx) => {
+      setClientTenantStatus(ctx.status);
+    });
+  }, [tenantStatus]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <SiteSettingsProvider initialSettings={siteSettings} initialOutreachStories={outreachStories}>

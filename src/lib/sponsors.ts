@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { usesDemoPlaceholders } from "@/lib/demo/app-mode";
 import { DEMO_SPONSORS } from "@/lib/demo/demo-fallbacks";
-import { isDemoTenant } from "@/lib/tenant/context";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { withTenantFilter } from "@/lib/tenant/query";
 import { resolveTenantIdForFetch } from "@/lib/tenant/resolve";
 import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
@@ -40,7 +40,7 @@ function mapRow(row: SponsorRow): Sponsor {
 }
 
 export async function fetchSponsors(): Promise<Sponsor[]> {
-  const useDemoFallbacks = usesDemoPlaceholders() || isDemoTenant();
+  const useDemoFallbacks = await shouldUseDemoAssets();
   try {
     const tenantId = await resolveTenantIdForFetch();
     let query = supabase

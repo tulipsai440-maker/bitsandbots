@@ -4,7 +4,7 @@ import { SiteLayout, PageHero } from "@/components/site/Layout";
 import { TeamPhoto } from "@/components/site/TeamPhoto";
 import { GalleryUploadForm } from "@/components/site/GalleryUploadForm";
 import { galleryPhotos } from "@/lib/gallery-photos";
-import { usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { demoAssets } from "@/lib/demo/demo-assets";
 import { galleryStaticPhotosEnabled, galleryUploadsEnabled } from "@/lib/gallery-config";
 import { DEMO_GALLERY_PHOTOS } from "@/lib/demo/demo-fallbacks";
@@ -19,10 +19,11 @@ import { ArrowRight, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 
 export const Route = createFileRoute("/gallery")({
   loader: async () => {
+    const isDemo = await shouldUseDemoAssets();
     const [{ branding }, uploaded] = await Promise.all([
       brandingRouteLoader(),
       (async () => {
-        if (!galleryUploadsEnabled()) return [] as ApprovedGalleryPhoto[];
+        if (!galleryUploadsEnabled(isDemo)) return [] as ApprovedGalleryPhoto[];
         try {
           return await fetchApprovedGalleryPhotos();
         } catch {
@@ -30,10 +31,11 @@ export const Route = createFileRoute("/gallery")({
         }
       })(),
     ]);
-    return { branding, uploaded };
+    return { branding, uploaded, isDemo };
   },
   head: ({ loaderData }) => {
     const name = routeTeamName(loaderData);
+    const isDemo = loaderData?.isDemo ?? false;
     return {
       meta: [
         { title: `Photo Gallery — ${name}` },
@@ -48,7 +50,7 @@ export const Route = createFileRoute("/gallery")({
         },
         {
           property: "og:image",
-          content: usesDemoPlaceholders() ? demoAssets.ogImage : photos.ogLogo,
+          content: isDemo ? demoAssets.ogImage : photos.ogLogo,
         },
       ],
     };
@@ -76,9 +78,9 @@ function toDisplayPhotos(rows: ApprovedGalleryPhoto[]): DisplayPhoto[] {
   }));
 }
 
-function getStaticPhotos(): DisplayPhoto[] {
-  if (!galleryStaticPhotosEnabled()) return [];
-  const source = usesDemoPlaceholders() ? DEMO_GALLERY_PHOTOS : galleryPhotos;
+function getStaticPhotos(isDemo: boolean): DisplayPhoto[] {
+  if (!galleryStaticPhotosEnabled(isDemo)) return [];
+  const source = isDemo ? DEMO_GALLERY_PHOTOS : galleryPhotos;
   return source.map((photo) => ({
     key: photo.src,
     src: photo.src,
@@ -90,7 +92,7 @@ function getStaticPhotos(): DisplayPhoto[] {
 }
 
 function GalleryPage() {
-  const { uploaded: loaderUploaded } = Route.useLoaderData();
+  const { uploaded: loaderUploaded, isDemo } = Route.useLoaderData();
   const {
     siteName,
     galleryHeroTitle,
@@ -103,7 +105,7 @@ function GalleryPage() {
   const [uploaded, setUploaded] = useState<DisplayPhoto[]>(() => toDisplayPhotos(loaderUploaded));
 
   useEffect(() => {
-    if (!galleryUploadsEnabled()) {
+    if (!galleryUploadsEnabled(isDemo)) {
       setUploaded([]);
       return;
     }
@@ -119,9 +121,9 @@ function GalleryPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isDemo]);
 
-  const allPhotos = useMemo(() => [...uploaded, ...getStaticPhotos()], [uploaded]);
+  const allPhotos = useMemo(() => [...uploaded, ...getStaticPhotos(isDemo)], [uploaded, isDemo]);
   const total = allPhotos.length;
 
   const close = useCallback(() => setOpenIndex(null), []);

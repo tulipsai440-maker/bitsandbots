@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export const PENDING_BUCKET = "gallery-pending";
@@ -364,7 +365,7 @@ export async function submitGalleryPhotos(
 }
 
 export async function fetchApprovedGalleryPhotos(): Promise<ApprovedGalleryPhoto[]> {
-  if (usesDemoPlaceholders()) return [];
+  if (await shouldUseDemoAssets()) return [];
 
   const tenantId = await tenantIdForQuery();
   const { data, error } = await supabase.rpc("list_approved_gallery_photos", {

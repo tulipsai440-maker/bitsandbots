@@ -1,11 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isDemoMode, usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { demoSiteImageDefaultUrl } from "@/lib/demo/demo-defaults";
 import { isDemoTenant } from "@/lib/tenant/context";
 import { withTenantFilter } from "@/lib/tenant/query";
 import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
-function usesDemoPlaceholderImages(): boolean {
+function usesDemoPlaceholderImages(forceDemo?: boolean): boolean {
+  if (forceDemo === true) return true;
+  if (forceDemo === false) return false;
   return usesDemoPlaceholders() || isDemoTenant();
 }
 
@@ -120,9 +123,9 @@ const SLOT_BY_KEY = Object.fromEntries(SITE_IMAGE_SLOTS.map((slot) => [slot.key,
   SiteImageSlot
 >;
 
-function defaultOverride(key: SiteImageKey): SiteImageOverride {
+function defaultOverride(key: SiteImageKey, forceDemo?: boolean): SiteImageOverride {
   const slot = SLOT_BY_KEY[key];
-  const url = usesDemoPlaceholderImages()
+  const url = usesDemoPlaceholderImages(forceDemo)
     ? demoSiteImageDefaultUrl(key, slot.defaultUrl)
     : slot.defaultUrl;
   return {
@@ -133,9 +136,9 @@ function defaultOverride(key: SiteImageKey): SiteImageOverride {
   };
 }
 
-export function buildDefaultSiteImageOverrides(): SiteImageOverrides {
+export function buildDefaultSiteImageOverrides(forceDemo?: boolean): SiteImageOverrides {
   return SITE_IMAGE_SLOTS.reduce((acc, slot) => {
-    acc[slot.key] = defaultOverride(slot.key);
+    acc[slot.key] = defaultOverride(slot.key, forceDemo);
     return acc;
   }, {} as SiteImageOverrides);
 }
@@ -263,10 +266,11 @@ USING (
 );`;
 
 export async function fetchSiteImageOverrides(): Promise<SiteImageOverrides> {
-  const defaults = buildDefaultSiteImageOverrides();
+  const useDemo = await shouldUseDemoAssets();
+  const defaults = buildDefaultSiteImageOverrides(useDemo);
 
   // Demo tenants use bundled AI placeholders — never bleed another team's Supabase uploads.
-  if (usesDemoPlaceholderImages()) {
+  if (useDemo) {
     return defaults;
   }
 

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SiteLayout } from "@/components/site/Layout";
 import { EditablePageHero } from "@/components/admin/inline-edit/EditablePageHero";
 import { EditableOutreachStory } from "@/components/admin/inline-edit/EditableOutreachStory";
-import { usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { DEMO_OUTREACH_STORIES } from "@/lib/demo/demo-defaults";
 import {
   buildDefaultSiteImageOverrides,
@@ -15,10 +15,12 @@ import { outreachItemsFromDefaults } from "@/lib/outreach";
 import { useSiteContent, useSiteSettings } from "@/lib/site-settings-context";
 
 export const Route = createFileRoute("/outreach")({
+  loader: async () => ({ isDemo: await shouldUseDemoAssets() }),
   component: OutreachPage,
 });
 
 function OutreachPage() {
+  const { isDemo } = Route.useLoaderData();
   const { outreachHeroDescription, outreachPageTitle } = useSiteSettings();
   const { outreachStories } = useSiteContent();
   const [imageOverrides, setImageOverrides] = useState(buildDefaultSiteImageOverrides());
@@ -28,7 +30,7 @@ function OutreachPage() {
   }, []);
 
   const items = useMemo(() => {
-    const stories = usesDemoPlaceholders() ? DEMO_OUTREACH_STORIES : outreachStories;
+    const stories = isDemo ? DEMO_OUTREACH_STORIES : outreachStories;
     const defaults = outreachItemsFromDefaults();
     return stories.map((story) => {
       const imageKey = story.imageKey as SiteImageKey;
@@ -38,7 +40,7 @@ function OutreachPage() {
       const demoUrl = demoStory?.defaultImageUrl;
       return {
         story,
-        imageUrl: usesDemoPlaceholders()
+        imageUrl: isDemo
           ? demoUrl || image.url
           : image.isOverride
             ? image.url
@@ -46,7 +48,7 @@ function OutreachPage() {
         imageAlt: image.alt || story.defaultImageAlt,
       };
     });
-  }, [outreachStories, imageOverrides]);
+  }, [outreachStories, imageOverrides, isDemo]);
 
   return (
     <SiteLayout>

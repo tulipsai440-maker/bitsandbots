@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isDemoMode, usesDemoPlaceholders } from "@/lib/demo/app-mode";
 import { DEMO_TEAM_MEMBERS } from "@/lib/demo/demo-fallbacks";
-import { isDemoTenant } from "@/lib/tenant/context";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { withTenantFilter } from "@/lib/tenant/query";
 import { resolveTenantIdForFetch } from "@/lib/tenant/resolve";
 
@@ -108,7 +108,7 @@ type TeamMemberRow = {
 };
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
-  const useDemoFallbacks = usesDemoPlaceholders() || isDemoTenant();
+  const useDemoFallbacks = await shouldUseDemoAssets();
   try {
     const tenantId = await resolveTenantIdForFetch();
     let query = supabase
