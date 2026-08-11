@@ -1,10 +1,13 @@
 /** Platform demo hostnames: {slug}.{apex} — default apex demo.com (no fllbots in demo URL). */
 
-/** @deprecated Legacy platform hostnames. */
+/** @deprecated Legacy platform hostnames (no free SSL for nested labels). */
 export const PLAY_DOMAIN_SUFFIX = ".play.fllbots.com";
 
 /** @deprecated Legacy; use platformDemoApex(). */
 export const LEGACY_PLATFORM_DEMO_SUFFIX = ".demo.fllbots.com";
+
+/** Demo on fllbots.com zone — one DNS label, covered by Universal SSL (*.fllbots.com). */
+export const FLLBOTS_DEMO_SUFFIX = "-demo.fllbots.com";
 
 export const DEMO_SUBDOMAIN = "demo";
 
@@ -35,6 +38,15 @@ export function platformDemoOrigin(slug: string): string {
   return `https://${platformDemoHostname(slug)}`;
 }
 
+/** `{slug}-demo.fllbots.com` — works on Cloudflare Free (Universal SSL). */
+export function fllbotsDemoHostname(slug: string): string {
+  const s = slug.trim().toLowerCase();
+  if (!s || s.includes(".") || s.includes(" ")) {
+    throw new Error("Invalid tenant slug");
+  }
+  return `${s}${FLLBOTS_DEMO_SUFFIX}`;
+}
+
 /** Strip protocol, path, and leading www. */
 export function normalizeTeamDomain(input: string): string {
   let d = input.trim().toLowerCase();
@@ -52,7 +64,12 @@ export function demoHostnameForTeamDomain(teamDomain: string): string {
   return `${DEMO_SUBDOMAIN}.${apex}`;
 }
 
-const LEGACY_SUFFIXES = [platformDemoSuffix(), LEGACY_PLATFORM_DEMO_SUFFIX, PLAY_DOMAIN_SUFFIX];
+const LEGACY_SUFFIXES = [
+  platformDemoSuffix(),
+  LEGACY_PLATFORM_DEMO_SUFFIX,
+  PLAY_DOMAIN_SUFFIX,
+  FLLBOTS_DEMO_SUFFIX,
+];
 
 export function slugFromPlatformDemoHostname(hostname: string): string | null {
   const h = hostname.split(":")[0]?.toLowerCase().trim() ?? "";

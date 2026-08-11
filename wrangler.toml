@@ -20,9 +20,9 @@ zone_name = "fllbots.com"
 pattern = "www.fllbots.com/*"
 zone_name = "fllbots.com"
 
-# Demo tenants on fllbots.com (until demo.com zone is registered).
+# Demo tenants: {slug}-demo.fllbots.com (one DNS label; covered by Free Universal SSL).
 [[routes]]
-pattern = "*.play.fllbots.com/*"
+pattern = "*.fllbots.com/*"
 zone_name = "fllbots.com"
 
 # Platform demo tenants: {slug}.demo.com (zone demo.com — no fllbots in demo URL).
