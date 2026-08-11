@@ -235,7 +235,7 @@ function AdminDashboardPage() {
             </DashboardPanel>
 
             <DashboardPanel
-              title="Gallery review"
+              title="Gallery"
               icon={<Camera size={18} className="text-forest" />}
               empty="No photos waiting for approval."
               action={
@@ -246,7 +246,7 @@ function AdminDashboardPage() {
                   </Link>
                 ) : (
                   <Link to="/admin/gallery-photos" className="btn-outline !px-3 !py-1.5 text-xs">
-                    Open gallery admin
+                    Open gallery
                   </Link>
                 )
               }

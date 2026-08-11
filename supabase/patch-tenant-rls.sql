@@ -182,4 +182,23 @@ WITH CHECK (
   )
 );
 
+-- ========== join notify / announcements ==========
+
+DROP POLICY IF EXISTS "Admins manage join notify emails" ON public.join_notify_emails;
+CREATE POLICY "Tenant admins manage join notify emails"
+ON public.join_notify_emails FOR ALL TO authenticated
+USING (public.has_tenant_role(tenant_id, auth.uid(), 'admin'))
+WITH CHECK (public.has_tenant_role(tenant_id, auth.uid(), 'admin'));
+
+DROP POLICY IF EXISTS "Active join notify emails are public" ON public.join_notify_emails;
+CREATE POLICY "Active join notify emails are public"
+ON public.join_notify_emails FOR SELECT TO anon, authenticated
+USING (active = true AND tenant_id IS NOT NULL);
+
+DROP POLICY IF EXISTS "Admins manage announcements" ON public.announcements;
+CREATE POLICY "Tenant admins manage announcements"
+ON public.announcements FOR ALL TO authenticated
+USING (public.has_tenant_role(tenant_id, auth.uid(), 'admin'))
+WITH CHECK (public.has_tenant_role(tenant_id, auth.uid(), 'admin'));
+
 NOTIFY pgrst, 'reload schema';

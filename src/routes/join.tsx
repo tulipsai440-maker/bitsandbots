@@ -96,6 +96,7 @@ function JoinPage() {
     <SiteLayout>
       <EditablePageHero
         title={`Join ${siteName}`}
+        align="center"
         description={joinHeroDescription}
         descriptionKey="joinHeroDescription"
         descriptionLabel="Join page intro"

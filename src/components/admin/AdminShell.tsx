@@ -1,8 +1,10 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
+import { AdminAccessPending } from "@/components/admin/AdminAccessPending";
 import { AdminNav } from "@/components/site/AdminNav";
 import { checkIsAdmin } from "@/lib/admin";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { supabase } from "@/integrations/supabase/client";
 import { LogOut } from "lucide-react";
 
@@ -38,9 +40,13 @@ export function AdminReviewPage({
 }) {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     checkIsAdmin().then(setIsAdmin);
+    shouldUseDemoAssets().then(setIsDemo);
+    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
   }, []);
 
   async function signOut() {
@@ -58,29 +64,11 @@ export function AdminReviewPage({
 
   if (!isAdmin) {
     return (
-      <SiteLayout>
-        <PageHero
-          eyebrow="Admin"
-          title="Admin access required"
-          description="Signed in successfully — admin is a role in the database, not a special password."
-        />
-        <div className="container-page pb-20">
-          <div className="rounded-2xl border border-border bg-card p-8">
-            <p className="text-sm text-muted-foreground">
-              Your password only controls sign-in. Admin access requires{" "}
-              <code className="rounded bg-muted px-1">user_roles.role = &apos;admin&apos;</code> for
-              this account. Ask a current coach/admin to open{" "}
-              <strong>Admin → Team Admins</strong> and select <strong>Make admin</strong> next to
-              your email, or have them run{" "}
-              <code className="rounded bg-muted px-1">supabase/grant-admin.sql</code> in the
-              Supabase SQL Editor. Sign in as the same email they granted, then refresh this page.
-            </p>
-            <button onClick={signOut} className="btn-outline mt-6 gap-2">
-              <LogOut size={16} /> Sign out
-            </button>
-          </div>
-        </div>
-      </SiteLayout>
+      <AdminAccessPending
+        isDemo={isDemo}
+        userEmail={userEmail}
+        onSignOut={() => navigate({ to: "/auth" })}
+      />
     );
   }
 

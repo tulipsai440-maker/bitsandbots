@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export type AnnouncementRow = {
   id: string;
@@ -30,12 +32,15 @@ const SELECT =
   "id,title,body,published_at,expires_at,created_at,updated_at";
 
 export async function fetchActiveAnnouncements(): Promise<AnnouncementRow[]> {
+  const tenantId = await tenantIdForQuery();
   const now = new Date();
-  const { data, error } = await supabase
+  let query = supabase
     .from("announcements")
     .select(SELECT)
     .lte("published_at", now.toISOString())
     .order("published_at", { ascending: false });
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? [])
     .map((row) => normalizeAnnouncement(row as unknown as Record<string, unknown>))
@@ -43,10 +48,13 @@ export async function fetchActiveAnnouncements(): Promise<AnnouncementRow[]> {
 }
 
 export async function fetchAllAnnouncements(): Promise<AnnouncementRow[]> {
-  const { data, error } = await supabase
+  const tenantId = await tenantIdForQuery();
+  let query = supabase
     .from("announcements")
     .select(SELECT)
     .order("published_at", { ascending: false });
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []).map((row) =>
     normalizeAnnouncement(row as unknown as Record<string, unknown>),

@@ -46,7 +46,7 @@ function formatDate(value: string): string {
 function AdminGalleryPhotosPage() {
   const [pending, setPending] = useState<PendingGalleryPhoto[]>([]);
   const [approved, setApproved] = useState<ApprovedRow[]>([]);
-  const [tab, setTab] = useState<"pending" | "approved">("approved");
+  const [tab, setTab] = useState<"pending" | "approved">("pending");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [needsSetup, setNeedsSetup] = useState(false);
@@ -61,6 +61,9 @@ function AdminGalleryPhotosPage() {
       ]);
       setPending(pendingRows);
       setApproved(approvedRows);
+      if (pendingRows.length > 0) {
+        setTab("pending");
+      }
       setNeedsSetup(false);
       setError(null);
     } catch (e) {
@@ -127,24 +130,30 @@ function AdminGalleryPhotosPage() {
 
   return (
     <AdminQuickShell>
-      {!needsSetup && (
-        <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl text-foreground">Gallery</h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Review family photo submissions, manage approved gallery photos, or upload directly.
+          </p>
+        </div>
+        {!needsSetup && (
           <div className="inline-flex rounded-full border border-border bg-card p-1">
             <button
-              onClick={() => setTab("approved")}
-              className={`rounded-full px-4 py-2 text-sm ${tab === "approved" ? "bg-gold font-medium text-forest-deep" : "text-muted-foreground"}`}
+              onClick={() => setTab("pending")}
+              className={`rounded-full px-4 py-2 text-sm ${tab === "pending" ? "bg-gold font-medium text-forest-deep" : "text-muted-foreground"}`}
             >
-              In the gallery {approved.length > 0 ? `(${approved.length})` : ""}
+              To review {pending.length > 0 ? `(${pending.length})` : ""}
             </button>
             <button
-              onClick={() => setTab("pending")}
-              className={`rounded-full px-4 py-2 text-sm ${tab === "pending" ? "bg-muted font-medium text-foreground" : "text-muted-foreground"}`}
+              onClick={() => setTab("approved")}
+              className={`rounded-full px-4 py-2 text-sm ${tab === "approved" ? "bg-muted font-medium text-foreground" : "text-muted-foreground"}`}
             >
-              Pending {pending.length > 0 ? `(${pending.length})` : ""}
+              Published {approved.length > 0 ? `(${approved.length})` : ""}
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
       {needsSetup && <GallerySetupBanner onRetry={load} />}
 
       {error && (

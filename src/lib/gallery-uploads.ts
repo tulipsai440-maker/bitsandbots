@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { usesDemoPlaceholders } from "@/lib/demo/app-mode";
 import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
+import { withTenantFilter } from "@/lib/tenant/query";
 import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export const PENDING_BUCKET = "gallery-pending";
@@ -451,6 +452,7 @@ export async function approveGalleryPhoto(photo: PendingGalleryPhoto): Promise<v
     if (uploadError) throw toError(uploadError);
   }
 
+  const tenantId = await tenantIdForQuery();
   const { data: userData } = await supabase.auth.getUser();
   const { error: rowError } = await supabase
     .from("gallery_photos")
@@ -460,13 +462,15 @@ export async function approveGalleryPhoto(photo: PendingGalleryPhoto): Promise<v
       reviewed_at: new Date().toISOString(),
       reviewed_by: userData.user?.id ?? null,
     })
-    .eq("id", photo.id);
+    .eq("id", photo.id)
+    .eq("tenant_id", tenantId);
   if (rowError) throw toError(rowError);
 
   await supabase.storage.from(PENDING_BUCKET).remove([photo.pendingPath]);
 }
 
 export async function rejectGalleryPhoto(photo: PendingGalleryPhoto): Promise<void> {
+  const tenantId = await tenantIdForQuery();
   const { data: userData } = await supabase.auth.getUser();
 
   const { error } = await supabase
@@ -477,7 +481,8 @@ export async function rejectGalleryPhoto(photo: PendingGalleryPhoto): Promise<vo
       reviewed_at: new Date().toISOString(),
       reviewed_by: userData.user?.id ?? null,
     })
-    .eq("id", photo.id);
+    .eq("id", photo.id)
+    .eq("tenant_id", tenantId);
   if (error) throw toError(error);
 
   if (photo.pendingPath) {
@@ -550,17 +555,25 @@ export async function addApprovedGalleryPhotos(
 
 /** Removes an approved photo from the public gallery and deletes the file. */
 export async function deleteApprovedGalleryPhoto(id: string, approvedPath: string): Promise<void> {
-  const { error } = await supabase.from("gallery_photos").delete().eq("id", id);
+  const tenantId = await tenantIdForQuery();
+  const { error } = await supabase
+    .from("gallery_photos")
+    .delete()
+    .eq("id", id)
+    .eq("tenant_id", tenantId);
   if (error) throw toError(error);
   await supabase.storage.from(APPROVED_BUCKET).remove([approvedPath]);
 }
 
 export async function fetchApprovedGalleryRows() {
-  const { data, error } = await supabase
+  const tenantId = await tenantIdForQuery();
+  let query = supabase
     .from("gallery_photos")
     .select("*")
     .eq("status", "approved")
     .order("created_at", { ascending: false });
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query;
   if (error) throw toError(error);
 
   return (data ?? []).map((row) => ({

@@ -370,6 +370,7 @@ export async function uploadSiteImageOverride(
 
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id ?? null;
+  const tenantId = await tenantIdForQuery();
 
   const { error: upsertError } = await supabase.from("site_images").upsert(
     {
@@ -378,6 +379,7 @@ export async function uploadSiteImageOverride(
       public_url: publicUrl,
       alt: alt?.trim() || slot.defaultAlt,
       updated_by: userId,
+      tenant_id: tenantId,
     },
     { onConflict: "key" },
   );
@@ -385,17 +387,18 @@ export async function uploadSiteImageOverride(
 }
 
 export async function resetSiteImageOverride(key: SiteImageKey): Promise<void> {
-  const { data: existing } = await supabase
-    .from("site_images")
-    .select("storage_path")
-    .eq("key", key)
-    .maybeSingle();
+  const tenantId = await tenantIdForQuery();
+  let existingQuery = supabase.from("site_images").select("storage_path").eq("key", key);
+  existingQuery = withTenantFilter(existingQuery, tenantId);
+  const { data: existing } = await existingQuery.maybeSingle();
 
   if (existing?.storage_path) {
     await supabase.storage.from(SITE_IMAGES_BUCKET).remove([existing.storage_path]);
   }
 
-  const { error } = await supabase.from("site_images").delete().eq("key", key);
+  let deleteQuery = supabase.from("site_images").delete().eq("key", key);
+  deleteQuery = withTenantFilter(deleteQuery, tenantId);
+  const { error } = await deleteQuery;
   if (error) throw error;
 }
 

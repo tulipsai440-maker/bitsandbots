@@ -19,6 +19,7 @@ import { OUTREACH_ITEMS } from "@/lib/outreach";
 import { useSiteSettings } from "@/lib/site-settings-context";
 import { DEFAULT_SITE_SETTINGS } from "@/lib/site-settings";
 import { brandingRouteLoader } from "@/lib/team-branding";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { parseAdminEditSearch } from "@/lib/admin-route-search";
 
 async function loadSiteImages(): Promise<SiteImageOverrides> {
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/")({
   validateSearch: parseAdminEditSearch,
   loader: async () => ({
     siteImages: await loadSiteImages(),
+    isDemo: await shouldUseDemoAssets(),
     ...(await brandingRouteLoader()),
   }),
   head: ({ loaderData }) => {
@@ -59,12 +61,12 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  const { siteImages } = Route.useLoaderData();
+  const { siteImages, isDemo } = Route.useLoaderData();
   const hero = resolveSiteImage("hero", siteImages);
 
   return (
     <SiteLayout>
-      <Hero hero={hero} />
+      <Hero hero={hero} isDemo={isDemo} />
       <NextUpStrip />
       <SeasonStory siteImages={siteImages} />
       <WhatWeDo />
@@ -73,7 +75,7 @@ function HomePage() {
   );
 }
 
-function Hero({ hero }: { hero: SiteImageOverride }) {
+function Hero({ hero, isDemo }: { hero: SiteImageOverride; isDemo: boolean }) {
   const {
     siteName,
     siteTagline,
@@ -97,10 +99,16 @@ function Hero({ hero }: { hero: SiteImageOverride }) {
           label="Hero"
         />
       ) : null}
-      <div className="absolute inset-0 bg-gradient-to-b from-navy/35 via-transparent via-35% to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-forest-deep from-0% via-forest-deep/88 via-40% to-transparent to-72%" />
+      {!isDemo && (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-b from-navy/35 via-transparent via-35% to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-forest-deep from-0% via-forest-deep/88 via-40% to-transparent to-72%" />
+        </>
+      )}
       <div className="relative">
-        <div className="container-page flex min-h-[78vh] flex-col items-center justify-end pb-14 pt-24 text-center text-cream md:min-h-[86vh] md:pb-20">
+        <div
+          className={`container-page flex min-h-[78vh] flex-col items-center justify-end pb-14 pt-24 text-center text-cream md:min-h-[86vh] md:pb-20${isDemo ? " [text-shadow:0_2px_16px_rgba(0,0,0,0.65)]" : ""}`}
+        >
           <div className="animate-rise max-w-3xl">
             <h1 className="font-display text-6xl leading-[0.95] tracking-tight text-cream md:text-8xl">
               <EditableText settingKey="siteName" label="Team name">

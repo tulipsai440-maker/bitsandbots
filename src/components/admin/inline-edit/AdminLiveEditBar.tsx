@@ -52,7 +52,7 @@ const ADMIN_QUICK_LINKS = [
 
   { to: "/admin/parent-consents", label: "Consents", icon: FileCheck, kind: "admin" as const },
 
-  { to: "/admin/gallery-photos", label: "Photo review", icon: Images, kind: "admin" as const },
+  { to: "/admin/gallery-photos", label: "Gallery", icon: Images, kind: "admin" as const },
 
   { to: "/admin/site-images", label: "Site images", icon: ImageIcon, kind: "admin" as const },
 

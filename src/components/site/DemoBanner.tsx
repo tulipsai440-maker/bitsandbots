@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { isDemoMode } from "@/lib/demo/app-mode";
 
 type DemoBannerProps = {
@@ -11,7 +12,10 @@ export function DemoBanner({ tenantStatus }: DemoBannerProps) {
   return (
     <div className="border-b border-amber-300/50 bg-amber-50 px-4 py-2 text-center text-sm text-amber-950">
       <strong>Demo site</strong> — explore and edit freely. Changes you save here carry over when this
-      team goes live.
+      team goes live.{" "}
+      <Link to="/auth" className="font-medium underline underline-offset-2 hover:text-amber-900">
+        Coach admin sign in →
+      </Link>
     </div>
   );
 }

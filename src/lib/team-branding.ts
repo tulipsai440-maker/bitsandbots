@@ -1,5 +1,5 @@
 import { DEFAULT_SITE_SETTINGS, fetchSiteSettings, type SiteSettings } from "@/lib/site-settings";
-import { BITSANDBOTS_TENANT_ID } from "@/lib/tenant/types";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 import { normalizeBrandColor } from "@/lib/brand-colors";
 
 export type TeamBranding = {
@@ -32,6 +32,7 @@ export async function fetchTeamBranding(): Promise<TeamBranding> {
 
 /** Server cron / email — service role read with env fallbacks. */
 export async function loadTeamBrandingServer(): Promise<TeamBranding> {
+  const tenantId = await tenantIdForQuery();
   const siteOrigin = (process.env.SITE_ORIGIN?.trim() || DEFAULT_SITE_SETTINGS.siteUrl).replace(
     /\/$/,
     "",
@@ -45,7 +46,7 @@ export async function loadTeamBrandingServer(): Promise<TeamBranding> {
     const { data } = await admin
       .from("site_settings")
       .select("site_name, site_url, brand_color")
-      .eq("tenant_id", BITSANDBOTS_TENANT_ID)
+      .eq("tenant_id", tenantId)
       .maybeSingle();
 
     if (data) {

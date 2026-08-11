@@ -1,6 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { usesDemoPlaceholders } from "@/lib/demo/app-mode";
-import { DEMO_SPONSORS } from "@/lib/demo/demo-fallbacks";
 import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { withTenantFilter } from "@/lib/tenant/query";
 import { resolveTenantIdForFetch } from "@/lib/tenant/resolve";
@@ -39,6 +37,17 @@ function mapRow(row: SponsorRow): Sponsor {
   };
 }
 
+/** Legacy demo seed names — treat as empty so public page matches production placeholders. */
+const LEGACY_DEMO_SPONSOR_NAMES = new Set([
+  "Community Bank",
+  "Tech Partners LLC",
+  "Youth Foundation",
+]);
+
+function isLegacyDemoSponsorSeed(rows: SponsorRow[]): boolean {
+  return rows.length > 0 && rows.every((row) => LEGACY_DEMO_SPONSOR_NAMES.has(row.name));
+}
+
 export async function fetchSponsors(): Promise<Sponsor[]> {
   const useDemoFallbacks = await shouldUseDemoAssets();
   try {
@@ -51,11 +60,14 @@ export async function fetchSponsors(): Promise<Sponsor[]> {
     query = withTenantFilter(query, tenantId);
     const { data, error } = await query;
     if (error) throw error;
-    if (!data?.length) return useDemoFallbacks ? DEMO_SPONSORS : SPONSORS;
-    return (data as SponsorRow[]).map(mapRow);
+    const mapped = (data ?? []) as SponsorRow[];
+    if (!mapped.length || (useDemoFallbacks && isLegacyDemoSponsorSeed(mapped))) {
+      return SPONSORS;
+    }
+    return mapped.map(mapRow);
   } catch (error) {
     console.error("[sponsors]", error);
-    return useDemoFallbacks ? DEMO_SPONSORS : SPONSORS;
+    return SPONSORS;
   }
 }
 

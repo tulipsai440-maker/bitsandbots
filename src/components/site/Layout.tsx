@@ -41,7 +41,7 @@ export function PageHero({
           <p
             className={cn(
               "mt-5 max-w-3xl text-base leading-relaxed text-muted-foreground md:text-lg text-pretty",
-              centered && "mx-auto",
+              centered && "mx-auto text-center",
             )}
           >
             {description}

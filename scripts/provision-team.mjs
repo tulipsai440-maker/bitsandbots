@@ -240,6 +240,9 @@ async function provisionTenantRest(slug, displayName, demoHostname) {
   } else {
     await rest("PATCH", `site_settings?tenant_id=eq.${tenantId}`, {
       site_url: `https://${hostname}`,
+      site_name: displayName.trim() || normalizedSlug,
+      site_tagline: "FIRST LEGO League · Demo & play",
+      hero_subtext: "Explore the site and customize every page in Admin.",
     }).catch(() => {});
   }
 
@@ -249,6 +252,10 @@ async function provisionTenantRest(slug, displayName, demoHostname) {
     hostname,
     url: `https://${hostname}`,
   };
+}
+
+async function clearDemoSponsors(tenantId) {
+  await rest("DELETE", `sponsors?tenant_id=eq.${tenantId}`);
 }
 
 async function main() {
@@ -305,23 +312,9 @@ async function main() {
         photo_url: `${demoPhotos}/${photo}`,
         sort_order,
       })));
-      await rest("POST", "sponsors", [
-        {
-          tenant_id: tenantId,
-          name: "Community Bank",
-          description: "Supporting youth STEM programs.",
-          logo_url: `${demoPhotos}/sponsor-community-bank.png`,
-          sort_order: 0,
-        },
-        {
-          tenant_id: tenantId,
-          name: "Tech Partners LLC",
-          description: "Local technology mentors.",
-          logo_url: `${demoPhotos}/sponsor-tech-partners.png`,
-          sort_order: 1,
-        },
-      ]);
     }
+
+    await clearDemoSponsors(tenantId);
 
     console.log(`\nDemo URL: ${result.url}`);
     printCloudflareSteps(result.hostname);

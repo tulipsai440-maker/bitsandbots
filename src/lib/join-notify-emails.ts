@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export type JoinNotifyEmailRow = {
   id: string;
@@ -25,22 +27,28 @@ function normalize(row: Record<string, unknown>): JoinNotifyEmailRow {
 }
 
 export async function fetchAllJoinNotifyEmails(): Promise<JoinNotifyEmailRow[]> {
-  const { data, error } = await supabase
+  const tenantId = await tenantIdForQuery();
+  let query = supabase
     .from("join_notify_emails")
     .select(SELECT)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []).map((row) => normalize(row as unknown as Record<string, unknown>));
 }
 
 export async function fetchActiveJoinNotifyEmails(): Promise<JoinNotifyEmailRow[]> {
-  const { data, error } = await supabase
+  const tenantId = await tenantIdForQuery();
+  let query = supabase
     .from("join_notify_emails")
     .select(SELECT)
     .eq("active", true)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []).map((row) => normalize(row as unknown as Record<string, unknown>));
 }

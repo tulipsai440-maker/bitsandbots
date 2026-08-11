@@ -58,6 +58,7 @@ function SponsorsPage() {
         description={sponsorsHeroDescription}
         descriptionKey="sponsorsHeroDescription"
         descriptionLabel="Sponsors page intro"
+        descriptionClassName="max-w-none text-pretty md:whitespace-nowrap"
       />
 
       <section className="py-14 md:py-16">

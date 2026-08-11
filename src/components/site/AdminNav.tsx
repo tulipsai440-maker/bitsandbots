@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import {
   Building2,
   Calendar,
-  ClipboardList,
   Contact,
   Image as ImageIcon,
   Megaphone,
@@ -26,9 +25,6 @@ export function AdminNav({ active }: { active: AdminNavKey }) {
       <Link to="/admin/broadcast" className={linkClass("broadcast")}>
         <Megaphone size={16} /> Send message
       </Link>
-      <Link to="/admin/assignments" className={linkClass("assignments")}>
-        <ClipboardList size={16} /> Assignments
-      </Link>
       <Link to="/admin/team" className={linkClass("team")}>
         <Users size={16} /> Our Team
       </Link>
@@ -51,7 +47,7 @@ export function AdminNav({ active }: { active: AdminNavKey }) {
         <ImageIcon size={16} /> Site Images
       </Link>
       <Link to="/admin/gallery-photos" className={linkClass("gallery-photos")}>
-        <ImageIcon size={16} /> Photo Review
+        <ImageIcon size={16} /> Gallery
       </Link>
       <Link to="/admin/team-admins" className={linkClass("team-admins")}>
         <ShieldCheck size={16} /> Team Admins

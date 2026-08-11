@@ -14,6 +14,8 @@
     "build:demo": "vite build --mode demo",
     "deploy:demo": "npm run build:demo && npx wrangler deploy --config .output/server/wrangler.json --name fll-team-demo --route demo.fllbots.com/* --keep-vars",
     "provision:team": "node scripts/provision-team.mjs",
+    "provision:demo-admin": "node scripts/provision-demo-admin.mjs",
+    "grant:demo-admin": "node scripts/grant-demo-admin.mjs",
     "verify:tenants": "node scripts/verify-tenant-isolation.mjs",
     "lint": "eslint .",
     "format": "prettier --write ."

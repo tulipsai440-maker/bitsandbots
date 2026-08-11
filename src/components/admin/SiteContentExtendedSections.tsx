@@ -53,6 +53,11 @@ export function SiteContentExtendedSections({
 
       <Section title="Page titles & heroes">
         <Grid>
+          <Field label="Our Team page title" value={form.settings.aboutPageTitle} onChange={(v) => patchSettings({ aboutPageTitle: v })} />
+          <Field label="Coaches page title" value={form.settings.coachesPageTitle} onChange={(v) => patchSettings({ coachesPageTitle: v })} />
+          <Field label="Sponsors page title" value={form.settings.sponsorsPageTitle} onChange={(v) => patchSettings({ sponsorsPageTitle: v })} />
+          <Field label="Outreach page title" value={form.settings.outreachPageTitle} onChange={(v) => patchSettings({ outreachPageTitle: v })} />
+          <Field label="Core Values page title" value={form.settings.coreValuesPageTitle} onChange={(v) => patchSettings({ coreValuesPageTitle: v })} />
           <Field label="Gallery title" value={form.settings.galleryHeroTitle} onChange={(v) => patchSettings({ galleryHeroTitle: v })} />
           <Field label="Events title" value={form.settings.eventsHeroTitle} onChange={(v) => patchSettings({ eventsHeroTitle: v })} />
           <Field label="Calendar title" value={form.settings.calendarHeroTitle} onChange={(v) => patchSettings({ calendarHeroTitle: v })} />
@@ -60,6 +65,10 @@ export function SiteContentExtendedSections({
           <Field label="Quick links title" value={form.settings.quickLinksHeroTitle} onChange={(v) => patchSettings({ quickLinksHeroTitle: v })} />
           <Field label="Consent title" value={form.settings.consentHeroTitle} onChange={(v) => patchSettings({ consentHeroTitle: v })} />
         </Grid>
+        <TextArea label="Our Team hero description" value={form.settings.aboutHeroDescription} onChange={(v) => patchSettings({ aboutHeroDescription: v })} />
+        <TextArea label="Coaches hero description" value={form.settings.coachesHeroDescription} onChange={(v) => patchSettings({ coachesHeroDescription: v })} />
+        <TextArea label="Sponsors hero description" value={form.settings.sponsorsHeroDescription} onChange={(v) => patchSettings({ sponsorsHeroDescription: v })} />
+        <TextArea label="Outreach hero description" value={form.settings.outreachHeroDescription} onChange={(v) => patchSettings({ outreachHeroDescription: v })} />
         <TextArea label="Gallery hero description" value={form.settings.galleryHeroDescription} onChange={(v) => patchSettings({ galleryHeroDescription: v })} />
         <TextArea label="Events hero description" value={form.settings.eventsHeroDescription} onChange={(v) => patchSettings({ eventsHeroDescription: v })} />
         <TextArea label="Calendar hero description" value={form.settings.calendarHeroDescription} onChange={(v) => patchSettings({ calendarHeroDescription: v })} />

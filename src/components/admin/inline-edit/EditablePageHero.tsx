@@ -17,6 +17,7 @@ export function EditablePageHero({
   eyebrowKey,
   eyebrowLabel = "Eyebrow",
   align = "left",
+  descriptionClassName,
 }: {
   title: string;
   titleKey?: StringSettingKey;
@@ -28,6 +29,7 @@ export function EditablePageHero({
   eyebrowKey?: StringSettingKey;
   eyebrowLabel?: string;
   align?: "left" | "center";
+  descriptionClassName?: string;
 }) {
   const centered = align === "center";
 
@@ -53,11 +55,16 @@ export function EditablePageHero({
         </h1>
 
         {description && descriptionKey ? (
-          <EditableBlock settingKey={descriptionKey} label={descriptionLabel} className="mt-5 max-w-3xl">
+          <EditableBlock
+            settingKey={descriptionKey}
+            label={descriptionLabel}
+            className={cn("mt-5 max-w-3xl", centered && "mx-auto text-center")}
+          >
             <p
               className={cn(
-                "max-w-3xl text-base leading-relaxed text-muted-foreground md:text-lg text-pretty",
-                centered && "mx-auto",
+                "text-base leading-relaxed text-muted-foreground md:text-lg text-pretty",
+                centered && "mx-auto text-center",
+                descriptionClassName,
               )}
             >
               {description}
@@ -67,7 +74,8 @@ export function EditablePageHero({
           <p
             className={cn(
               "mt-5 max-w-3xl text-base leading-relaxed text-muted-foreground md:text-lg text-pretty",
-              centered && "mx-auto",
+              centered && "mx-auto text-center",
+              descriptionClassName,
             )}
           >
             {description}

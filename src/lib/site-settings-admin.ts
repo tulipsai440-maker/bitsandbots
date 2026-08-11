@@ -1,7 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeAccentColor, normalizeBrandColor } from "@/lib/brand-colors";
+import { DEMO_OUTREACH_STORIES } from "@/lib/demo/demo-defaults";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import {
   DEFAULT_SITE_SETTINGS,
+  DEFAULT_OUTREACH_STORIES,
+  fetchOutreachStoriesFromDb,
+  fetchSiteSettingsFromDb,
   siteSettingsErrorMessage,
   type OutreachStoryRow,
   type SiteSettings,
@@ -94,6 +99,7 @@ function settingsToRow(settings: SiteSettings, tenantId: string, rowId: number) 
     calendar_hero_description: settings.calendarHeroDescription,
     videos_hero_title: settings.videosHeroTitle,
     videos_hero_description: settings.videosHeroDescription,
+    resources_page_sections: settings.resourcesPageSections,
     quick_links_hero_title: settings.quickLinksHeroTitle,
     quick_links_hero_description: settings.quickLinksHeroDescription,
     consent_hero_title: settings.consentHeroTitle,
@@ -115,11 +121,16 @@ function settingsToRow(settings: SiteSettings, tenantId: string, rowId: number) 
 }
 
 export async function fetchSiteContentAdmin(): Promise<SiteContentAdminData> {
-  const { fetchSiteSettings, fetchOutreachStories } = await import("@/lib/site-settings");
-  const [settings, outreachStories] = await Promise.all([
-    fetchSiteSettings(),
-    fetchOutreachStories(),
+  const [settings, storiesFromDb] = await Promise.all([
+    fetchSiteSettingsFromDb(),
+    fetchOutreachStoriesFromDb(),
   ]);
+  let outreachStories = storiesFromDb;
+  if (!outreachStories.length) {
+    outreachStories = (await shouldUseDemoAssets())
+      ? structuredClone(DEMO_OUTREACH_STORIES)
+      : DEFAULT_OUTREACH_STORIES;
+  }
   return { settings, outreachStories };
 }
 

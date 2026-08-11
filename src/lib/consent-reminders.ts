@@ -52,6 +52,8 @@ function groupRecipients(families: UnsignedConsentFamily[]): ConsentReminderReci
   return [...byEmail.values()].sort((a, b) => a.email.localeCompare(b.email));
 }
 
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
+
 /** Admin client: unsigned kids + parent emails from roster. */
 export async function fetchUnsignedConsentFamilies(): Promise<UnsignedConsentFamily[]> {
   const { fetchFamilyRosterAdmin } = await import("@/lib/parent-contacts");
@@ -83,17 +85,23 @@ export async function fetchUnsignedConsentFamiliesServer(): Promise<UnsignedCons
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = supabaseAdmin as any;
+  const tenantId = await tenantIdForQuery();
 
   const { data: members, error: memberError } = await admin
     .from("team_members")
     .select("id, name")
+    .eq("tenant_id", tenantId)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
   if (memberError) throw new Error(memberError.message);
 
+  const memberIds = (members ?? []).map((m: { id: string }) => m.id as string);
+  if (!memberIds.length) return [];
+
   const { data: consents, error: consentError } = await admin
     .from("parent_media_consents")
-    .select("team_member_id");
+    .select("team_member_id")
+    .in("team_member_id", memberIds);
   if (consentError && !consentError.message.includes("parent_media_consents")) {
     throw new Error(consentError.message);
   }
@@ -110,11 +118,11 @@ export async function fetchUnsignedConsentFamiliesServer(): Promise<UnsignedCons
 
   if (unsignedIds.length === 0) return [];
 
-  const memberIds = unsignedIds.map((m) => m.id);
+  const unsignedMemberIds = unsignedIds.map((m) => m.id);
   const { data: parents, error: parentsError } = await admin
     .from("parent_contacts")
     .select("team_member_id, parent_name, email")
-    .in("team_member_id", memberIds)
+    .in("team_member_id", unsignedMemberIds)
     .order("sort_order", { ascending: true });
   if (parentsError) throw new Error(parentsError.message);
 

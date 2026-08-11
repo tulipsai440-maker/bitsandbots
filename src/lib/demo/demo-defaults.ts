@@ -15,7 +15,7 @@ export const DEMO_SITE_SETTINGS_OVERRIDES: Partial<SiteSettings> = {
   coachesHeroDescription:
     "Sample coaches — replace names, photos, and bios with your real coaching team.",
   sponsorsHeroDescription:
-    "Sample sponsors — add your community partners and upload their logos.",
+    "Community partners help our team build, compete, and share FIRST LEGO League with others.",
   outreachHeroDescription:
     "Sample outreach stories — tell how your team shares FLL in the community.",
   heroSubtext:
@@ -35,6 +35,20 @@ export const DEMO_SITE_SETTINGS_OVERRIDES: Partial<SiteSettings> = {
   galleryHeroDescription: "Sample approved photos — parents can submit more from the gallery page.",
   galleryEmptyTitle: "No photos yet.",
   galleryEmptyMessage: "Share photos below — a coach approves them before they appear here.",
+  meetingsBlurb: "Set your team schedule in Admin — practice times, Zoom links, and calendar events.",
+  meetingSummary: "Customize in Admin",
+  practiceSummary: "Your practice day & time",
+  practicePlace: "Your location",
+  zoomSummary: "Optional midweek check-in",
+  zoomPlace: "Online",
+  ctaTitle: "Come to a practice",
+  ctaBody:
+    "Invite families to visit a practice or meeting — customize this message and your schedule in Admin.",
+  joinHeroDescription: "Send a short message and a coach will follow up.",
+  coreValuesIntro:
+    "The FIRST Core Values guide how teams learn, compete, and work with others. Official definitions below are from FIRST / FIRST LEGO League.",
+  eventsHeroDescription: "Add practices and events in Admin → Calendar.",
+  calendarHeroDescription: "Team practices, Zoom check-ins, and FLL events — manage in Admin.",
 };
 
 export const DEMO_OUTREACH_STORIES: OutreachStoryRow[] = [

@@ -3,6 +3,8 @@ import {
   isParentConsentSetupMissing,
   parentConsentErrorMessage,
 } from "@/lib/parent-consent";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -27,6 +29,16 @@ export type ParentMediaConsentRow = {
 export { isParentConsentSetupMissing, parentConsentErrorMessage };
 
 export async function fetchParentMediaConsentsAdmin(): Promise<ParentMediaConsentRow[]> {
+  const tenantId = await tenantIdForQuery();
+
+  let memberQuery = supabase.from("team_members").select("id");
+  memberQuery = withTenantFilter(memberQuery, tenantId);
+  const { data: members, error: memberError } = await memberQuery;
+  if (memberError) throw new Error(memberError.message);
+
+  const memberIds = (members ?? []).map((m) => m.id as string);
+  if (!memberIds.length) return [];
+
   const { data, error } = await db
     .from("parent_media_consents")
     .select(
@@ -47,6 +59,7 @@ export async function fetchParentMediaConsentsAdmin(): Promise<ParentMediaConsen
       team_members!inner ( name )
     `,
     )
+    .in("team_member_id", memberIds)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);

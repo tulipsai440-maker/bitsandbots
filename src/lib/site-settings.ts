@@ -15,8 +15,14 @@ import {
   type SeasonVideoGroup,
 } from "@/lib/site-content-defaults";
 import type { SeasonDocument, SeasonVideo } from "@/lib/season-videos";
+import {
+  DEFAULT_RESOURCES_PAGE_SECTIONS,
+  parseResourcesPageSections,
+  type ResourcesPageSections,
+} from "@/lib/resources-page-sections";
 import { isDemoMode } from "@/lib/demo/app-mode";
-import { buildDemoSiteSettings, demoOutreachStories } from "@/lib/demo/demo-defaults";
+import { buildDemoSiteSettings, demoOutreachStories, DEMO_OUTREACH_STORIES } from "@/lib/demo/demo-defaults";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { withTenantFilter } from "@/lib/tenant/query";
 import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
@@ -113,6 +119,7 @@ export type SiteSettings = {
   calendarHeroDescription: string;
   videosHeroTitle: string;
   videosHeroDescription: string;
+  resourcesPageSections: ResourcesPageSections;
   quickLinksHeroTitle: string;
   quickLinksHeroDescription: string;
   consentHeroTitle: string;
@@ -365,6 +372,7 @@ export const PRODUCTION_SITE_SETTINGS: SiteSettings = {
   videosHeroTitle: "Resources",
   videosHeroDescription:
     "Official season videos and PDFs, plus FIRST LEGO League links — everything in one place.",
+  resourcesPageSections: DEFAULT_RESOURCES_PAGE_SECTIONS,
   quickLinksHeroTitle: "Resources",
   quickLinksHeroDescription:
     "Official season videos and PDFs, plus FIRST LEGO League links for Bits & Bots families.",
@@ -644,6 +652,7 @@ function mapSettingsRow(row: Record<string, unknown>): SiteSettings {
     calendarHeroDescription: String(row.calendar_hero_description ?? DEFAULT_SITE_SETTINGS.calendarHeroDescription),
     videosHeroTitle: String(row.videos_hero_title ?? DEFAULT_SITE_SETTINGS.videosHeroTitle),
     videosHeroDescription: String(row.videos_hero_description ?? DEFAULT_SITE_SETTINGS.videosHeroDescription),
+    resourcesPageSections: parseResourcesPageSections(row.resources_page_sections),
     quickLinksHeroTitle: String(row.quick_links_hero_title ?? DEFAULT_SITE_SETTINGS.quickLinksHeroTitle),
     quickLinksHeroDescription: String(row.quick_links_hero_description ?? DEFAULT_SITE_SETTINGS.quickLinksHeroDescription),
     consentHeroTitle: String(row.consent_hero_title ?? DEFAULT_SITE_SETTINGS.consentHeroTitle),
@@ -694,7 +703,7 @@ export function isSiteSettingsSetupMissing(error: unknown): boolean {
   );
 }
 
-export async function fetchSiteSettings(): Promise<SiteSettings> {
+export async function fetchSiteSettingsFromDb(): Promise<SiteSettings> {
   const tenantId = await tenantIdForQuery();
   let query = db.from("site_settings").select("*");
   query = withTenantFilter(query, tenantId);
@@ -707,14 +716,29 @@ export async function fetchSiteSettings(): Promise<SiteSettings> {
   return mapSettingsRow(data as Record<string, unknown>);
 }
 
-export async function fetchOutreachStories(): Promise<OutreachStoryRow[]> {
+export async function fetchOutreachStoriesFromDb(): Promise<OutreachStoryRow[]> {
   const tenantId = await tenantIdForQuery();
   let query = db.from("outreach_stories").select("*").order("sort_order", { ascending: true });
   query = withTenantFilter(query, tenantId);
   const { data, error } = await query;
   if (error) throw error;
-  if (!data?.length) return DEFAULT_OUTREACH_STORIES;
+  if (!data?.length) return [];
   return (data as Record<string, unknown>[]).map(mapOutreachRow);
+}
+
+export async function fetchSiteSettings(): Promise<SiteSettings> {
+  let settings = await fetchSiteSettingsFromDb();
+  if (isDemoMode) return buildDemoSiteSettings(settings);
+  return settings;
+}
+
+export async function fetchOutreachStories(): Promise<OutreachStoryRow[]> {
+  const stories = await fetchOutreachStoriesFromDb();
+  if (isDemoMode) return demoOutreachStories(stories);
+  if (await shouldUseDemoAssets()) {
+    return stories.length ? stories : DEMO_OUTREACH_STORIES;
+  }
+  return stories.length ? stories : DEFAULT_OUTREACH_STORIES;
 }
 
 /** Replace a previous team name everywhere it appears in a string. */

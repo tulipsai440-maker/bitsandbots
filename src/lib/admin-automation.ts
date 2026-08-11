@@ -426,7 +426,14 @@ export async function sendWeeklyCoachDigest(): Promise<{ sent: boolean; failures
     .from("team_members")
     .select("id, name")
     .eq("tenant_id", BITSANDBOTS_TENANT_ID);
-  const { data: consents } = await admin.from("parent_media_consents").select("team_member_id");
+  const memberIds = (members ?? []).map((m: { id: string }) => m.id);
+  const { data: consents } =
+    memberIds.length > 0
+      ? await admin
+          .from("parent_media_consents")
+          .select("team_member_id")
+          .in("team_member_id", memberIds)
+      : { data: [] };
   const consented = new Set((consents ?? []).map((c: { team_member_id: string }) => c.team_member_id));
   const missingConsent = (members ?? [])
     .filter((m: { id: string }) => !consented.has(m.id))

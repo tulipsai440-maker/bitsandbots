@@ -108,7 +108,7 @@ function ParentsConsentPage() {
 
   return (
     <SiteLayout>
-      <PageHero title={heroTitle} description={heroDescription} />
+      <PageHero title={heroTitle} align="center" description={heroDescription} />
       <section className="py-16">
         <div className="container-page grid gap-12 lg:grid-cols-[1fr_1.35fr]">
           <aside>

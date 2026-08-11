@@ -1,5 +1,4 @@
 import type { Coach } from "@/lib/coaches";
-import type { Sponsor } from "@/lib/sponsors";
 import type { TeamMember } from "@/lib/team-members";
 import type { GalleryPhoto } from "@/lib/gallery-photos";
 import { demoAssets } from "@/lib/demo/demo-assets";
@@ -34,30 +33,6 @@ export const DEMO_TEAM_MEMBERS: TeamMember[] = [
   { id: "member-morgan", name: "Morgan Brooks", photoUrl: demoAssets.memberMorgan, description: GENERIC_MEMBER_BIO, sortOrder: 3 },
   { id: "member-jordan", name: "Jordan Kim", photoUrl: demoAssets.memberJordan, description: GENERIC_MEMBER_BIO, sortOrder: 4 },
   { id: "member-taylor", name: "Taylor Wright", photoUrl: demoAssets.memberTaylor, description: GENERIC_MEMBER_BIO, sortOrder: 5 },
-];
-
-export const DEMO_SPONSORS: Sponsor[] = [
-  {
-    id: "sponsor-community-bank",
-    name: "Community Bank",
-    logoUrl: demoAssets.sponsorBank,
-    description: "Supporting youth STEM programs in our county.",
-    sortOrder: 0,
-  },
-  {
-    id: "sponsor-tech-partners",
-    name: "Tech Partners LLC",
-    logoUrl: demoAssets.sponsorTech,
-    description: "Local technology mentors and workshop space.",
-    sortOrder: 1,
-  },
-  {
-    id: "sponsor-youth-foundation",
-    name: "Youth Foundation",
-    logoUrl: demoAssets.sponsorTech,
-    description: "Grants for robotics and after-school STEM.",
-    sortOrder: 2,
-  },
 ];
 
 export const DEMO_GALLERY_PHOTOS: GalleryPhoto[] = [

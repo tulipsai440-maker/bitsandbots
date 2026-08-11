@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { resolveTenantIdForFetch } from "@/lib/tenant/resolve";
+import { withTenantFilter } from "@/lib/tenant/query";
 import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -148,6 +149,7 @@ export async function createAssignment(input: {
   if (!input.dueDate) throw new Error("Due date is required");
   if (!input.memberIds.length) throw new Error("Select at least one teammate");
 
+  const tenantId = await tenantIdForQuery();
   const { data: userData } = await supabase.auth.getUser();
 
   const { data: assignment, error } = await db
@@ -158,6 +160,7 @@ export async function createAssignment(input: {
       link_url: input.linkUrl?.trim() || null,
       due_date: input.dueDate,
       created_by: userData.user?.id ?? null,
+      tenant_id: tenantId,
     })
     .select("id")
     .single();
@@ -169,6 +172,7 @@ export async function createAssignment(input: {
     team_member_id,
     status: "todo",
     note: "",
+    tenant_id: tenantId,
   }));
 
   const { error: taskError } = await db.from("assignment_tasks").insert(rows);
@@ -181,18 +185,28 @@ export async function createAssignment(input: {
 }
 
 export async function deleteAssignment(id: string): Promise<void> {
-  const { error } = await db.from("assignments").delete().eq("id", id);
+  const tenantId = await tenantIdForQuery();
+  let query = db.from("assignments").delete().eq("id", id);
+  query = withTenantFilter(query, tenantId);
+  const { error } = await query;
   if (error) throw error;
 }
 
 export async function fetchAssignmentsAdmin(): Promise<AssignmentWithProgress[]> {
-  const { data: assignments, error } = await db
+  const tenantId = await tenantIdForQuery();
+  let assignmentsQuery = db
     .from("assignments")
     .select("id, title, description, link_url, due_date, created_at")
     .order("due_date", { ascending: true })
     .order("created_at", { ascending: false });
+  assignmentsQuery = withTenantFilter(assignmentsQuery, tenantId);
+
+  const { data: assignments, error } = await assignmentsQuery;
 
   if (error) throw error;
+  if (!assignments?.length) return [];
+
+  const assignmentIds = (assignments as { id: string }[]).map((row) => row.id);
 
   let tasks: Record<string, unknown>[] | null = null;
   {
@@ -200,12 +214,14 @@ export async function fetchAssignmentsAdmin(): Promise<AssignmentWithProgress[]>
       .from("assignment_tasks")
       .select(
         "id, assignment_id, team_member_id, status, note, attachment_url, attachment_name, updated_at",
-      );
+      )
+      .in("assignment_id", assignmentIds);
 
     if (withAttachments.error && isAssignmentAttachmentsUpgradeMissing(withAttachments.error)) {
       const fallback = await db
         .from("assignment_tasks")
-        .select("id, assignment_id, team_member_id, status, note, updated_at");
+        .select("id, assignment_id, team_member_id, status, note, updated_at")
+        .in("assignment_id", assignmentIds);
       if (fallback.error) throw fallback.error;
       tasks = fallback.data ?? [];
     } else if (withAttachments.error) {
@@ -215,9 +231,9 @@ export async function fetchAssignmentsAdmin(): Promise<AssignmentWithProgress[]>
     }
   }
 
-  const { data: members, error: memberError } = await supabase
-    .from("team_members")
-    .select("id, name");
+  let membersQuery = supabase.from("team_members").select("id, name");
+  membersQuery = withTenantFilter(membersQuery, tenantId);
+  const { data: members, error: memberError } = await membersQuery;
 
   if (memberError) throw memberError;
 
