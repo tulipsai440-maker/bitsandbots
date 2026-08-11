@@ -8,8 +8,7 @@ import {
   emailSignoff,
   loadTeamBrandingServer,
 } from "@/lib/team-branding";
-
-const DEFAULT_CC = "suresh440@gmail.com";
+import { loadCoachCcEmailsServer } from "@/lib/coach-cc-emails";
 
 export type OverdueReminderRow = {
   taskId: string;
@@ -53,10 +52,9 @@ async function resendConfig() {
   const branding = await loadTeamBrandingServer();
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const fromAddress = emailFromFallback(branding);
-  const cc =
-    process.env.ASSIGNMENT_REMINDER_CC?.trim() ||
-    process.env.RESEND_REPLY_TO?.trim() ||
-    DEFAULT_CC;
+  const envCc = process.env.ASSIGNMENT_REMINDER_CC?.trim() || process.env.RESEND_REPLY_TO?.trim();
+  const coachCc = await loadCoachCcEmailsServer();
+  const cc = [...new Set([...(envCc ? [envCc] : []), ...coachCc])];
   const siteOrigin = branding.siteUrl;
   return { apiKey, fromAddress, cc, siteOrigin, branding };
 }
@@ -203,8 +201,7 @@ Teammates can update their task at ${assignmentsUrl} (name + 4-digit PIN).
     body: JSON.stringify({
       from: config.fromAddress,
       to: [row.parentEmail],
-      cc: [config.cc],
-      reply_to: [config.cc],
+      ...(config.cc.length > 0 ? { cc: config.cc, reply_to: [config.cc[0]] } : {}),
       subject,
       text,
       html,

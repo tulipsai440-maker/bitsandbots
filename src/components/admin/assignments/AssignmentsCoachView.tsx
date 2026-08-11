@@ -102,7 +102,7 @@ export function AssignmentsCoachView() {
       } else if (result.sent === 0) {
         toast.message("No overdue reminders to send (due yesterday, not done, not already emailed).");
       } else {
-        toast.success(`Sent ${result.sent} overdue reminder email(s) to parents (CC suresh440@gmail.com).`);
+        toast.success(`Sent ${result.sent} overdue reminder email(s) to parents (coaches copied).`);
       }
     } catch (e) {
       toast.error(assignmentsErrorMessage(e));
@@ -175,8 +175,7 @@ export function AssignmentsCoachView() {
             <p className="mt-1 text-muted-foreground">
               Each day at <strong className="text-foreground">8 AM Eastern</strong>, parents get a separate email if their kid did not finish a
               task by the due date (sent the <strong className="text-foreground">next day</strong>).
-              Coach <strong className="text-foreground">suresh440@gmail.com</strong> is CC&apos;d on
-              every reminder. One-time: run{" "}
+              Coaches are copied on every reminder. One-time: run{" "}
               <code className="rounded bg-muted px-1">supabase/setup-assignment-reminders.sql</code> in
               Supabase.
             </p>
