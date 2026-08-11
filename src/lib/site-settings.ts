@@ -147,8 +147,7 @@ export const DEFAULT_NAV_LINKS: NavLinkItem[] = [
   { kind: "internal", label: "Coaches", to: "/coaches" },
   { kind: "internal", label: "Calendar", to: "/calendar" },
   { kind: "internal", label: "Assignments", to: "/assignments" },
-  { kind: "internal", label: "Videos", to: "/videos" },
-  { kind: "external", label: "Resources", href: DEFAULT_SEASON_CONTENT.seasonResourcesUrl },
+  { kind: "internal", label: "Resources", to: "/resources" },
   { kind: "internal", label: "Gallery", to: "/gallery" },
   { kind: "internal", label: "Outreach", to: "/outreach" },
 ];
@@ -159,11 +158,10 @@ export const DEFAULT_FOOTER_EXPLORE_LINKS: NavLinkItem[] = [
   { kind: "internal", label: "Calendar", to: "/calendar" },
   { kind: "internal", label: "Assignments", to: "/assignments" },
   { kind: "internal", label: "Gallery", to: "/gallery" },
-  { kind: "internal", label: "Videos", to: "/videos" },
+  { kind: "internal", label: "Resources", to: "/resources" },
   { kind: "internal", label: "Outreach", to: "/outreach" },
   { kind: "internal", label: "Sponsors", to: "/sponsors" },
   { kind: "internal", label: "Core Values", to: "/core-values" },
-  { kind: "internal", label: "Quick Links", to: "/quick-links" },
 ];
 
 export const DEFAULT_FOOTER_EXTERNAL_LINKS: NavLinkItem[] = [
@@ -363,11 +361,12 @@ export const PRODUCTION_SITE_SETTINGS: SiteSettings = {
   eventsHeroDescription: "Team practice on Sundays and Zoom check-ins on Wednesdays.",
   calendarHeroTitle: "Calendar",
   calendarHeroDescription: "Practices, Zoom calls, and team events.",
-  videosHeroTitle: "BIOGLOW videos & resources",
+  videosHeroTitle: "Resources",
   videosHeroDescription:
-    "Official Future Edition videos and PDFs — notebook, rulebook, missions, rubric, and score sheet.",
-  quickLinksHeroTitle: "Quick links",
-  quickLinksHeroDescription: "FIRST LEGO League resources and helpful links for Bits & Bots families.",
+    "Official season videos and PDFs, plus FIRST LEGO League links — everything in one place.",
+  quickLinksHeroTitle: "Resources",
+  quickLinksHeroDescription:
+    "Official season videos and PDFs, plus FIRST LEGO League links for Bits & Bots families.",
   consentHeroTitle: "Photo & Media Consent",
   consentHeroDescription: "Permission for Bits & Bots to share team photos and videos.",
   consentIntroOverride: "",
@@ -394,6 +393,46 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = isDemoMode
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
+const RESOURCES_NAV_LINK: NavLinkItem = { kind: "internal", label: "Resources", to: "/resources" };
+
+function isLegacyResourcesNavItem(item: NavLinkItem): boolean {
+  if (item.kind === "internal") {
+    return item.to === "/videos" || item.to === "/quick-links" || item.label === "Videos" || item.label === "Quick Links";
+  }
+  return item.label === "Resources";
+}
+
+function mergeNavLinksForResources(links: NavLinkItem[], fallback: NavLinkItem[]): NavLinkItem[] {
+  const base = links.length ? links : fallback;
+  let changed = false;
+  const filtered = base.filter((item) => {
+    if (isLegacyResourcesNavItem(item)) {
+      changed = true;
+      return false;
+    }
+    return true;
+  });
+
+  const hasResources = filtered.some(
+    (item) => item.kind === "internal" && item.to === "/resources",
+  );
+  if (!hasResources) {
+    changed = true;
+    const afterAssignments = filtered.findIndex(
+      (item) => item.kind === "internal" && item.to === "/assignments",
+    );
+    const insertAt = afterAssignments >= 0 ? afterAssignments + 1 : filtered.length;
+    filtered.splice(insertAt, 0, RESOURCES_NAV_LINK);
+  }
+
+  return changed || !links.length ? filtered : links;
+}
+
+function normalizeInternalPath(path: string): string {
+  if (path === "/videos" || path === "/quick-links") return "/resources";
+  return path;
+}
+
 function parseNavLinks(value: unknown, fallback: NavLinkItem[]): NavLinkItem[] {
   if (!Array.isArray(value)) return fallback;
   const parsed = value.filter(
@@ -405,7 +444,10 @@ function parseNavLinks(value: unknown, fallback: NavLinkItem[]): NavLinkItem[] {
         ? typeof (item as { to?: string }).to === "string"
         : typeof (item as { href?: string }).href === "string"),
   );
-  return parsed.length ? parsed : fallback;
+  const mapped = parsed.map((item) =>
+    item.kind === "internal" ? { ...item, to: normalizeInternalPath(item.to) } : item,
+  );
+  return mergeNavLinksForResources(mapped, fallback);
 }
 
 function parsePillars(value: unknown): HomepagePillar[] {
@@ -538,9 +580,9 @@ function mapSettingsRow(row: Record<string, unknown>): SiteSettings {
     joinSuccessMessage: String(row.join_success_message ?? DEFAULT_SITE_SETTINGS.joinSuccessMessage),
     heroSubtext: String(row.hero_subtext ?? DEFAULT_SITE_SETTINGS.heroSubtext),
     heroPrimaryLabel: String(row.hero_primary_label ?? DEFAULT_SITE_SETTINGS.heroPrimaryLabel),
-    heroPrimaryPath: String(row.hero_primary_path ?? DEFAULT_SITE_SETTINGS.heroPrimaryPath),
+    heroPrimaryPath: normalizeInternalPath(String(row.hero_primary_path ?? DEFAULT_SITE_SETTINGS.heroPrimaryPath)),
     heroSecondaryLabel: String(row.hero_secondary_label ?? DEFAULT_SITE_SETTINGS.heroSecondaryLabel),
-    heroSecondaryPath: String(row.hero_secondary_path ?? DEFAULT_SITE_SETTINGS.heroSecondaryPath),
+    heroSecondaryPath: normalizeInternalPath(String(row.hero_secondary_path ?? DEFAULT_SITE_SETTINGS.heroSecondaryPath)),
     seasonEyebrow: String(row.season_eyebrow ?? DEFAULT_SITE_SETTINGS.seasonEyebrow),
     seasonStoryTitle: String(row.season_story_title ?? DEFAULT_SITE_SETTINGS.seasonStoryTitle),
     seasonStoryBody: String(row.season_story_body ?? DEFAULT_SITE_SETTINGS.seasonStoryBody),

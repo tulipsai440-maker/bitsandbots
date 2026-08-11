@@ -56,14 +56,14 @@ export function SiteContentExtendedSections({
           <Field label="Gallery title" value={form.settings.galleryHeroTitle} onChange={(v) => patchSettings({ galleryHeroTitle: v })} />
           <Field label="Events title" value={form.settings.eventsHeroTitle} onChange={(v) => patchSettings({ eventsHeroTitle: v })} />
           <Field label="Calendar title" value={form.settings.calendarHeroTitle} onChange={(v) => patchSettings({ calendarHeroTitle: v })} />
-          <Field label="Videos title" value={form.settings.videosHeroTitle} onChange={(v) => patchSettings({ videosHeroTitle: v })} />
+          <Field label="Resources page title" value={form.settings.videosHeroTitle} onChange={(v) => patchSettings({ videosHeroTitle: v })} />
           <Field label="Quick links title" value={form.settings.quickLinksHeroTitle} onChange={(v) => patchSettings({ quickLinksHeroTitle: v })} />
           <Field label="Consent title" value={form.settings.consentHeroTitle} onChange={(v) => patchSettings({ consentHeroTitle: v })} />
         </Grid>
         <TextArea label="Gallery hero description" value={form.settings.galleryHeroDescription} onChange={(v) => patchSettings({ galleryHeroDescription: v })} />
         <TextArea label="Events hero description" value={form.settings.eventsHeroDescription} onChange={(v) => patchSettings({ eventsHeroDescription: v })} />
         <TextArea label="Calendar hero description" value={form.settings.calendarHeroDescription} onChange={(v) => patchSettings({ calendarHeroDescription: v })} />
-        <TextArea label="Videos hero description" value={form.settings.videosHeroDescription} onChange={(v) => patchSettings({ videosHeroDescription: v })} />
+        <TextArea label="Resources page description" value={form.settings.videosHeroDescription} onChange={(v) => patchSettings({ videosHeroDescription: v })} />
         <TextArea label="Quick links hero description" value={form.settings.quickLinksHeroDescription} onChange={(v) => patchSettings({ quickLinksHeroDescription: v })} />
         <TextArea label="Consent hero description" value={form.settings.consentHeroDescription} onChange={(v) => patchSettings({ consentHeroDescription: v })} />
         <Grid>
@@ -94,7 +94,11 @@ export function SiteContentExtendedSections({
         />
       </Section>
 
-      <Section title="Quick links page">
+      <Section title="Resources page (extra links)">
+        <p className="text-sm text-muted-foreground">
+          Season videos and PDFs appear automatically on the Resources page. Add FIRST program links and
+          shortcuts to team pages below.
+        </p>
         <QuickLinksEditor links={form.settings.quickLinks} onChange={(quickLinks) => patchSettings({ quickLinks })} />
       </Section>
 

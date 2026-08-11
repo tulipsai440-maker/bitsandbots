@@ -24,6 +24,7 @@ import { Route as JoinRouteImport } from './routes/join'
 import { Route as OutreachRouteImport } from './routes/outreach'
 import { Route as ParentsconsentRouteImport } from './routes/parentsconsent'
 import { Route as QuickLinksRouteImport } from './routes/quick-links'
+import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SponsorsRouteImport } from './routes/sponsors'
 import { Route as VideosRouteImport } from './routes/videos'
@@ -120,6 +121,11 @@ const ParentsconsentRoute = ParentsconsentRouteImport.update({
 const QuickLinksRoute = QuickLinksRouteImport.update({
   id: '/quick-links',
   path: '/quick-links',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesRoute = ResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -271,6 +277,7 @@ export interface FileRoutesByFullPath {
   '/outreach': typeof OutreachRoute
   '/parentsconsent': typeof ParentsconsentRoute
   '/quick-links': typeof QuickLinksRoute
+  '/resources': typeof ResourcesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sponsors': typeof SponsorsRoute
   '/videos': typeof VideosRoute
@@ -310,6 +317,7 @@ export interface FileRoutesByTo {
   '/outreach': typeof OutreachRoute
   '/parentsconsent': typeof ParentsconsentRoute
   '/quick-links': typeof QuickLinksRoute
+  '/resources': typeof ResourcesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sponsors': typeof SponsorsRoute
   '/videos': typeof VideosRoute
@@ -351,6 +359,7 @@ export interface FileRoutesById {
   '/outreach': typeof OutreachRoute
   '/parentsconsent': typeof ParentsconsentRoute
   '/quick-links': typeof QuickLinksRoute
+  '/resources': typeof ResourcesRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sponsors': typeof SponsorsRoute
   '/videos': typeof VideosRoute
@@ -392,6 +401,7 @@ export interface FileRouteTypes {
     | '/outreach'
     | '/parentsconsent'
     | '/quick-links'
+    | '/resources'
     | '/sitemap.xml'
     | '/sponsors'
     | '/videos'
@@ -431,6 +441,7 @@ export interface FileRouteTypes {
     | '/outreach'
     | '/parentsconsent'
     | '/quick-links'
+    | '/resources'
     | '/sitemap.xml'
     | '/sponsors'
     | '/videos'
@@ -471,6 +482,7 @@ export interface FileRouteTypes {
     | '/outreach'
     | '/parentsconsent'
     | '/quick-links'
+    | '/resources'
     | '/sitemap.xml'
     | '/sponsors'
     | '/videos'
@@ -512,6 +524,7 @@ export interface RootRouteChildren {
   OutreachRoute: typeof OutreachRoute
   ParentsconsentRoute: typeof ParentsconsentRoute
   QuickLinksRoute: typeof QuickLinksRoute
+  ResourcesRoute: typeof ResourcesRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SponsorsRoute: typeof SponsorsRoute
   VideosRoute: typeof VideosRoute
@@ -622,6 +635,13 @@ declare module '@tanstack/react-router' {
       path: '/quick-links'
       fullPath: '/quick-links'
       preLoaderRoute: typeof QuickLinksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources': {
+      id: '/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof ResourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -854,6 +874,7 @@ const rootRouteChildren: RootRouteChildren = {
   OutreachRoute: OutreachRoute,
   ParentsconsentRoute: ParentsconsentRoute,
   QuickLinksRoute: QuickLinksRoute,
+  ResourcesRoute: ResourcesRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SponsorsRoute: SponsorsRoute,
   VideosRoute: VideosRoute,

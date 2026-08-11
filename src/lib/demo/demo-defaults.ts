@@ -24,9 +24,9 @@ export const DEMO_SITE_SETTINGS_OVERRIDES: Partial<SiteSettings> = {
   seasonStoryBody:
     "Demo Robotics Team shows how an FLL site can highlight the Innovation Project, Robot Design & Code, and Core Values — plus outreach in your community.",
   seasonStoryLinkLabel: "See sample outreach stories",
-  videosHeroTitle: "Season videos & resources",
+  videosHeroTitle: "Resources",
   videosHeroDescription:
-    "Link your season playlist and official FIRST resources — these are sample links you can replace.",
+    "Official season videos and PDFs, plus FIRST LEGO League links — sample content you can replace.",
   quickLinksHeroTitle: "Quick links",
   quickLinksHeroDescription: "Helpful links for families — customize in Admin → Site content.",
   consentHeroDescription: "Sample media consent form — wire to your team roster in Supabase.",

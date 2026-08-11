@@ -39,30 +39,6 @@ export const DEFAULT_GENERIC_MEMBER_BIO =
 
 export const DEFAULT_QUICK_LINKS: QuickLinkCard[] = [
   {
-    id: "season-videos",
-    label: "Season videos",
-    href: "/videos",
-    desc: "Season intro, missions, field setup, role videos, and official PDFs.",
-  },
-  {
-    id: "season-resources",
-    label: "Season resources",
-    href: BIOGLOW_RESOURCES_URL,
-    desc: "Official LEGO Education materials for Future Edition (grades 3–8).",
-  },
-  ...BIOGLOW_DOCUMENTS.map((doc) => ({
-    id: doc.id,
-    label: doc.title,
-    href: doc.href,
-    desc: doc.blurb,
-  })),
-  {
-    id: "season-playlist",
-    label: "Full season playlist",
-    href: BIOGLOW_PLAYLIST_URL,
-    desc: "Official FIRST LEGO League YouTube playlist for Future Edition.",
-  },
-  {
     id: "fll",
     label: "FIRST LEGO League",
     href: "https://www.firstlegoleague.org/",
@@ -136,7 +112,7 @@ export type NavButton = {
 
 export const DEFAULT_HERO_BUTTONS = {
   primary: { label: "Meet the team", path: "/about" },
-  secondary: { label: "Watch season videos", path: "/videos" },
+  secondary: { label: "Season resources", path: "/resources" },
 } as const;
 
 export const DEFAULT_CTA_BUTTONS = {

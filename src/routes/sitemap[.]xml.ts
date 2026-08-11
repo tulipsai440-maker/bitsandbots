@@ -13,9 +13,8 @@ const paths = [
   "/calendar",
   "/events",
   "/gallery",
-  "/videos",
+  "/resources",
   "/join",
-  "/quick-links",
 ];
 
 export const Route = createFileRoute("/sitemap.xml")({
