@@ -4,17 +4,31 @@ import { SiteLayout, PageHero } from "@/components/site/Layout";
 import { TeamPhoto } from "@/components/site/TeamPhoto";
 import { ArrowRight, Calendar } from "lucide-react";
 import { fetchUpcomingEvents, type EventRow } from "@/lib/events";
-import { MEETINGS_BLURB, photoForEventType, SITE_NAME } from "@/lib/photos";
+import { photoForEventType } from "@/lib/photos";
+import { fetchSiteSettings, DEFAULT_SITE_SETTINGS } from "@/lib/site-settings";
+import { fetchTeamBranding } from "@/lib/team-branding";
+import { useSiteSettings } from "@/lib/site-settings-context";
 
 export const Route = createFileRoute("/events")({
-  head: () => ({
-    meta: [
-      { title: `Events — ${SITE_NAME}` },
-      { name: "description", content: `Upcoming ${SITE_NAME} meetings. ${MEETINGS_BLURB}` },
-      { property: "og:title", content: `${SITE_NAME} Events` },
-      { property: "og:description", content: "Team practice and Zoom check-ins." },
-    ],
-  }),
+  loader: async () => {
+    const [branding, settings] = await Promise.all([
+      fetchTeamBranding(),
+      fetchSiteSettings().catch(() => DEFAULT_SITE_SETTINGS),
+    ]);
+    return { branding, meetingsBlurb: settings.meetingsBlurb };
+  },
+  head: ({ loaderData }) => {
+    const name = loaderData?.branding?.siteName ?? DEFAULT_SITE_SETTINGS.siteName;
+    const blurb = loaderData?.meetingsBlurb ?? DEFAULT_SITE_SETTINGS.meetingsBlurb;
+    return {
+      meta: [
+        { title: `Events — ${name}` },
+        { name: "description", content: `Upcoming ${name} meetings. ${blurb}` },
+        { property: "og:title", content: `${name} Events` },
+        { property: "og:description", content: "Team practice and Zoom check-ins." },
+      ],
+    };
+  },
   component: EventsPage,
 });
 
@@ -30,6 +44,7 @@ function formatEventDate(startsAt: string, endsAt: string | null): string {
 }
 
 function EventsPage() {
+  const { eventsHeroTitle, eventsHeroDescription, meetingsBlurb } = useSiteSettings();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,11 +57,7 @@ function EventsPage() {
 
   return (
     <SiteLayout>
-      <PageHero
-        title="Upcoming meetings"
-        align="center"
-        description="Team practice on Sundays and Zoom check-ins on Wednesdays."
-      />
+      <PageHero title={eventsHeroTitle} align="center" description={eventsHeroDescription} />
       <section className="py-16">
         <div className="container-page">
           {loading && <p className="text-sm text-muted-foreground">Loading events…</p>}
@@ -54,7 +65,7 @@ function EventsPage() {
             <div className="rounded-2xl border border-border bg-card p-10 text-center">
               <p className="font-display text-2xl text-foreground">Nothing on the schedule right now.</p>
               <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-                {MEETINGS_BLURB}
+                {meetingsBlurb}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <Link to="/calendar" className="btn-outline inline-flex gap-2">

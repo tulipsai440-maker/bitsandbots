@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { AdminReviewPage } from "@/components/admin/AdminShell";
+import { useEffect, useState } from "react";
+import { AdminQuickShell } from "@/components/admin/AdminQuickShell";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchTroopUsers,
@@ -77,8 +77,6 @@ function AdminTroopAdminsPage() {
     load();
   }, []);
 
-  const adminCount = useMemo(() => users.filter((u) => u.isAdmin).length, [users]);
-
   async function toggleAdmin(user: TroopUser) {
     const granting = !user.isAdmin;
     if (
@@ -107,11 +105,7 @@ function AdminTroopAdminsPage() {
   }
 
   return (
-    <AdminReviewPage
-      active="team-admins"
-      title="Team Admins"
-      description={`Give coaches access to the admin tools. ${adminCount} admin${adminCount === 1 ? "" : "s"} right now. Password does not grant admin — only the admin role does.`}
-    >
+    <AdminQuickShell>
       {needsSetup && <TeamAdminsSetupBanner onRetry={load} />}
 
       {!needsSetup && (
@@ -230,7 +224,7 @@ function AdminTroopAdminsPage() {
           </table>
         </div>
       )}
-    </AdminReviewPage>
+    </AdminQuickShell>
   );
 }
 

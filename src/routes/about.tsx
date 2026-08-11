@@ -1,64 +1,108 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SiteLayout, PageHero } from "@/components/site/Layout";
-import { FOUNDED_YEAR, MEETINGS_BLURB, PRACTICE_PLACE, PRACTICE_SUMMARY, SITE_NAME, SITE_TAGLINE, ZOOM_PLACE, ZOOM_SUMMARY } from "@/lib/photos";
+import { useState } from "react";
+import { SiteLayout } from "@/components/site/Layout";
+import { EditablePageHero } from "@/components/admin/inline-edit/EditablePageHero";
+import { EditableBlock, EditableText } from "@/components/admin/inline-edit/EditableText";
+import {
+  EditableTeamMemberCard,
+  InlineAddButton,
+  InlineAddPersonDialog,
+  useInlineEditRefresh,
+} from "@/components/admin/inline-edit/EditablePersonCard";
+import { deleteTeamMember, saveTeamMember } from "@/lib/team-members-admin";
 import { fetchTeamMembers, teamMemberDisplayBio, type TeamMember } from "@/lib/team-members";
-import { MapPin, Clock, UserRound } from "lucide-react";
+import { useSiteSettings } from "@/lib/site-settings-context";
+import { MapPin, Clock } from "lucide-react";
+import { parseAdminEditSearch } from "@/lib/admin-route-search";
 
 export const Route = createFileRoute("/about")({
-  head: () => ({
-    meta: [
-      { title: `Our Team — ${SITE_NAME}` },
-      {
-        name: "description",
-        content: `Meet the ${SITE_NAME} FIRST LEGO League teammates. Founded in ${FOUNDED_YEAR}.`,
-      },
-      { property: "og:title", content: `Our Team — ${SITE_NAME}` },
-      { property: "og:description", content: "Team members and weekly practice details." },
-    ],
-  }),
+  validateSearch: parseAdminEditSearch,
+  component: AboutPage,
   loader: async () => ({
     members: await fetchTeamMembers(),
   }),
-  component: AboutPage,
 });
 
 function AboutPage() {
   const { members } = Route.useLoaderData();
+  const refresh = useInlineEditRefresh();
+  const [showAdd, setShowAdd] = useState(false);
+  const {
+    siteName,
+    aboutHeroDescription,
+    aboutBlurb,
+    aboutPageTitle,
+    aboutTeamSectionTitle,
+    aboutMeetingsSectionTitle,
+    practiceSummary,
+    practicePlace,
+    zoomSummary,
+    zoomPlace,
+    genericMemberBio,
+  } = useSiteSettings();
+
+  async function handleSave(payload: {
+    id?: string;
+    name: string;
+    description?: string | null;
+    photoUrl?: string | null;
+    sortOrder?: number;
+  }) {
+    await saveTeamMember(payload);
+    await refresh();
+  }
+
+  async function handleDelete(id: string) {
+    await deleteTeamMember(id);
+    await refresh();
+  }
 
   return (
     <SiteLayout>
-      <PageHero
-        title="Our Team"
+      <EditablePageHero
+        title={aboutPageTitle}
+        titleKey="aboutPageTitle"
+        titleLabel="About page title"
         align="center"
-        description={`${SITE_NAME} is a FIRST LEGO League team founded in ${FOUNDED_YEAR}. ${MEETINGS_BLURB}`}
+        description={aboutHeroDescription}
+        descriptionKey="aboutHeroDescription"
+        descriptionLabel="About page intro"
       />
 
       <section className="pt-10">
         <div className="container-page">
-          <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
-            <h2 className="font-display text-2xl text-foreground">About {SITE_NAME}</h2>
-            <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-              We are a community robotics team from Collier County, Florida, competing in FIRST LEGO
-              League Challenge. Each season we research a real-world theme, design and program LEGO
-              robots for the Robot Game, and practice Core Values like discovery, innovation, impact,
-              inclusion, teamwork, and fun.
-            </p>
-          </div>
+          <EditableBlock settingKey="aboutBlurb" label="About blurb" className="rounded-2xl border border-border bg-card p-6 md:p-8">
+            <h2 className="font-display text-2xl text-foreground">About {siteName}</h2>
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground">{aboutBlurb}</p>
+          </EditableBlock>
         </div>
       </section>
 
       <section className="py-14 md:py-16">
         <div className="container-page">
           <div className="max-w-2xl">
-            <h2 className="font-display text-4xl md:text-5xl">Team members</h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="font-display text-4xl md:text-5xl">
+                <EditableText settingKey="aboutTeamSectionTitle" label="Team section title">
+                  {aboutTeamSectionTitle}
+                </EditableText>
+              </h2>
+              <InlineAddButton label="Add teammate" onClick={() => setShowAdd(true)} />
+            </div>
             <p className="mt-3 text-muted-foreground">
-              Meet the builders behind Bits &amp; Bots. Bios and photos can be updated anytime in Admin.
+              Click the pencil on any card to edit name, photo, or bio right here.
             </p>
           </div>
 
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {members.map((member) => (
-              <TeamMemberCard key={member.id} member={member} />
+              <EditableTeamMemberCard
+                key={member.id}
+                member={member}
+                displayDescription={teamMemberDisplayBio(member.description, member.name, genericMemberBio)}
+                onSave={handleSave}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         </div>
@@ -66,7 +110,11 @@ function AboutPage() {
 
       <section className="border-t border-border/60 bg-sand py-14 md:py-16">
         <div className="container-page">
-          <h2 className="font-display text-4xl md:text-5xl">Meeting details</h2>
+          <h2 className="font-display text-4xl md:text-5xl">
+            <EditableText settingKey="aboutMeetingsSectionTitle" label="Meetings section title">
+              {aboutMeetingsSectionTitle}
+            </EditableText>
+          </h2>
           <p className="mt-4 max-w-xl text-muted-foreground">
             Weekly team practice in person, plus a short midweek Zoom check-in.
           </p>
@@ -74,61 +122,40 @@ function AboutPage() {
             <li className="flex gap-3">
               <MapPin className="mt-0.5 shrink-0 text-forest" size={20} />
               <span>
-                Team practice · {PRACTICE_SUMMARY} · {PRACTICE_PLACE}
+                Team practice ·{" "}
+                <EditableText settingKey="practiceSummary" label="Practice schedule">
+                  {practiceSummary}
+                </EditableText>{" "}
+                ·{" "}
+                <EditableText settingKey="practicePlace" label="Practice location">
+                  {practicePlace}
+                </EditableText>
               </span>
             </li>
             <li className="flex gap-3">
               <Clock className="mt-0.5 shrink-0 text-forest" size={20} />
               <span>
-                Zoom call · {ZOOM_SUMMARY} · {ZOOM_PLACE}
+                Zoom call ·{" "}
+                <EditableText settingKey="zoomSummary" label="Zoom schedule">
+                  {zoomSummary}
+                </EditableText>{" "}
+                ·{" "}
+                <EditableText settingKey="zoomPlace" label="Zoom location">
+                  {zoomPlace}
+                </EditableText>
               </span>
             </li>
           </ul>
         </div>
       </section>
+
+      <InlineAddPersonDialog
+        open={showAdd}
+        onOpenChange={setShowAdd}
+        title="Add teammate"
+        photoKind="team"
+        onSave={handleSave}
+      />
     </SiteLayout>
-  );
-}
-
-function memberInitials(name: string): string {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
-function TeamMemberCard({ member }: { member: TeamMember }) {
-  const initials = memberInitials(member.name);
-  const description = teamMemberDisplayBio(member.description, member.name);
-
-  return (
-    <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm ring-1 ring-border/50">
-      <div className="relative aspect-[4/5] overflow-hidden bg-sand">
-        {member.photoUrl ? (
-          <img
-            src={member.photoUrl}
-            alt={member.name}
-            className="h-full w-full object-cover object-top"
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-forest/15 via-sand to-navy/10 px-4 text-center">
-            <div className="grid h-20 w-20 place-items-center rounded-full border border-dashed border-forest/30 bg-white/70 text-forest">
-              <span className="font-display text-2xl">{initials}</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <UserRound size={14} /> Photo placeholder
-            </div>
-          </div>
-        )}
-      </div>
-      <div className="p-5">
-        <h3 className="font-display text-xl leading-tight text-foreground">{member.name}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
-      </div>
-    </article>
   );
 }

@@ -57,8 +57,8 @@ export type SeasonVideo = {
   group: "season" | "game" | "roles";
 };
 
-export function youtubeWatchUrl(videoId: string): string {
-  return `https://www.youtube.com/watch?v=${videoId}&list=${BIOGLOW_PLAYLIST_ID}`;
+export function youtubeWatchUrl(videoId: string, playlistId = BIOGLOW_PLAYLIST_ID): string {
+  return `https://www.youtube.com/watch?v=${videoId}&list=${playlistId}`;
 }
 
 export function youtubeThumbnailUrl(videoId: string): string {

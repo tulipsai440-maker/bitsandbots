@@ -4,6 +4,11 @@ export const SITE_IMAGES_BUCKET = "site-images";
 
 export type SiteImageKey =
   | "hero"
+  | "teamLogo"
+  | "favicon32"
+  | "favicon16"
+  | "appleTouchIcon"
+  | "ogImage"
   | "outreachMentoring"
   | "outreachIndiaFest"
   | "outreachSteamExpo";
@@ -23,7 +28,47 @@ export const SITE_IMAGE_SLOTS: SiteImageSlot[] = [
     label: "Homepage hero",
     description: "Background for the landing page hero. Upload in Admin — no bundled default.",
     defaultUrl: "",
-    defaultAlt: "Bits & Bots FIRST LEGO League team group photo",
+    defaultAlt: "FIRST LEGO League team group photo",
+    aspect: "16/9",
+  },
+  {
+    key: "teamLogo",
+    label: "Team logo",
+    description: "Logo in the header and footer. Square PNG recommended.",
+    defaultUrl: "/photos/logo/fll-logo.png",
+    defaultAlt: "Team logo",
+    aspect: "4/3",
+  },
+  {
+    key: "favicon32",
+    label: "Favicon (32×32)",
+    description: "Browser tab icon — 32×32 PNG.",
+    defaultUrl: "/photos/logo/favicon-32x32.png",
+    defaultAlt: "Site favicon",
+    aspect: "4/3",
+  },
+  {
+    key: "favicon16",
+    label: "Favicon (16×16)",
+    description: "Browser tab icon — 16×16 PNG.",
+    defaultUrl: "/photos/logo/favicon-16x16.png",
+    defaultAlt: "Site favicon",
+    aspect: "4/3",
+  },
+  {
+    key: "appleTouchIcon",
+    label: "Apple touch icon",
+    description: "Home screen icon on iOS — 180×180 PNG.",
+    defaultUrl: "/photos/logo/apple-touch-icon.png",
+    defaultAlt: "Team icon",
+    aspect: "4/3",
+  },
+  {
+    key: "ogImage",
+    label: "Social share image",
+    description: "Default Open Graph / Twitter card image when pages have no specific photo.",
+    defaultUrl: "/photos/logo/fll-logo.png",
+    defaultAlt: "Team photo",
     aspect: "16/9",
   },
   {

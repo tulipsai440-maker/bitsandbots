@@ -12,34 +12,43 @@ import {
   fetchApprovedGalleryPhotos,
   type ApprovedGalleryPhoto,
 } from "@/lib/gallery-uploads";
-import { photos, SITE_NAME } from "@/lib/photos";
+import { photos } from "@/lib/photos";
+import { brandingRouteLoader, routeTeamName } from "@/lib/team-branding";
+import { useSiteSettings } from "@/lib/site-settings-context";
 import { ArrowRight, ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 
 export const Route = createFileRoute("/gallery")({
-  head: () => ({
-    meta: [
-      { title: `Photo Gallery — ${SITE_NAME}` },
-      {
-        name: "description",
-        content: `Photos from ${SITE_NAME} practices, builds, and FIRST LEGO League events.`,
-      },
-      { property: "og:title", content: `${SITE_NAME} Photo Gallery` },
-      {
-        property: "og:description",
-        content: "Photos from practices, builds, and FLL events.",
-      },
-      { property: "og:image", content: photos.ogLogo },
-    ],
-  }),
   loader: async () => {
-    if (!GALLERY_UPLOADS_PUBLIC) {
-      return { uploaded: [] as ApprovedGalleryPhoto[] };
-    }
-    try {
-      return { uploaded: await fetchApprovedGalleryPhotos() };
-    } catch {
-      return { uploaded: [] as ApprovedGalleryPhoto[] };
-    }
+    const [{ branding }, uploaded] = await Promise.all([
+      brandingRouteLoader(),
+      (async () => {
+        if (!GALLERY_UPLOADS_PUBLIC) return [] as ApprovedGalleryPhoto[];
+        try {
+          return await fetchApprovedGalleryPhotos();
+        } catch {
+          return [] as ApprovedGalleryPhoto[];
+        }
+      })(),
+    ]);
+    return { branding, uploaded };
+  },
+  head: ({ loaderData }) => {
+    const name = routeTeamName(loaderData);
+    return {
+      meta: [
+        { title: `Photo Gallery — ${name}` },
+        {
+          name: "description",
+          content: `Photos from ${name} practices, builds, and FIRST LEGO League events.`,
+        },
+        { property: "og:title", content: `${name} Photo Gallery` },
+        {
+          property: "og:description",
+          content: "Photos from practices, builds, and FLL events.",
+        },
+        { property: "og:image", content: photos.ogLogo },
+      ],
+    };
   },
   component: GalleryPage,
 });
@@ -77,6 +86,14 @@ const staticPhotos: DisplayPhoto[] = GALLERY_STATIC_PHOTOS_PUBLIC
 
 function GalleryPage() {
   const { uploaded: loaderUploaded } = Route.useLoaderData();
+  const {
+    siteName,
+    galleryHeroTitle,
+    galleryHeroDescription,
+    galleryEmptyTitle,
+    galleryEmptyMessage,
+    galleryShareButtonLabel,
+  } = useSiteSettings();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [uploaded, setUploaded] = useState<DisplayPhoto[]>(() => toDisplayPhotos(loaderUploaded));
 
@@ -132,28 +149,28 @@ function GalleryPage() {
   return (
     <SiteLayout>
       <PageHero
-        title="Photo gallery"
+        title={galleryHeroTitle}
         align="center"
         description={
           total > 0
-            ? "Approved photos from practices, builds, and FLL events."
-            : "Team photos will appear here after admin review."
+            ? galleryHeroDescription
+            : galleryEmptyMessage
         }
       />
 
       <section className="py-16">
         <div className="container-page">
-          <div className="mb-8 flex justify-center">
+          <div className="mb-8 flex flex-wrap items-center justify-center gap-3">
             <a href="#share-photos" className="btn-primary gap-2">
-              <Upload size={16} /> Share your photos
+              <Upload size={16} /> {galleryShareButtonLabel}
             </a>
           </div>
 
           {total === 0 ? (
             <div className="rounded-2xl border border-border bg-card p-10 text-center">
-              <p className="font-display text-2xl text-foreground">No photos yet.</p>
+              <p className="font-display text-2xl text-foreground">{galleryEmptyTitle}</p>
               <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-                Share photos below — a coach approves them before they appear here.
+                {galleryEmptyMessage}
               </p>
               <Link to="/events" className="btn-outline mt-6 inline-flex gap-2">
                 See upcoming events <ArrowRight size={16} />
@@ -172,7 +189,7 @@ function GalleryPage() {
                   >
                     <TeamPhoto
                       src={photo.thumb}
-                      alt={photo.caption ?? `${SITE_NAME} team photo ${index + 1}`}
+                      alt={photo.caption ?? `${siteName} team photo ${index + 1}`}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       label="Team photo"
                     />
@@ -239,7 +256,7 @@ function GalleryPage() {
           <figure className="max-h-full w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
             <img
               src={active.src}
-              alt={active.caption ?? `${SITE_NAME} team photo ${(openIndex ?? 0) + 1}`}
+              alt={active.caption ?? `${siteName} team photo ${(openIndex ?? 0) + 1}`}
               width={active.width ?? undefined}
               height={active.height ?? undefined}
               className="mx-auto max-h-[80vh] w-auto rounded-2xl object-contain shadow-2xl"

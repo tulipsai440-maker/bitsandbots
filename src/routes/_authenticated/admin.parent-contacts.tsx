@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AdminReviewPage } from "@/components/admin/AdminShell";
+import { AdminQuickShell } from "@/components/admin/AdminQuickShell";
 import {
   deleteParentContact,
   fetchFamilyRosterAdmin,
@@ -11,8 +11,9 @@ import {
   type FamilyRosterRow,
   type ParentContact,
 } from "@/lib/parent-contacts";
+import { fetchMediaConsentedMemberIds } from "@/lib/parent-consent";
 import { toast } from "sonner";
-import { Copy, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, Pencil, Plus, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/parent-contacts")({
   component: AdminParentContactsPage,
@@ -44,6 +45,7 @@ function formatDob(value: string): string {
 
 function AdminParentContactsPage() {
   const [rows, setRows] = useState<FamilyRosterRow[]>([]);
+  const [consentedIds, setConsentedIds] = useState<Set<string>>(new Set());
   const [needsSetup, setNeedsSetup] = useState(false);
   const [editingKid, setEditingKid] = useState<FamilyRosterRow | null>(null);
   const [editingParent, setEditingParent] = useState<{
@@ -53,7 +55,12 @@ function AdminParentContactsPage() {
 
   async function load() {
     try {
-      setRows(await fetchFamilyRosterAdmin());
+      const [roster, consented] = await Promise.all([
+        fetchFamilyRosterAdmin(),
+        fetchMediaConsentedMemberIds(),
+      ]);
+      setRows(roster);
+      setConsentedIds(new Set(consented.map((id) => id.toLowerCase())));
       setNeedsSetup(false);
     } catch (e) {
       if (isParentContactsSetupMissing(e)) {
@@ -66,14 +73,27 @@ function AdminParentContactsPage() {
 
   useEffect(() => {
     load();
+    const refresh = () => load();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refresh();
+    });
+    return () => {
+      window.removeEventListener("focus", refresh);
+    };
   }, []);
 
   return (
-    <AdminReviewPage
-      active="parent-contacts"
-      title="Parents info"
-      description="Private coach roster — kid + parent contacts. Not shown on the public site."
-    >
+    <AdminQuickShell>
+      <div className="mb-6">
+        <h1 className="font-display text-3xl text-foreground">Parents</h1>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          One place for every family — kid details plus <strong className="text-foreground">both
+          parents</strong> with separate emails for broadcast and reminders. Media consent status is
+          shown per teammate.
+        </p>
+      </div>
+
       {needsSetup && (
         <div className="mb-6 rounded-2xl border border-amber-300/60 bg-amber-50 p-5 text-sm text-amber-950">
           <p className="font-medium">One-time setup required</p>
@@ -136,18 +156,39 @@ function AdminParentContactsPage() {
               No teammates yet — add kids under Admin → Our Team first.
             </p>
           ) : (
-            rows.map((row) => (
+            rows.map((row) => {
+              const parentEmails = row.parents.filter((p) => p.email.trim().includes("@"));
+              const hasBothParents = parentEmails.length >= 2;
+              const hasConsent = consentedIds.has(row.teamMemberId.toLowerCase());
+
+              return (
               <article
                 key={row.teamMemberId}
                 className="overflow-hidden rounded-2xl border border-border bg-card"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-sand/50 px-5 py-4">
                   <div>
-                    <h2 className="font-display text-xl text-foreground">{row.kidName}</h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-display text-xl text-foreground">{row.kidName}</h2>
+                      {hasConsent ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-forest/10 px-2 py-0.5 text-xs font-medium text-forest">
+                          <CheckCircle2 size={12} /> Consent signed
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                          <AlertCircle size={12} /> Consent needed
+                        </span>
+                      )}
+                      {!hasBothParents && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                          Add Parent {parentEmails.length === 0 ? "1 & 2" : "2"}
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-1 text-sm text-muted-foreground">
                       DOB {formatDob(row.dateOfBirth)}
-                      {row.email ? ` · ${row.email}` : ""}
-                      {row.phone ? ` · ${row.phone}` : ""}
+                      {row.email ? ` · Kid email: ${row.email}` : ""}
+                      {row.phone ? ` · Kid phone: ${row.phone}` : ""}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -178,10 +219,10 @@ function AdminParentContactsPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-background text-left text-xs uppercase tracking-widest text-muted-foreground">
                       <tr>
-                        <th className="p-3">Parent name</th>
+                        <th className="p-3">Parent</th>
                         <th className="p-3">Relation</th>
                         <th className="p-3">Phone</th>
-                        <th className="p-3">Email</th>
+                        <th className="p-3">Email (broadcast)</th>
                         <th className="p-3" />
                       </tr>
                     </thead>
@@ -189,7 +230,7 @@ function AdminParentContactsPage() {
                       {row.parents.length === 0 ? (
                         <tr className="border-t border-border">
                           <td colSpan={5} className="p-4 text-muted-foreground">
-                            No parents listed yet.
+                            No parents yet — add Parent 1 and Parent 2 so both receive team emails.
                           </td>
                         </tr>
                       ) : (
@@ -236,11 +277,12 @@ function AdminParentContactsPage() {
                   </table>
                 </div>
               </article>
-            ))
+            );
+            })
           )}
         </div>
       )}
-    </AdminReviewPage>
+    </AdminQuickShell>
   );
 }
 
@@ -353,8 +395,11 @@ function ParentForm({
   }) => Promise<void>;
   onCancel: () => void;
 }) {
+  const defaultRelation =
+    initial?.relation ??
+    (nextSort === 1 ? "Parent 1" : nextSort === 2 ? "Parent 2" : `Parent ${nextSort}`);
   const [parentName, setParentName] = useState(initial?.parentName ?? "");
-  const [relation, setRelation] = useState(initial?.relation ?? "Parent");
+  const [relation, setRelation] = useState(defaultRelation);
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
   const [sortOrder, setSortOrder] = useState(initial?.sortOrder ?? nextSort);
@@ -406,7 +451,7 @@ function ParentForm({
             value={relation}
             onChange={(e) => setRelation(e.target.value)}
             className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2"
-            placeholder="Parent 1, Mother, Father…"
+            placeholder="Parent 1, Parent 2, Mother, Father…"
           />
         </label>
         <label className="block text-sm">

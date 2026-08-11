@@ -24,7 +24,7 @@ export function AdminNav({ active }: { active: AdminNavKey }) {
         <Calendar size={16} /> Calendar
       </Link>
       <Link to="/admin/broadcast" className={linkClass("broadcast")}>
-        <Megaphone size={16} /> Broadcast
+        <Megaphone size={16} /> Send message
       </Link>
       <Link to="/admin/assignments" className={linkClass("assignments")}>
         <ClipboardList size={16} /> Assignments
@@ -33,7 +33,7 @@ export function AdminNav({ active }: { active: AdminNavKey }) {
         <Users size={16} /> Our Team
       </Link>
       <Link to="/admin/parent-contacts" className={linkClass("parent-contacts")}>
-        <Contact size={16} /> Parents
+        <Contact size={16} /> Parents info
       </Link>
       <Link to="/admin/parent-consents" className={linkClass("parent-consents")}>
         <Contact size={16} /> Consents
@@ -43,6 +43,9 @@ export function AdminNav({ active }: { active: AdminNavKey }) {
       </Link>
       <Link to="/admin/sponsors" className={linkClass("sponsors")}>
         <Building2 size={16} /> Sponsors
+      </Link>
+      <Link to="/admin/site-settings" className={linkClass("site-settings")}>
+        <Megaphone size={16} /> Site Content
       </Link>
       <Link to="/admin/site-images" className={linkClass("site-images")}>
         <ImageIcon size={16} /> Site Images

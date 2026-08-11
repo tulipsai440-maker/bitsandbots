@@ -1,5 +1,5 @@
--- Run in Supabase SQL Editor for project xohaeezxzbeyzpjbngkj
--- Creates the join form notification email list (admin-managed).
+-- Run in Supabase SQL Editor: https://supabase.com/dashboard/project/njhiqsbykiggxqkjrxse/sql/new
+-- Coach emails CC'd on join-form submissions and parent broadcasts.
 
 CREATE TABLE IF NOT EXISTS public.join_notify_emails (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -36,3 +36,5 @@ FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 INSERT INTO public.join_notify_emails (email, label, sort_order)
 VALUES ('suresh440@gmail.com', 'Coach', 1)
 ON CONFLICT (email) DO NOTHING;
+
+NOTIFY pgrst, 'reload schema';

@@ -5,32 +5,45 @@ import { SiteLayout, PageHero } from "@/components/site/Layout";
 import { type TeamMember } from "@/lib/team-members";
 import {
   fetchConsentEligibleMembers,
-  MEDIA_CONSENT_INTRO,
-  MEDIA_CONSENT_TERMS,
   isParentConsentSetupMissing,
   parentConsentErrorMessage,
   type ParentMediaConsentInput,
 } from "@/lib/parent-consent";
-import { SITE_NAME } from "@/lib/photos";
+import { resolveConsentCopy } from "@/lib/consent-copy";
+import { fetchSiteSettings } from "@/lib/site-settings";
+import { brandingFromSettings } from "@/lib/team-branding";
 
 export const Route = createFileRoute("/parentsconsent")({
-  head: () => ({
-    meta: [
-      { title: `Photo & Media Consent — ${SITE_NAME}` },
-      {
-        name: "description",
-        content: `Parent permission for ${SITE_NAME} to share team photos and videos on the website and social media.`,
-      },
-      { property: "og:title", content: `Photo & Media Consent — ${SITE_NAME}` },
-      {
-        property: "og:description",
-        content: "Electronic consent form for team photo and video use.",
-      },
-    ],
-  }),
-  loader: async () => ({
-    members: await fetchConsentEligibleMembers(),
-  }),
+  loader: async () => {
+    const [members, settings] = await Promise.all([
+      fetchConsentEligibleMembers(),
+      fetchSiteSettings(),
+    ]);
+    const branding = brandingFromSettings(settings);
+    const consent = resolveConsentCopy(settings, branding);
+    return {
+      members,
+      branding,
+      ...consent,
+    };
+  },
+  head: ({ loaderData }) => {
+    const siteName = loaderData?.branding.siteName ?? "Our Team";
+    return {
+      meta: [
+        { title: `Photo & Media Consent — ${siteName}` },
+        {
+          name: "description",
+          content: `Parent permission for ${siteName} to share team photos and videos on the website and social media.`,
+        },
+        { property: "og:title", content: `Photo & Media Consent — ${siteName}` },
+        {
+          property: "og:description",
+          content: "Electronic consent form for team photo and video use.",
+        },
+      ],
+    };
+  },
   component: ParentsConsentPage,
 });
 
@@ -52,7 +65,8 @@ const emptyForm = (): ParentMediaConsentInput => ({
 });
 
 function ParentsConsentPage() {
-  const { members: initialMembers } = Route.useLoaderData();
+  const { members: initialMembers, intro, terms, bothParentsNote, heroTitle, heroDescription, successTitle, successMessage } =
+    Route.useLoaderData();
   const [members, setMembers] = useState<TeamMember[]>(initialMembers);
   const [form, setForm] = useState<ParentMediaConsentInput>(emptyForm);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
@@ -94,27 +108,21 @@ function ParentsConsentPage() {
 
   return (
     <SiteLayout>
-      <PageHero
-        title="Photo & Media Consent"
-        description={`Permission for ${SITE_NAME} to share team photos and videos.`}
-      />
+      <PageHero title={heroTitle} description={heroDescription} />
       <section className="py-16">
         <div className="container-page grid gap-12 lg:grid-cols-[1fr_1.35fr]">
           <aside>
             <div className="rounded-2xl border border-border bg-card p-8">
               <h2 className="font-display text-xl">What you are agreeing to</h2>
-              <p className="mt-4 text-sm leading-relaxed text-foreground/85">{MEDIA_CONSENT_INTRO}</p>
+              <p className="mt-4 text-sm leading-relaxed text-foreground/85">{intro}</p>
               <ol className="mt-6 list-decimal space-y-3 pl-5 text-sm text-foreground/85">
-                {MEDIA_CONSENT_TERMS.map((term) => (
+                {terms.map((term) => (
                   <li key={term}>{term}</li>
                 ))}
               </ol>
               <div className="mt-8 rounded-xl bg-sand p-5 text-sm text-foreground/90">
                 <p className="font-medium">Do both parents need to sign?</p>
-                <p className="mt-2 text-muted-foreground">
-                  No. One parent or legal guardian signature is enough. Please fill in both parents&apos;
-                  names and contact details when you have them — that helps coaches reach your family.
-                </p>
+                <p className="mt-2 text-muted-foreground">{bothParentsNote}</p>
               </div>
             </div>
           </aside>
@@ -123,10 +131,10 @@ function ParentsConsentPage() {
             {status === "success" ? (
               <div className="rounded-2xl border border-forest/30 bg-forest/5 p-10 text-center">
                 <CheckCircle2 size={40} className="mx-auto text-forest" />
-                <h2 className="mt-4 font-display text-3xl">Consent saved</h2>
+                <h2 className="mt-4 font-display text-3xl">{successTitle}</h2>
                 <p className="mt-2 text-muted-foreground">
-                  Thank you{submittedKid ? ` for ${submittedKid}'s consent` : ""}. Coaches have your
-                  signed permission on file.
+                  {successMessage}
+                  {submittedKid ? ` (${submittedKid})` : ""}
                 </p>
                 <button
                   type="button"

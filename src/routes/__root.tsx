@@ -13,9 +13,23 @@ import appCss from "../styles.css?url";
 import { Header } from "../components/site/Header";
 import { Footer } from "../components/site/Footer";
 import { Toaster } from "../components/ui/sonner";
-import { photos, SITE_NAME, SITE_TAGLINE, FOUNDED_YEAR, MEETINGS_BLURB } from "@/lib/photos";
-
-const SITE_URL = "https://github.com/tulipsai440-maker/bitsandbots";
+import { photos } from "@/lib/photos";
+import {
+  DEFAULT_OUTREACH_STORIES,
+  DEFAULT_SITE_SETTINGS,
+  fetchOutreachStories,
+  fetchSiteSettings,
+} from "@/lib/site-settings";
+import { SiteSettingsProvider } from "@/lib/site-settings-context";
+import { AdminEditProvider } from "@/components/admin/inline-edit/AdminEditProvider";
+import { BrandColorStyles } from "@/components/site/BrandColorStyles";
+import { normalizeBrandColor } from "@/lib/brand-colors";
+import {
+  buildDefaultSiteImageOverrides,
+  fetchSiteImageOverrides,
+  resolveSiteImage,
+} from "@/lib/site-images";
+import { SiteImagesProvider } from "@/lib/site-images-context";
 
 function NotFoundComponent() {
   return (
@@ -62,45 +76,69 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: `${SITE_NAME} — ${SITE_TAGLINE}` },
-      {
-        name: "description",
-        content: `${SITE_NAME} is a FIRST LEGO League team founded in ${FOUNDED_YEAR}. ${MEETINGS_BLURB}`,
-      },
-      { name: "author", content: SITE_NAME },
-      { name: "theme-color", content: "#1f3d1f" },
-      { property: "og:title", content: `${SITE_NAME} — ${SITE_TAGLINE}` },
-      {
-        property: "og:description",
-        content: `A FIRST LEGO League team founded in ${FOUNDED_YEAR}. ${MEETINGS_BLURB}`,
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:site_name", content: SITE_NAME },
-      { property: "og:url", content: SITE_URL },
-      { property: "og:image", content: photos.ogLogo },
-      { property: "og:image:alt", content: `${SITE_NAME} team photo` },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: photos.ogLogo },
-      { name: "twitter:image:alt", content: `${SITE_NAME} team photo` },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", sizes: "any" },
-      { rel: "icon", href: photos.favicon32, type: "image/png", sizes: "32x32" },
-      { rel: "icon", href: photos.favicon16, type: "image/png", sizes: "16x16" },
-      { rel: "apple-touch-icon", href: photos.appleTouchIcon, sizes: "180x180" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@500;600;700&display=swap",
-      },
-    ],
-  }),
+  loader: async () => {
+    try {
+      const [siteSettings, outreachStories, siteImages] = await Promise.all([
+        fetchSiteSettings(),
+        fetchOutreachStories(),
+        fetchSiteImageOverrides().catch(() => buildDefaultSiteImageOverrides()),
+      ]);
+      return { siteSettings, outreachStories, siteImages };
+    } catch {
+      return {
+        siteSettings: DEFAULT_SITE_SETTINGS,
+        outreachStories: DEFAULT_OUTREACH_STORIES,
+        siteImages: buildDefaultSiteImageOverrides(),
+      };
+    }
+  },
+  head: ({ loaderData }) => {
+    const s = loaderData?.siteSettings ?? DEFAULT_SITE_SETTINGS;
+    const images = loaderData?.siteImages ?? buildDefaultSiteImageOverrides();
+    const ogImage = resolveSiteImage("ogImage", images).url || photos.ogLogo;
+    const favicon32 = resolveSiteImage("favicon32", images).url || photos.favicon32;
+    const favicon16 = resolveSiteImage("favicon16", images).url || photos.favicon16;
+    const appleTouch = resolveSiteImage("appleTouchIcon", images).url || photos.appleTouchIcon;
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: `${s.siteName} — ${s.siteTagline}` },
+        {
+          name: "description",
+          content: `${s.siteName} is a FIRST LEGO League team founded in ${s.foundedYear}. ${s.meetingsBlurb}`,
+        },
+        { name: "author", content: s.siteName },
+        { name: "theme-color", content: normalizeBrandColor(s.brandColor) },
+        { property: "og:title", content: `${s.siteName} — ${s.siteTagline}` },
+        {
+          property: "og:description",
+          content: `A FIRST LEGO League team founded in ${s.foundedYear}. ${s.meetingsBlurb}`,
+        },
+        { property: "og:type", content: "website" },
+        { property: "og:site_name", content: s.siteName },
+        { property: "og:url", content: s.siteUrl },
+        { property: "og:image", content: ogImage },
+        { property: "og:image:alt", content: `${s.siteName} team photo` },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:image", content: ogImage },
+        { name: "twitter:image:alt", content: `${s.siteName} team photo` },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "icon", href: "/favicon.ico", sizes: "any" },
+        { rel: "icon", href: favicon32, type: "image/png", sizes: "32x32" },
+        { rel: "icon", href: favicon16, type: "image/png", sizes: "16x16" },
+        { rel: "apple-touch-icon", href: appleTouch, sizes: "180x180" },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@500;600;700&display=swap",
+        },
+      ],
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -123,10 +161,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { siteSettings, outreachStories, siteImages } = Route.useLoaderData();
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster richColors closeButton position="top-center" />
+      <SiteSettingsProvider initialSettings={siteSettings} initialOutreachStories={outreachStories}>
+        <SiteImagesProvider initialOverrides={siteImages}>
+          <BrandColorStyles />
+          <AdminEditProvider>
+            <Outlet />
+            <Toaster richColors closeButton position="top-center" />
+          </AdminEditProvider>
+        </SiteImagesProvider>
+      </SiteSettingsProvider>
     </QueryClientProvider>
   );
 }

@@ -2,6 +2,7 @@ import {
   fetchActiveJoinNotifyEmailAddresses,
   isJoinNotifyTableMissingError,
 } from "@/lib/join-notify-emails";
+import { fetchTeamBranding } from "@/lib/team-branding";
 
 export type JoinFormData = {
   parentName: string;
@@ -33,7 +34,12 @@ async function loadRecipients(): Promise<string[]> {
   }
 }
 
-async function sendOne(recipient: string, form: JoinFormData, origin: string): Promise<void> {
+async function sendOne(
+  recipient: string,
+  form: JoinFormData,
+  origin: string,
+  siteName: string,
+): Promise<void> {
   const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipient)}`, {
     method: "POST",
     headers: {
@@ -43,7 +49,7 @@ async function sendOne(recipient: string, form: JoinFormData, origin: string): P
       Referer: `${origin}/join`,
     },
     body: JSON.stringify({
-      _subject: `Bits & Bots Join Request — ${form.scoutName}`,
+      _subject: `${siteName} Join Request — ${form.scoutName}`,
       _template: "table",
       _captcha: "false",
       _replyto: form.parentEmail,
@@ -79,13 +85,13 @@ async function sendOne(recipient: string, form: JoinFormData, origin: string): P
 
 /** Sends join form to every active admin notification email via FormSubmit. */
 export async function sendJoinEmailFromBrowser(form: JoinFormData): Promise<void> {
-  const recipients = await loadRecipients();
+  const [recipients, branding] = await Promise.all([loadRecipients(), fetchTeamBranding()]);
   const origin = window.location.origin;
   const failures: string[] = [];
 
   for (const recipient of recipients) {
     try {
-      await sendOne(recipient, form, origin);
+      await sendOne(recipient, form, origin, branding.siteName);
     } catch (err) {
       failures.push(err instanceof Error ? err.message : "Send failed");
     }

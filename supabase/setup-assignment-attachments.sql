@@ -119,10 +119,14 @@ BEGIN
     RAISE EXCEPTION 'Invalid status';
   END IF;
 
+  IF NULLIF(TRIM(COALESCE(p_note, '')), '') IS NULL THEN
+    RAISE EXCEPTION 'Please add a note before saving';
+  END IF;
+
   UPDATE public.assignment_tasks
   SET
     status = p_status,
-    note = COALESCE(p_note, ''),
+    note = TRIM(p_note),
     attachment_url = p_attachment_url,
     attachment_name = p_attachment_name,
     updated_at = now()

@@ -1,31 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SiteLayout, PageHero } from "@/components/site/Layout";
+import { SiteLayout } from "@/components/site/Layout";
+import { EditablePageHero } from "@/components/admin/inline-edit/EditablePageHero";
+import { ManageInAdmin } from "@/components/admin/inline-edit/AdminLiveEditBar";
+import { EditableText } from "@/components/admin/inline-edit/EditableText";
 import { useEffect, useState } from "react";
 import { CheckCircle2, Send } from "lucide-react";
 import { fetchJoinContactEmail, sendJoinEmailFromBrowser } from "@/lib/join-client-email";
-import {
-  PRACTICE_PLACE,
-  PRACTICE_SUMMARY,
-  SITE_NAME,
-  ZOOM_PLACE,
-  ZOOM_SUMMARY,
-} from "@/lib/photos";
+import { useSiteSettings } from "@/lib/site-settings-context";
+import { brandingRouteLoader, routeTeamName } from "@/lib/team-branding";
 
 export const Route = createFileRoute("/join")({
-  head: () => ({
-    meta: [
-      { title: `Join ${SITE_NAME} — FIRST LEGO League` },
-      {
-        name: "description",
-        content: `Contact ${SITE_NAME} with a short form. A coach will reply and invite you to a team practice.`,
-      },
-      { property: "og:title", content: `Join ${SITE_NAME}` },
-      {
-        property: "og:description",
-        content: `Send a message to join ${SITE_NAME}, a FIRST LEGO League team.`,
-      },
-    ],
-  }),
+  loader: brandingRouteLoader,
+  head: ({ loaderData }) => {
+    const name = routeTeamName(loaderData);
+    return {
+      meta: [
+        { title: `Join ${name} — FIRST LEGO League` },
+        {
+          name: "description",
+          content: `Contact ${name} with a short form. A coach will reply and invite you to a team practice.`,
+        },
+        { property: "og:title", content: `Join ${name}` },
+        {
+          property: "og:description",
+          content: `Send a message to join ${name}, a FIRST LEGO League team.`,
+        },
+      ],
+    };
+  },
   component: JoinPage,
 });
 
@@ -40,6 +42,17 @@ const empty: FormState = {
 };
 
 function JoinPage() {
+  const {
+    siteName,
+    joinHeroDescription,
+    joinNextSteps,
+    joinSuccessTitle,
+    joinSuccessMessage,
+    practiceSummary,
+    practicePlace,
+    zoomSummary,
+    zoomPlace,
+  } = useSiteSettings();
   const [form, setForm] = useState<FormState>(empty);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +84,7 @@ function JoinPage() {
         setError(
           contactEmail
             ? `Network blocked the email request. Try again on home Wi‑Fi, or email ${contactEmail} directly.`
-            : `Network blocked the email request. Try again on home Wi‑Fi, or contact ${SITE_NAME} directly.`,
+            : `Network blocked the email request. Try again on home Wi‑Fi, or contact ${siteName} directly.`,
         );
       } else {
         setError(msg);
@@ -81,26 +94,50 @@ function JoinPage() {
 
   return (
     <SiteLayout>
-      <PageHero
-        title={`Join ${SITE_NAME}`}
-        description="Send a short message and a coach will follow up. You can also visit a Sunday team practice."
+      <EditablePageHero
+        title={`Join ${siteName}`}
+        description={joinHeroDescription}
+        descriptionKey="joinHeroDescription"
+        descriptionLabel="Join page intro"
       />
       <section className="py-16">
         <div className="container-page grid gap-12 lg:grid-cols-[1fr_1.4fr]">
           <aside>
             <div className="rounded-2xl border border-border bg-card p-8">
-              <h2 className="font-display text-xl">What happens next</h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-display text-xl">What happens next</h2>
+                <ManageInAdmin label="Edit steps" to="/admin/site-settings" />
+              </div>
               <ul className="mt-4 space-y-4 text-sm text-foreground/85">
-                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> A coach replies within a few days.</li>
-                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> We&apos;ll invite you to a Sunday practice to visit.</li>
-                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> No special gear needed for your first visit.</li>
-                <li className="flex gap-3"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> FIRST LEGO League Challenge is typically for ages 9–16 (grades 4–8).</li>
+                {joinNextSteps.map((step) => (
+                  <li key={step} className="flex gap-3">
+                    <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest" /> {step}
+                  </li>
+                ))}
               </ul>
               <div className="mt-8 rounded-xl bg-sand p-5 text-sm">
-                <div className="font-medium">Team practice · {PRACTICE_SUMMARY}</div>
-                <div className="mt-1 text-muted-foreground">{PRACTICE_PLACE}</div>
-                <div className="mt-3 font-medium">Zoom call · {ZOOM_SUMMARY}</div>
-                <div className="mt-1 text-muted-foreground">{ZOOM_PLACE}</div>
+                <div className="font-medium">
+                  Team practice ·{" "}
+                  <EditableText settingKey="practiceSummary" label="Practice schedule">
+                    {practiceSummary}
+                  </EditableText>
+                </div>
+                <div className="mt-1 text-muted-foreground">
+                  <EditableText settingKey="practicePlace" label="Practice location">
+                    {practicePlace}
+                  </EditableText>
+                </div>
+                <div className="mt-3 font-medium">
+                  Zoom call ·{" "}
+                  <EditableText settingKey="zoomSummary" label="Zoom schedule">
+                    {zoomSummary}
+                  </EditableText>
+                </div>
+                <div className="mt-1 text-muted-foreground">
+                  <EditableText settingKey="zoomPlace" label="Zoom location">
+                    {zoomPlace}
+                  </EditableText>
+                </div>
               </div>
             </div>
           </aside>
@@ -109,10 +146,8 @@ function JoinPage() {
             {status === "success" ? (
               <div className="rounded-2xl border border-forest/30 bg-forest/5 p-10 text-center">
                 <CheckCircle2 size={40} className="mx-auto text-forest" />
-                <h2 className="mt-4 font-display text-3xl">Message received</h2>
-                <p className="mt-2 text-muted-foreground">
-                  Thanks for reaching out! A coach will be in touch shortly.
-                </p>
+                <h2 className="mt-4 font-display text-3xl">{joinSuccessTitle}</h2>
+                <p className="mt-2 text-muted-foreground">{joinSuccessMessage}</p>
                 <button onClick={() => setStatus("idle")} className="btn-outline mt-6">Send another</button>
               </div>
             ) : (
@@ -133,7 +168,7 @@ function JoinPage() {
                     value={form.questions}
                     onChange={onChange("questions")}
                     className="rounded-lg border border-input bg-background px-4 py-3 text-sm outline-none transition-shadow focus:ring-2 focus:ring-forest/30"
-                    placeholder={`Anything you'd like the ${SITE_NAME} coaches to know?`}
+                    placeholder={`Anything you'd like the ${siteName} coaches to know?`}
                   />
                 </label>
 

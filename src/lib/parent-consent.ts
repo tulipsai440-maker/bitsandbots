@@ -1,19 +1,19 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTeamMembers, type TeamMember } from "@/lib/team-members";
+import {
+  buildMediaConsentBothParentsNote,
+  buildMediaConsentIntro,
+  buildMediaConsentTerms,
+} from "@/lib/media-consent-copy";
 
-/** Media consent copy shown on /parentsconsent */
+export {
+  buildMediaConsentBothParentsNote,
+  buildMediaConsentIntro,
+  buildMediaConsentTerms,
+} from "@/lib/media-consent-copy";
+
+/** Media consent copy version stored with each submission. */
 export const MEDIA_CONSENT_VERSION = "2026-media-v1";
-
-export const MEDIA_CONSENT_INTRO = `Bits & Bots is a community robotics team in Collier County, Florida. We share team photos and videos on our website and social media (Facebook, Instagram, and similar) to celebrate the team, educate the community about STEM, and show our outreach and competition presence. We do not sell photos or use them for unrelated advertising.`;
-
-export const MEDIA_CONSENT_TERMS = [
-  "I am the parent or legal guardian of the child named below.",
-  "I give permission for Bits & Bots to photograph and record video of my child during team activities, practices, competitions, and outreach events.",
-  "I allow Bits & Bots to use those photos and videos on the team website (fllbots.com) and on team social media accounts for educational and team-promotion purposes only.",
-  "My child's first name and team activities may appear with photos. We will not publish home addresses or personal contact details.",
-  "I understand I may withdraw this consent at any time by emailing the coaches. Future posts will honor the withdrawal; removing content already shared on social media may take reasonable time.",
-  "One parent or guardian signature is sufficient. We collect both parents' names and contact details when available for our records.",
-];
 
 export type ParentMediaConsentInput = {
   teamMemberId: string;
@@ -30,22 +30,60 @@ export type ParentMediaConsentInput = {
   agreesSocialMedia: boolean;
 };
 
-/** Teammates still needing consent — uses public RPC (ids only) so it works in browser loaders too. */
+/** Teammates still needing consent — signed kids are excluded. */
 export async function fetchConsentEligibleMembers(): Promise<TeamMember[]> {
   const members = await fetchTeamMembers();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).rpc("list_media_consented_member_ids");
-  if (error) {
-    if (isParentConsentSetupMissing(error)) {
-      return members;
-    }
-    console.error("[parent-consent] list consented ids", error.message);
+  try {
+    const consented = new Set((await fetchMediaConsentedMemberIds()).map(normalizeMemberId));
+    return members.filter((member) => !consented.has(normalizeMemberId(member.id)));
+  } catch (error) {
+    if (isParentConsentSetupMissing(error)) return members;
+    console.error("[parent-consent] list consented ids", parentConsentErrorMessage(error));
     return members;
   }
+}
 
-  const consented = new Set((data ?? []) as string[]);
-  return members.filter((member) => !consented.has(member.id));
+/** Normalize member id from DB/RPC for reliable Set lookups. */
+export function normalizeMemberId(id: unknown): string {
+  return String(id ?? "").trim().toLowerCase();
+}
+
+/** Kid IDs with a signed media consent on file. */
+export async function fetchMediaConsentedMemberIds(): Promise<string[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+
+  // Prefer direct table read for admins (always in sync after a form submit).
+  const { data: rows, error: tableError } = await db
+    .from("parent_media_consents")
+    .select("team_member_id");
+
+  if (!tableError && Array.isArray(rows)) {
+    const ids = new Set<string>();
+    for (const row of rows) {
+      const id = normalizeMemberId(row.team_member_id);
+      if (id) ids.add(id);
+    }
+    return [...ids];
+  }
+
+  // Table missing or RLS blocked — fall back to public RPC (uuid list only).
+  if (tableError && !isParentConsentSetupMissing(tableError)) {
+    console.warn("[parent-consent] table read failed, using RPC", tableError.message);
+  }
+
+  const { data, error } = await db.rpc("list_media_consented_member_ids");
+  if (error) {
+    if (isParentConsentSetupMissing(error)) return [];
+    throw new Error(error.message);
+  }
+
+  const ids = new Set<string>();
+  for (const item of data ?? []) {
+    const id = normalizeMemberId(item);
+    if (id) ids.add(id);
+  }
+  return [...ids];
 }
 
 export function parentConsentErrorMessage(error: unknown): string {

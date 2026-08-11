@@ -1,20 +1,25 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AdminReviewPage } from "@/components/admin/AdminShell";
+import { AdminQuickShell } from "@/components/admin/AdminQuickShell";
 import {
   broadcastErrorMessage,
+  fetchCoachBroadcastEmails,
   fetchParentBroadcastEmails,
   fetchParentBroadcastPhones,
   fetchWhatsAppGroupUrl,
   formatBroadcastMessage,
   isBroadcastSetupMissing,
   openWhatsAppGroupWithMessage,
+  probeBroadcastSettingsTable,
   saveWhatsAppGroupUrl,
 } from "@/lib/broadcast";
+import { getBroadcastTemplates } from "@/lib/broadcast-templates";
+import { brandingFromSettings } from "@/lib/team-branding";
+import { useSiteSettings } from "@/lib/site-settings-context";
 import { sendBroadcastWhatsApp, sendParentBroadcast } from "@/lib/broadcast.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, ExternalLink, Mail, MessageCircle } from "lucide-react";
+import { Copy, ExternalLink, Mail, MessageCircle, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/broadcast")({
   component: AdminBroadcastPage,
@@ -23,7 +28,10 @@ export const Route = createFileRoute("/_authenticated/admin/broadcast")({
 const SQL_EDITOR_URL = "https://supabase.com/dashboard/project/njhiqsbykiggxqkjrxse/sql/new";
 
 function AdminBroadcastPage() {
-  const [emails, setEmails] = useState<string[]>([]);
+  const siteSettings = useSiteSettings();
+  const broadcastTemplates = getBroadcastTemplates(brandingFromSettings(siteSettings));
+  const [toEmails, setToEmails] = useState<string[]>([]);
+  const [coachCcEmails, setCoachCcEmails] = useState<string[]>([]);
   const [phones, setPhones] = useState<string[]>([]);
   const [whatsappUrl, setWhatsappUrl] = useState("");
   const [subject, setSubject] = useState("");
@@ -42,31 +50,36 @@ function AdminBroadcastPage() {
 
   async function load() {
     try {
-      const [list, phoneList, wa] = await Promise.all([
+      const broadcastTableOk = await probeBroadcastSettingsTable();
+      setNeedsSetup(!broadcastTableOk);
+
+      const [list, coachList, phoneList, wa] = await Promise.all([
         fetchParentBroadcastEmails(),
+        fetchCoachBroadcastEmails(),
         fetchParentBroadcastPhones(),
         fetchWhatsAppGroupUrl(),
       ]);
-      setEmails(list);
+      setToEmails(list);
+      setCoachCcEmails(coachList);
       setPhones(phoneList);
       setWhatsappUrl(wa);
-      setNeedsSetup(false);
     } catch (e) {
-      if (isBroadcastSetupMissing(e)) {
-        setNeedsSetup(true);
-        try {
-          const [list, phoneList] = await Promise.all([
-            fetchParentBroadcastEmails(),
-            fetchParentBroadcastPhones(),
-          ]);
-          setEmails(list);
-          setPhones(phoneList);
-        } catch {
-          /* parents may also be empty */
-        }
-        setWhatsappUrl("https://chat.whatsapp.com/I14hN2OpZci2C2F4RsquwQ");
-      } else {
-        toast.error(broadcastErrorMessage(e));
+      toast.error(broadcastErrorMessage(e));
+      try {
+        const broadcastTableOk = await probeBroadcastSettingsTable();
+        setNeedsSetup(!broadcastTableOk);
+        const [list, coachList, phoneList, wa] = await Promise.all([
+          fetchParentBroadcastEmails().catch(() => [] as string[]),
+          fetchCoachBroadcastEmails().catch(() => [] as string[]),
+          fetchParentBroadcastPhones().catch(() => [] as string[]),
+          fetchWhatsAppGroupUrl(),
+        ]);
+        setToEmails(list);
+        setCoachCcEmails(coachList);
+        setPhones(phoneList);
+        setWhatsappUrl(wa);
+      } catch {
+        /* partial load failed */
       }
     }
   }
@@ -80,8 +93,8 @@ function AdminBroadcastPage() {
       toast.error("Add a subject and message first.");
       return;
     }
-    if (emails.length === 0) {
-      toast.error("No parent emails yet — add them under Admin → Parents.");
+    if (toEmails.length === 0) {
+      toast.error("No parent emails in To — add them under Admin → Parents or restore recipients.");
       return;
     }
 
@@ -96,6 +109,7 @@ function AdminBroadcastPage() {
           subject: subject.trim(),
           body: body.trim(),
           accessToken,
+          onlyTo: toEmails,
         },
       });
 
@@ -184,6 +198,7 @@ function AdminBroadcastPage() {
       await saveWhatsAppGroupUrl(whatsappUrl);
       toast.success("WhatsApp group link saved");
       setNeedsSetup(false);
+      await load();
     } catch (e) {
       if (isBroadcastSetupMissing(e)) {
         setNeedsSetup(true);
@@ -198,11 +213,21 @@ function AdminBroadcastPage() {
 
   async function copyEmails() {
     try {
-      await navigator.clipboard.writeText(emails.join(", "));
-      toast.success("Parent emails copied");
+      await navigator.clipboard.writeText(toEmails.join(", "));
+      toast.success("To emails copied");
     } catch {
       toast.error("Could not copy");
     }
+  }
+
+  function removeToEmail(email: string) {
+    setToEmails((prev) => prev.filter((e) => e !== email));
+  }
+
+  function restoreAllToEmails() {
+    void fetchParentBroadcastEmails()
+      .then(setToEmails)
+      .catch((e) => toast.error(broadcastErrorMessage(e)));
   }
 
   async function copyMessage() {
@@ -215,56 +240,152 @@ function AdminBroadcastPage() {
   }
 
   return (
-    <AdminReviewPage
-      active="broadcast"
-      title="Broadcast"
-      description="Email all parents with one click, or send WhatsApp messages automatically."
-    >
+    <AdminQuickShell>
+      <div className="mb-6">
+        <h1 className="font-display text-3xl text-foreground">Send message to parents</h1>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          All parent emails load in <strong className="text-foreground">To</strong> — remove anyone
+          who should not receive this send. Coaches are always CC&apos;d. Pick a template to start
+          fast.
+        </p>
+      </div>
+
       {needsSetup && (
         <div className="mb-6 rounded-2xl border border-amber-300/60 bg-amber-50 p-5 text-sm text-amber-950">
           <p className="font-medium">Optional: save WhatsApp link in the database</p>
           <p className="mt-1">
             Run <code className="rounded bg-white/70 px-1">supabase/setup-broadcast.sql</code> once
-            so the group link is shared for all admins. Until then, the default group link still works.
+            in Supabase so the group link is shared for all admins. Until then, the default group
+            link still works.
           </p>
-          <a
-            href={SQL_EDITOR_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="btn-outline mt-4 inline-flex gap-2"
-          >
-            <ExternalLink size={16} /> Open SQL Editor
-          </a>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a
+              href={SQL_EDITOR_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-outline inline-flex gap-2"
+            >
+              <ExternalLink size={16} /> Open SQL Editor
+            </a>
+            <button type="button" className="btn-outline" onClick={load}>
+              Check again
+            </button>
+          </div>
         </div>
       )}
 
-      <div className="mb-6 rounded-2xl border border-border bg-sand/40 p-5 text-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="font-medium text-foreground">
-              {emails.length} unique parent email{emails.length === 1 ? "" : "s"} ·{" "}
-              {phones.length} unique phone{phones.length === 1 ? "" : "s"}
+      <div className="mb-6 space-y-4 rounded-2xl border border-border bg-sand/40 p-5 text-sm">
+        <div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              To
             </p>
-            <p className="mt-1 text-muted-foreground">
-              Pulled from <code className="rounded bg-muted px-1">parent_contacts</code> — duplicates
-              removed.
-            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-outline gap-2 !px-3 !py-1.5 text-xs"
+                onClick={copyEmails}
+                disabled={toEmails.length === 0}
+              >
+                <Copy size={14} /> Copy
+              </button>
+              <button
+                type="button"
+                className="btn-outline !px-3 !py-1.5 text-xs"
+                onClick={restoreAllToEmails}
+              >
+                Restore all
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            className="btn-outline gap-2 !px-3 !py-1.5 text-xs"
-            onClick={copyEmails}
-            disabled={emails.length === 0}
-          >
-            <Copy size={14} /> Copy emails
-          </button>
+          <p className="mt-1 text-muted-foreground">
+            {toEmails.length} parent email{toEmails.length === 1 ? "" : "s"} — tap × to remove
+            anyone who should not receive this message.
+          </p>
+          {toEmails.length > 0 ? (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {toEmails.map((email) => (
+                <li key={email}>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground">
+                    {email}
+                    <button
+                      type="button"
+                      className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      onClick={() => removeToEmail(email)}
+                      aria-label={`Remove ${email}`}
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-xs text-amber-800">
+              No recipients in To. Add parent emails under Admin → Parents, or tap Restore all.
+            </p>
+          )}
         </div>
-        {emails.length > 0 && (
-          <p className="mt-3 break-all text-xs text-muted-foreground">{emails.join(" · ")}</p>
-        )}
+
+        <div className="border-t border-border/60 pt-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">CC</p>
+          <p className="mt-1 text-muted-foreground">
+            Coach emails are CC&apos;d on every parent message (
+            {coachCcEmails.length} address{coachCcEmails.length === 1 ? "" : "es"}).{" "}
+            <Link to="/admin/join-notifications" className="font-medium text-forest underline">
+              Manage coach CC emails
+            </Link>
+          </p>
+          {coachCcEmails.length > 0 ? (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {coachCcEmails.map((email) => (
+                <li key={email}>
+                  <span className="inline-flex rounded-full border border-forest/20 bg-forest/5 px-2.5 py-1 text-xs text-foreground">
+                    {email}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              No coach CC emails yet.{" "}
+              <Link to="/admin/join-notifications" className="font-medium text-forest underline">
+                Add coach CC emails
+              </Link>
+              .
+            </p>
+          )}
+        </div>
+
+        <p className="border-t border-border/60 pt-4 text-xs text-muted-foreground">
+          {phones.length} unique parent phone{phones.length === 1 ? "" : "s"} for WhatsApp — from{" "}
+          <code className="rounded bg-muted px-1">parent_contacts</code>.
+        </p>
       </div>
 
       <div className="mb-6 space-y-4 rounded-2xl border border-border bg-card p-6">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Quick templates
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {broadcastTemplates.map((template) => (
+              <button
+                key={template.id}
+                type="button"
+                className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:border-forest/40 hover:bg-forest/5"
+                onClick={() => {
+                  setSubject(template.subject);
+                  setBody(template.body);
+                  toast.success(`Template: ${template.label}`);
+                }}
+              >
+                {template.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <label className="block text-sm">
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Subject
@@ -286,7 +407,7 @@ function AdminBroadcastPage() {
             onChange={(e) => setBody(e.target.value)}
             rows={8}
             className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2"
-            placeholder="Hi families — a quick update from Bits & Bots…"
+            placeholder="Hi families — a quick team update…"
             maxLength={10000}
           />
         </label>
@@ -295,11 +416,11 @@ function AdminBroadcastPage() {
           <button
             type="button"
             className="btn-primary gap-2"
-            disabled={busy !== null || emails.length === 0}
+            disabled={busy !== null || toEmails.length === 0}
             onClick={sendEmail}
           >
             <Mail size={16} />
-            {busy === "email" ? "Sending…" : `Send email (${emails.length})`}
+            {busy === "email" ? "Sending…" : `Send email (${toEmails.length})`}
           </button>
           <button
             type="button"
@@ -398,6 +519,6 @@ function AdminBroadcastPage() {
           </button>
         </div>
       </div>
-    </AdminReviewPage>
+    </AdminQuickShell>
   );
 }

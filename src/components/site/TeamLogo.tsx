@@ -1,10 +1,8 @@
 import { cn } from "@/lib/utils";
-import { photos, SITE_NAME, SITE_TAGLINE } from "@/lib/photos";
+import { useSiteImage } from "@/lib/site-images-context";
+import { useSiteSettings } from "@/lib/site-settings-context";
 
-const LOGO_SRC = photos.logo;
-
-type TeamLogoProps = {
-  variant?: "light" | "dark";
+type TeamLogoProps = {  variant?: "light" | "dark";
   size?: "sm" | "md";
   className?: string;
   priority?: boolean;
@@ -16,8 +14,9 @@ const sizeConfig = {
 } as const;
 
 export function TeamLogo({ variant = "light", size = "md", className, priority = false }: TeamLogoProps) {
+  const { siteName, siteTagline } = useSiteSettings();
+  const logo = useSiteImage("teamLogo");
   const cfg = sizeConfig[size];
-
   return (
     <span
       className={cn(
@@ -31,9 +30,8 @@ export function TeamLogo({ variant = "light", size = "md", className, priority =
       )}
     >
       <img
-        src={LOGO_SRC}
-        alt={`${SITE_TAGLINE} — ${SITE_NAME}`}
-        width={cfg.render}
+        src={logo.url}
+        alt={logo.alt || `${siteTagline} — ${siteName}`}        width={cfg.render}
         height={cfg.render}
         loading={priority ? "eager" : "lazy"}
         decoding="async"

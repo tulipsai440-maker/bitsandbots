@@ -456,11 +456,16 @@ export async function updateMyAssignmentTask(
   note: string,
   attachment?: { url: string | null; name: string | null },
 ): Promise<void> {
+  const trimmedNote = note.trim();
+  if (!trimmedNote) {
+    throw new Error("Please add a note before saving");
+  }
+
   const withAttachments = await db.rpc("update_my_assignment_task", {
     p_token: token,
     p_task_id: taskId,
     p_status: status,
-    p_note: note,
+    p_note: trimmedNote,
     p_attachment_url: attachment?.url ?? null,
     p_attachment_name: attachment?.name ?? null,
   });
@@ -480,7 +485,7 @@ export async function updateMyAssignmentTask(
     p_token: token,
     p_task_id: taskId,
     p_status: status,
-    p_note: note,
+    p_note: trimmedNote,
   });
   if (error) throw error;
   if (attachment?.url) {
@@ -496,4 +501,60 @@ export async function logoutAssignmentSession(token: string): Promise<void> {
   } finally {
     clearAssignmentSession();
   }
+}
+
+export async function adminReopenAssignmentTask(taskId: string): Promise<void> {
+  const { error } = await db.rpc("admin_reopen_assignment_task", { p_task_id: taskId });
+  if (!error) return;
+  if (isAdminAssignmentRpcMissing(error)) {
+    const { error: upd } = await db.from("assignment_tasks").update({ status: "todo" }).eq("id", taskId);
+    if (upd) throw upd;
+    return;
+  }
+  throw error;
+}
+
+/** Admin: reopen all completed tasks on an assignment. Returns count reopened. */
+export async function adminReopenAssignment(assignmentId: string): Promise<number> {
+  const { data, error } = await db.rpc("admin_reopen_assignment", {
+    p_assignment_id: assignmentId,
+  });
+  if (!error) return (data as number) ?? 0;
+  if (isAdminAssignmentRpcMissing(error)) {
+    const { data: rows, error: upd } = await db
+      .from("assignment_tasks")
+      .update({ status: "todo" })
+      .eq("assignment_id", assignmentId)
+      .eq("status", "done")
+      .select("id");
+    if (upd) throw upd;
+    return rows?.length ?? 0;
+  }
+  throw error;
+}
+
+/** Admin: change a teammate's task status. */
+export async function adminSetAssignmentTaskStatus(
+  taskId: string,
+  status: AssignmentStatus,
+): Promise<void> {
+  const { error } = await db.rpc("admin_set_assignment_task_status", {
+    p_task_id: taskId,
+    p_status: status,
+  });
+  if (!error) return;
+  if (isAdminAssignmentRpcMissing(error)) {
+    const { error: upd } = await db.from("assignment_tasks").update({ status }).eq("id", taskId);
+    if (upd) throw upd;
+    return;
+  }
+  throw error;
+}
+
+function isAdminAssignmentRpcMissing(error: unknown): boolean {
+  const msg = assignmentsErrorMessage(error).toLowerCase();
+  return (
+    msg.includes("could not find the function") ||
+    (msg.includes("schema cache") && msg.includes("admin_"))
+  );
 }

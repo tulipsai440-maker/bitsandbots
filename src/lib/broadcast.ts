@@ -22,11 +22,17 @@ export function broadcastErrorMessage(error: unknown): string {
 
 export function isBroadcastSetupMissing(error: unknown): boolean {
   const message = broadcastErrorMessage(error).toLowerCase();
-  return (
-    message.includes("broadcast_settings") ||
-    message.includes("schema cache") ||
-    message.includes("could not find the table")
-  );
+  if (message.includes("broadcast_settings")) return true;
+  if (message.includes("could not find the table") && message.includes("broadcast")) return true;
+  if (message.includes("schema cache") && message.includes("broadcast")) return true;
+  return false;
+}
+
+/** True when broadcast_settings exists and the current admin can read it. */
+export async function probeBroadcastSettingsTable(): Promise<boolean> {
+  const { error } = await db.from("broadcast_settings").select("id").eq("id", 1).maybeSingle();
+  if (!error) return true;
+  return !isBroadcastSetupMissing(error);
 }
 
 /** Normalize and de-dupe emails from parent_contacts rows. */
@@ -63,6 +69,12 @@ export async function fetchParentBroadcastPhones(): Promise<string[]> {
   const { data, error } = await db.from("parent_contacts").select("phone");
   if (error) throw error;
   return uniquePhonesFromParentRows(data ?? []);
+}
+
+/** Active coach notification emails (CC on parent broadcasts). */
+export async function fetchCoachBroadcastEmails(): Promise<string[]> {
+  const { fetchCoachCcEmailAddresses } = await import("@/lib/coach-cc-emails");
+  return fetchCoachCcEmailAddresses();
 }
 
 export async function fetchWhatsAppGroupUrl(): Promise<string> {

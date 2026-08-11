@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { loadCoachCcEmailsServer } from "@/lib/coach-cc-emails";
+import { emailFromFallback, loadTeamBrandingServer } from "@/lib/team-branding";
 
 const schema = z.object({
   parentName: z.string().min(1, "Parent name is required").max(120),
@@ -17,25 +19,10 @@ function escapeHtml(s: string) {
 }
 
 async function loadNotifyRecipients(): Promise<string[]> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("join_notify_emails")
-    .select("email")
-    .eq("active", true)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("[join] Could not load notify emails", error.message);
-    throw new Error(
-      "Join notification emails are not set up yet. A coach must add recipients in Admin → Join Notifications.",
-    );
-  }
-
-  const emails = (data ?? []).map((row) => row.email.trim()).filter(Boolean);
+  const emails = await loadCoachCcEmailsServer();
   if (emails.length === 0) {
     throw new Error(
-      "No notification emails are set up yet. A coach must add recipients in Admin → Join Notifications.",
+      "No coach notification emails yet. Add them under Admin → Coach CC emails.",
     );
   }
   return emails;
@@ -48,6 +35,7 @@ async function sendViaResend(
   data: z.infer<typeof schema>,
   summary: string,
   html: string,
+  siteName: string,
 ) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -59,7 +47,7 @@ async function sendViaResend(
       from: fromAddress,
       to: recipients,
       reply_to: data.parentEmail,
-      subject: `Bits & Bots Join Request — ${data.scoutName}`,
+      subject: `${siteName} Join Request — ${data.scoutName}`,
       text: summary,
       html,
     }),
@@ -90,7 +78,8 @@ export const submitJoinRequest = createServerFn({ method: "POST" })
     }
 
     const recipients = await loadNotifyRecipients();
-    const fromAddress = process.env.RESEND_FROM || "Bits & Bots <onboarding@resend.dev>";
+    const branding = await loadTeamBrandingServer();
+    const fromAddress = emailFromFallback(branding);
 
     const summary = [
       `Parent: ${data.parentName}`,
@@ -105,8 +94,8 @@ export const submitJoinRequest = createServerFn({ method: "POST" })
 
     const html = `
       <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-        <h2 style="font-family:Georgia,serif;color:#1f3d1f;margin:0 0 8px">New Bits &amp; Bots Join Request</h2>
-        <p style="color:#666;margin:0 0 16px">Submitted from Bits &amp; Bots</p>
+        <h2 style="font-family:Georgia,serif;color:${escapeHtml(branding.brandColor)};margin:0 0 8px">New ${escapeHtml(branding.siteName)} Join Request</h2>
+        <p style="color:#666;margin:0 0 16px">Submitted from ${escapeHtml(branding.siteName)}</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px">
           <tbody>
             ${[
@@ -130,6 +119,6 @@ export const submitJoinRequest = createServerFn({ method: "POST" })
       </div>
     `;
 
-    await sendViaResend(apiKey, fromAddress, recipients, data, summary, html);
+    await sendViaResend(apiKey, fromAddress, recipients, data, summary, html, branding.siteName);
     return { ok: true as const, delivered: true as const, useClientFormSubmit: false as const };
   });

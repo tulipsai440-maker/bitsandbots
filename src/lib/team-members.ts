@@ -7,6 +7,7 @@ export type TeamMember = {
   photoUrl?: string;
   /** Short bio — leave empty for placeholder copy */
   description?: string;
+  sortOrder?: number;
 };
 
 const GENERIC_BIO =
@@ -83,14 +84,14 @@ export const TEAM_MEMBERS: TeamMember[] = [
   },
 ];
 
-export function teamMemberDisplayBio(description?: string | null, name?: string): string {
+export function teamMemberDisplayBio(description?: string | null, name?: string, fallback?: string): string {
   const trimmed = description?.trim();
   if (trimmed) return trimmed;
   if (name) {
     const unique = uniqueBioForName(name);
     if (unique) return unique;
   }
-  return GENERIC_BIO;
+  return fallback?.trim() || GENERIC_BIO;
 }
 
 type TeamMemberRow = {
@@ -115,8 +116,9 @@ export async function fetchTeamMembers(): Promise<TeamMember[]> {
     return (data as TeamMemberRow[]).map((row) => ({
       id: row.id,
       name: row.name,
-      description: teamMemberDisplayBio(row.description, row.name),
+      description: row.description ?? undefined,
       photoUrl: row.photo_url ?? undefined,
+      sortOrder: row.sort_order,
     }));
   } catch (error) {
     console.error("[team_members]", error);

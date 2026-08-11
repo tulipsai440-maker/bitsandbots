@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { AdminReviewPage } from "@/components/admin/AdminShell";
+import { AdminQuickShell } from "@/components/admin/AdminQuickShell";
 import {
   addApprovedGalleryPhotos,
   approveGalleryPhoto,
@@ -126,12 +126,9 @@ function AdminGalleryPhotosPage() {
   }
 
   return (
-    <AdminReviewPage
-      active="gallery-photos"
-      title="Gallery photos"
-      description="Add photos straight to the public gallery, or review parent submissions."
-      toolbar={
-        needsSetup ? undefined : (
+    <AdminQuickShell>
+      {!needsSetup && (
+        <div className="mb-6 flex justify-end">
           <div className="inline-flex rounded-full border border-border bg-card p-1">
             <button
               onClick={() => setTab("approved")}
@@ -146,9 +143,8 @@ function AdminGalleryPhotosPage() {
               Pending {pending.length > 0 ? `(${pending.length})` : ""}
             </button>
           </div>
-        )
-      }
-    >
+        </div>
+      )}
       {needsSetup && <GallerySetupBanner onRetry={load} />}
 
       {error && (
@@ -286,7 +282,7 @@ function AdminGalleryPhotosPage() {
           )}
         </>
       )}
-    </AdminReviewPage>
+    </AdminQuickShell>
   );
 }
 

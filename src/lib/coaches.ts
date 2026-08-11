@@ -3,10 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 export type Coach = {
   id: string;
   name: string;
-  /** Optional photo URL — leave empty for placeholder */
   photoUrl?: string;
-  /** Short bio — leave empty for placeholder copy */
   description?: string;
+  sortOrder?: number;
 };
 
 const GENERIC_COACH_BIO =
@@ -26,14 +25,15 @@ export const COACHES: Coach[] = [
   },
 ];
 
-export function coachDisplayBio(description?: string | null): string {
+export function coachDisplayBio(description?: string | null, fallback?: string): string {
   const trimmed = description?.trim();
-  return trimmed || GENERIC_COACH_BIO;
+  return trimmed || fallback?.trim() || GENERIC_COACH_BIO;
 }
 
 type CoachRow = {
   id: string;
   name: string;
+  email: string | null;
   description: string | null;
   photo_url: string | null;
   sort_order: number;
@@ -50,11 +50,12 @@ export async function fetchCoaches(): Promise<Coach[]> {
     if (error) throw error;
     if (!data?.length) return COACHES;
 
-    return (data as CoachRow[]).map((row) => ({
+    return (data as Omit<CoachRow, "email">[]).map((row) => ({
       id: row.id,
       name: row.name,
-      description: coachDisplayBio(row.description),
+      description: row.description ?? undefined,
       photoUrl: row.photo_url ?? undefined,
+      sortOrder: row.sort_order,
     }));
   } catch (error) {
     console.error("[coaches]", error);

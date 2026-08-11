@@ -1,7 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import {
+  emailFromFallback,
+  loadTeamBrandingServer,
+} from "@/lib/team-branding";
 import { createClient } from "@supabase/supabase-js";
 import { uniquePhonesFromParentRows } from "@/lib/broadcast-phones";
+import { loadCoachCcEmailsServer } from "@/lib/coach-cc-emails";
 
 const schema = z.object({
   subject: z.string().min(1, "Subject is required").max(200),
@@ -87,6 +92,10 @@ async function loadParentEmails(): Promise<string[]> {
   return [...unique].sort();
 }
 
+async function loadCoachEmails(): Promise<string[]> {
+  return loadCoachCcEmailsServer();
+}
+
 async function loadParentPhones(): Promise<string[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -164,6 +173,7 @@ async function sendOneResend(
   text: string,
   html: string,
   replyTo?: string,
+  cc?: string[],
 ) {
   const body: Record<string, unknown> = {
     from: fromAddress,
@@ -173,6 +183,7 @@ async function sendOneResend(
     html,
   };
   if (replyTo) body.reply_to = [replyTo];
+  if (cc?.length) body.cc = cc;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -218,6 +229,7 @@ async function sendBroadcastResend(
   text: string,
   html: string,
   replyTo?: string,
+  cc?: string[],
 ) {
   const batch = recipients.map((to) => {
     const item: Record<string, unknown> = {
@@ -228,6 +240,7 @@ async function sendBroadcastResend(
       html,
     };
     if (replyTo) item.reply_to = [replyTo];
+    if (cc?.length) item.cc = cc;
     return item;
   });
 
@@ -281,8 +294,8 @@ export const sendParentBroadcast = createServerFn({ method: "POST" })
       );
     }
 
-    const fromAddress =
-      process.env.RESEND_FROM?.trim() || "Bits & Bots <updates@fllbots.com>";
+    const branding = await loadTeamBrandingServer();
+    const fromAddress = emailFromFallback(branding);
     const replyTo =
       process.env.RESEND_REPLY_TO?.trim() || "sravanthi440@gmail.com";
 
@@ -301,16 +314,18 @@ export const sendParentBroadcast = createServerFn({ method: "POST" })
     }
     if (recipients.length === 0) {
       throw new Error(
-        "No parent emails found. Add emails under Admin → Parents first.",
+        "No parent emails selected. Add emails under Admin → Parents or restore recipients in the To field.",
       );
     }
+
+    const coachCc = await loadCoachEmails();
 
     const subject = data.subject.trim();
     const text = data.body.trim();
     const html = `
       <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a;line-height:1.5">
-        <p style="color:#666;margin:0 0 12px;font-size:13px">Bits &amp; Bots team update</p>
-        <h2 style="font-family:Georgia,serif;color:#1f3d1f;margin:0 0 16px;font-size:22px">${escapeHtml(subject)}</h2>
+        <p style="color:#666;margin:0 0 12px;font-size:13px">${escapeHtml(branding.siteName)} team update</p>
+        <h2 style="font-family:Georgia,serif;color:${escapeHtml(branding.brandColor)};margin:0 0 16px;font-size:22px">${escapeHtml(subject)}</h2>
         <div style="white-space:pre-wrap;font-size:15px">${escapeHtml(text)}</div>
       </div>
     `;
@@ -327,13 +342,14 @@ export const sendParentBroadcast = createServerFn({ method: "POST" })
         text,
         html,
         replyTo,
+        coachCc,
       );
     } catch (err) {
       // Batch failed — fall back to one-by-one so partial delivery still works.
       console.warn("[broadcast] batch send failed, falling back to individual sends", err);
       for (const to of recipients) {
         try {
-          await sendOneResend(apiKey, fromAddress, to, subject, text, html, replyTo);
+          await sendOneResend(apiKey, fromAddress, to, subject, text, html, replyTo, coachCc);
           sent += 1;
         } catch (oneErr) {
           failures.push(

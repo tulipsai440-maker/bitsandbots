@@ -391,10 +391,14 @@ BEGIN
     RAISE EXCEPTION 'Invalid status';
   END IF;
 
+  IF NULLIF(TRIM(COALESCE(p_note, '')), '') IS NULL THEN
+    RAISE EXCEPTION 'Please add a note before saving';
+  END IF;
+
   UPDATE public.assignment_tasks
   SET
     status = p_status,
-    note = COALESCE(p_note, ''),
+    note = TRIM(p_note),
     updated_at = now()
   WHERE id = p_task_id
     AND team_member_id = v_member;
@@ -447,5 +451,86 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.logout_member_session(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.logout_member_session(uuid) TO anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_reopen_assignment_task(p_task_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+BEGIN
+  IF NOT public.has_role(auth.uid(), 'admin') THEN
+    RAISE EXCEPTION 'Admin access required';
+  END IF;
+
+  UPDATE public.assignment_tasks
+  SET status = 'todo', updated_at = now()
+  WHERE id = p_task_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Task not found';
+  END IF;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.admin_reopen_assignment_task(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.admin_reopen_assignment_task(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_reopen_assignment(p_assignment_id uuid)
+RETURNS int
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_count int;
+BEGIN
+  IF NOT public.has_role(auth.uid(), 'admin') THEN
+    RAISE EXCEPTION 'Admin access required';
+  END IF;
+
+  UPDATE public.assignment_tasks
+  SET status = 'todo', updated_at = now()
+  WHERE assignment_id = p_assignment_id
+    AND status = 'done';
+
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RETURN v_count;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.admin_reopen_assignment(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.admin_reopen_assignment(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_set_assignment_task_status(
+  p_task_id uuid,
+  p_status text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+BEGIN
+  IF NOT public.has_role(auth.uid(), 'admin') THEN
+    RAISE EXCEPTION 'Admin access required';
+  END IF;
+
+  IF p_status NOT IN ('todo', 'doing', 'done') THEN
+    RAISE EXCEPTION 'Invalid status';
+  END IF;
+
+  UPDATE public.assignment_tasks
+  SET status = p_status, updated_at = now()
+  WHERE id = p_task_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Task not found';
+  END IF;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.admin_set_assignment_task_status(uuid, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.admin_set_assignment_task_status(uuid, text) TO authenticated;
 
 NOTIFY pgrst, 'reload schema';

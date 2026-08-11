@@ -46,8 +46,13 @@ export async function fetchActiveJoinNotifyEmails(): Promise<JoinNotifyEmailRow[
 }
 
 export async function fetchActiveJoinNotifyEmailAddresses(): Promise<string[]> {
-  const rows = await fetchActiveJoinNotifyEmails();
-  return rows.map((r) => r.email.trim()).filter(Boolean);
+  try {
+    const rows = await fetchActiveJoinNotifyEmails();
+    return rows.map((r) => r.email.trim()).filter(Boolean);
+  } catch (e) {
+    if (isJoinNotifyTableMissingError(e)) return [];
+    throw e;
+  }
 }
 
 export function isJoinNotifyTableMissingError(error: unknown): boolean {
@@ -94,4 +99,6 @@ FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 INSERT INTO public.join_notify_emails (email, label, sort_order)
 VALUES ('suresh440@gmail.com', 'Coach', 1)
-ON CONFLICT (email) DO NOTHING;`;
+ON CONFLICT (email) DO NOTHING;
+
+NOTIFY pgrst, 'reload schema';`;

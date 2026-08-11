@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SiteLayout } from "@/components/site/Layout";
 import { supabase, getSupabaseProjectRef } from "@/integrations/supabase/client";
+import { brandingRouteLoader, routeTeamName } from "@/lib/team-branding";
 import { toast } from "sonner";
 
 function authCallbackUrl(): string {
@@ -10,15 +11,19 @@ function authCallbackUrl(): string {
 }
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({
-    meta: [
-      { title: "Sign in — Bits & Bots" },
-      { name: "description", content: "Sign in to Bits & Bots admin." },
-      { property: "og:title", content: "Sign in — Bits & Bots" },
-      { property: "og:description", content: "Bits & Bots admin sign in." },
-      { name: "robots", content: "noindex" },
-    ],
-  }),
+  loader: brandingRouteLoader,
+  head: ({ loaderData }) => {
+    const name = routeTeamName(loaderData);
+    return {
+      meta: [
+        { title: `Sign in — ${name}` },
+        { name: "description", content: `Sign in to ${name} admin.` },
+        { property: "og:title", content: `Sign in — ${name}` },
+        { property: "og:description", content: `${name} admin sign in.` },
+        { name: "robots", content: "noindex" },
+      ],
+    };
+  },
   component: AuthPage,
 });
 
@@ -35,13 +40,13 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/admin/calendar" });
+      if (data.session) navigate({ to: "/admin" });
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session) {
         toast.success("Signed in successfully.");
-        navigate({ to: "/admin/calendar" });
+        navigate({ to: "/admin" });
       }
       if (event === "PASSWORD_RECOVERY") {
         setMessage({
@@ -92,7 +97,7 @@ function AuthPage() {
         setMode("signin");
         return;
       }
-      navigate({ to: "/admin/calendar" });
+      navigate({ to: "/admin" });
     } catch (err) {
       const text = authErrorMessage(err);
       setMessage({ type: "error", text });

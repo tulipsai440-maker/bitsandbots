@@ -3,6 +3,12 @@
  * Runs daily via Cloudflare cron the day after due_date; CC coach on every send.
  */
 
+import {
+  emailFromFallback,
+  emailSignoff,
+  loadTeamBrandingServer,
+} from "@/lib/team-branding";
+
 const DEFAULT_CC = "suresh440@gmail.com";
 
 export type OverdueReminderRow = {
@@ -43,17 +49,16 @@ function formatDueDate(isoDate: string) {
   }
 }
 
-function resendConfig() {
+async function resendConfig() {
+  const branding = await loadTeamBrandingServer();
   const apiKey = process.env.RESEND_API_KEY?.trim();
-  const fromAddress =
-    process.env.RESEND_FROM?.trim() || "Bits & Bots <updates@fllbots.com>";
+  const fromAddress = emailFromFallback(branding);
   const cc =
     process.env.ASSIGNMENT_REMINDER_CC?.trim() ||
     process.env.RESEND_REPLY_TO?.trim() ||
     DEFAULT_CC;
-  const siteOrigin =
-    process.env.SITE_ORIGIN?.trim() || "https://fllbots.com";
-  return { apiKey, fromAddress, cc, siteOrigin };
+  const siteOrigin = branding.siteUrl;
+  return { apiKey, fromAddress, cc, siteOrigin, branding };
 }
 
 /** Tasks due yesterday, not done, parent has email, reminder not yet sent. */
@@ -154,13 +159,14 @@ export async function loadOverdueReminderRows(): Promise<OverdueReminderRow[]> {
 
 async function sendReminderEmail(
   row: OverdueReminderRow,
-  config: ReturnType<typeof resendConfig>,
+  config: Awaited<ReturnType<typeof resendConfig>>,
 ) {
   if (!config.apiKey) throw new Error("RESEND_API_KEY is missing.");
 
+  const signoff = emailSignoff(config.branding);
   const dueLabel = formatDueDate(row.dueDate);
   const assignmentsUrl = `${config.siteOrigin.replace(/\/$/, "")}/assignments`;
-  const subject = `Bits & Bots: ${row.memberName} — overdue assignment (${row.title})`;
+  const subject = `${config.branding.siteName}: ${row.memberName} — overdue assignment (${row.title})`;
 
   const text = `Hi ${row.parentName},
 
@@ -172,19 +178,19 @@ Status: ${row.status === "doing" ? "In progress" : "Not started"}
 ${row.linkUrl ? `\nLink: ${row.linkUrl}\n` : ""}
 Teammates can update their task at ${assignmentsUrl} (name + 4-digit PIN).
 
-— Bits & Bots coaches`;
+— ${signoff}`;
 
   const html = `
     <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a;line-height:1.5">
-      <p style="color:#666;margin:0 0 12px;font-size:13px">Bits &amp; Bots assignment reminder</p>
+      <p style="color:#666;margin:0 0 12px;font-size:13px">${escapeHtml(config.branding.siteName)} assignment reminder</p>
       <p>Hi ${escapeHtml(row.parentName)},</p>
       <p><strong>${escapeHtml(row.memberName)}</strong> has not completed this assignment, which was due <strong>${escapeHtml(dueLabel)}</strong>:</p>
-      <h2 style="font-family:Georgia,serif;color:#1f3d1f;margin:16px 0 8px;font-size:20px">${escapeHtml(row.title)}</h2>
+        <h2 style="font-family:Georgia,serif;color:${escapeHtml(config.branding.brandColor)};margin:16px 0 8px;font-size:20px">${escapeHtml(row.title)}</h2>
       ${row.description ? `<p style="white-space:pre-wrap">${escapeHtml(row.description)}</p>` : ""}
       <p>Status: <strong>${row.status === "doing" ? "In progress" : "Not started"}</strong></p>
       ${row.linkUrl ? `<p><a href="${escapeHtml(row.linkUrl)}">Open assignment link</a></p>` : ""}
       <p style="margin-top:20px">Teammates can update their task at <a href="${escapeHtml(assignmentsUrl)}">${escapeHtml(assignmentsUrl)}</a> (name + 4-digit PIN).</p>
-      <p style="color:#666;font-size:13px;margin-top:24px">— Bits &amp; Bots coaches</p>
+      <p style="color:#666;font-size:13px;margin-top:24px">— ${escapeHtml(signoff)}</p>
     </div>
   `;
 
@@ -226,7 +232,7 @@ async function markReminderSent(taskId: string, parentEmail: string) {
 
 /** Send all pending overdue reminders (cron + admin manual). */
 export async function sendOverdueAssignmentReminders(): Promise<OverdueReminderResult> {
-  const config = resendConfig();
+  const config = await resendConfig();
   if (!config.apiKey) {
     throw new Error("RESEND_API_KEY is missing.");
   }

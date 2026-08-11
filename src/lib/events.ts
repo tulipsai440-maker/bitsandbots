@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { ZOOM_URL } from "@/lib/photos";
 
 export type EventRow = {
   id: string;
@@ -48,11 +47,8 @@ function parseTime(value: string | null, fallbackHour: number, fallbackMinute: n
   return { hour: fallbackHour, minute: fallbackMinute };
 }
 
-function eventTypeFromTitle(title: string): string {
-  const t = title.toLowerCase();
-  if (t.includes("zoom")) return "Zoom";
-  if (t.includes("practice")) return "Practice";
-  return "Meeting";
+function eventTypeFromTitle(_title: string): string {
+  return "Event";
 }
 
 /** Map calendar table rows → EventRow used by the public site. */
@@ -73,7 +69,7 @@ export function calendarRowsToEvents(rows: CalendarRow[]): EventRow[] {
         starts_at: iso(starts),
         ends_at: iso(ends),
         type,
-        band_url: type === "Zoom" ? ZOOM_URL : null,
+        band_url: null,
       } satisfies EventRow;
     })
     .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());

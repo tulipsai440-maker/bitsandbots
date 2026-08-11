@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { AssignmentsCoachView } from "@/components/admin/assignments/AssignmentsCoachView";
 import { SiteLayout } from "@/components/site/Layout";
-import {
+import { checkIsAdmin } from "@/lib/admin";
+import { supabase } from "@/integrations/supabase/client";import {
   assignmentsErrorMessage,
   clearAssignmentSession,
   fetchAssignmentRoster,
@@ -18,21 +20,27 @@ import {
   type MyAssignmentTask,
   type RosterMember,
 } from "@/lib/assignments";
-import { SITE_NAME } from "@/lib/photos";
+import { brandingRouteLoader, routeTeamName } from "@/lib/team-branding";
+import { useSiteSettings } from "@/lib/site-settings-context";
+import { displayTeamNameText } from "@/lib/site-settings";
 import { ExternalLink, LogOut, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/assignments")({
-  head: () => ({
-    meta: [
-      { title: `Assignments — ${SITE_NAME}` },
-      { name: "robots", content: "noindex, nofollow" },
-      {
-        name: "description",
-        content: "Team member assignment portal for Bits & Bots.",
-      },
-    ],
-  }),
+  loader: brandingRouteLoader,
+  head: ({ loaderData }) => {
+    const name = routeTeamName(loaderData);
+    return {
+      meta: [
+        { title: `Assignments — ${name}` },
+        { name: "robots", content: "noindex, nofollow" },
+        {
+          name: "description",
+          content: `Team member assignment portal for ${name}.`,
+        },
+      ],
+    };
+  },
   component: AssignmentsPortalPage,
 });
 
@@ -43,11 +51,26 @@ const STATUS_OPTIONS: { value: AssignmentStatus; label: string }[] = [
 ];
 
 function AssignmentsPortalPage() {
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
   const [bootstrapping, setBootstrapping] = useState(true);
 
   useEffect(() => {
+    checkIsAdmin().then(setIsAdmin);
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      checkIsAdmin().then(setIsAdmin);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (isAdmin) {
+      setBootstrapping(false);
+      return;
+    }
+    if (isAdmin === null) return;
+
     const existing = getStoredAssignmentSession();
     if (!existing) {
       setBootstrapping(false);
@@ -64,12 +87,20 @@ function AssignmentsPortalPage() {
       })
       .catch(() => clearAssignmentSession())
       .finally(() => setBootstrapping(false));
-  }, []);
+  }, [isAdmin]);
 
-  if (bootstrapping) {
+  if (isAdmin === null || bootstrapping) {
     return (
       <SiteLayout>
         <div className="container-page py-16 text-muted-foreground">Loading…</div>
+      </SiteLayout>
+    );
+  }
+
+  if (isAdmin) {
+    return (
+      <SiteLayout>
+        <AssignmentsCoachView />
       </SiteLayout>
     );
   }
@@ -103,6 +134,7 @@ function AssignmentsPortalPage() {
 }
 
 function PinGate({ onSignedIn }: { onSignedIn: (token: string, name: string) => void }) {
+  const { siteName, assignmentsIntro } = useSiteSettings();
   const [roster, setRoster] = useState<RosterMember[]>([]);
   const [memberId, setMemberId] = useState("");
   const [pin, setPin] = useState("");
@@ -149,8 +181,8 @@ function PinGate({ onSignedIn }: { onSignedIn: (token: string, name: string) => 
       <div className="container-page">
         <div className="mx-auto w-full max-w-md">
         <h1 className="font-display text-4xl text-foreground">Assignments</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          For Bits &amp; Bots teammates only. Choose your name and enter your 4-digit PIN.
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          {displayTeamNameText(assignmentsIntro, siteName)}
         </p>
 
         {setupMissing ? (
@@ -214,8 +246,8 @@ function PinGate({ onSignedIn }: { onSignedIn: (token: string, name: string) => 
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 tracking-[0.35em]"
                   placeholder="••••"
                 />
-                <p className="mt-2 text-xs text-muted-foreground">
-                  First visit — pick a PIN you will remember. A coach can reset it if you forget.
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  Choose something you&apos;ll remember — you&apos;ll use it every time you open Assignments.
                 </p>
               </div>
             )}
@@ -388,13 +420,15 @@ function TaskCard({
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Your note (optional)
+            Your note <span className="text-destructive">*</span>
           </label>
-          <input
+          <textarea
+            required
+            rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
-            placeholder="Idea, question, or notes…"
+            placeholder="What did you work on, learn, or finish? Required every time you save."
           />
         </div>
       </div>
@@ -467,9 +501,13 @@ function TaskCard({
         disabled={busy}
         className="btn-primary mt-4 disabled:opacity-50"
         onClick={async () => {
+          if (!note.trim()) {
+            toast.error("Please add a note before saving");
+            return;
+          }
           setBusy(true);
           try {
-            await onSave(status, note, {
+            await onSave(status, note.trim(), {
               url: attachmentUrl,
               name: attachmentName,
             });

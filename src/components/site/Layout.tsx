@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { AdminLiveEditBar } from "@/components/admin/inline-edit/AdminLiveEditBar";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { VisitBar } from "./VisitBar";
@@ -7,6 +8,7 @@ import { VisitBar } from "./VisitBar";
 export function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col pb-28 lg:pb-0">
+      <AdminLiveEditBar />
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />

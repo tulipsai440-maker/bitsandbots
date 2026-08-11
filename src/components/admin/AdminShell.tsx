@@ -15,6 +15,7 @@ export type AdminNavKey =
   | "announcements"
   | "gallery-photos"
   | "site-images"
+  | "site-settings"
   | "join-notifications"
   | "team-admins"
   | "assignments"

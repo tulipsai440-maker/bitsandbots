@@ -27,6 +27,7 @@ import { Route as QuickLinksRouteImport } from './routes/quick-links'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SponsorsRouteImport } from './routes/sponsors'
 import { Route as VideosRouteImport } from './routes/videos'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminAnnouncementsRouteImport } from './routes/_authenticated/admin.announcements'
 import { Route as AuthenticatedAdminAssignmentsRouteImport } from './routes/_authenticated/admin.assignments'
 import { Route as AuthenticatedAdminBroadcastRouteImport } from './routes/_authenticated/admin.broadcast'
@@ -41,6 +42,7 @@ import { Route as AuthenticatedAdminParentConsentsRouteImport } from './routes/_
 import { Route as AuthenticatedAdminParentContactsRouteImport } from './routes/_authenticated/admin.parent-contacts'
 import { Route as AuthenticatedAdminScoutmastersRouteImport } from './routes/_authenticated/admin.scoutmasters'
 import { Route as AuthenticatedAdminSiteImagesRouteImport } from './routes/_authenticated/admin.site-images'
+import { Route as AuthenticatedAdminSiteSettingsRouteImport } from './routes/_authenticated/admin.site-settings'
 import { Route as AuthenticatedAdminSponsorsRouteImport } from './routes/_authenticated/admin.sponsors'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin.team'
 import { Route as AuthenticatedAdminTeamAdminsRouteImport } from './routes/_authenticated/admin.team-admins'
@@ -135,6 +137,11 @@ const VideosRoute = VideosRouteImport.update({
   path: '/videos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminAnnouncementsRoute =
   AuthenticatedAdminAnnouncementsRouteImport.update({
     id: '/admin/announcements',
@@ -219,6 +226,12 @@ const AuthenticatedAdminSiteImagesRoute =
     path: '/admin/site-images',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminSiteSettingsRoute =
+  AuthenticatedAdminSiteSettingsRouteImport.update({
+    id: '/admin/site-settings',
+    path: '/admin/site-settings',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminSponsorsRoute =
   AuthenticatedAdminSponsorsRouteImport.update({
     id: '/admin/sponsors',
@@ -275,10 +288,12 @@ export interface FileRoutesByFullPath {
   '/admin/parent-contacts': typeof AuthenticatedAdminParentContactsRoute
   '/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
   '/admin/site-images': typeof AuthenticatedAdminSiteImagesRoute
+  '/admin/site-settings': typeof AuthenticatedAdminSiteSettingsRoute
   '/admin/sponsors': typeof AuthenticatedAdminSponsorsRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/team-admins': typeof AuthenticatedAdminTeamAdminsRoute
   '/admin/troop-admins': typeof AuthenticatedAdminTroopAdminsRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -312,10 +327,12 @@ export interface FileRoutesByTo {
   '/admin/parent-contacts': typeof AuthenticatedAdminParentContactsRoute
   '/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
   '/admin/site-images': typeof AuthenticatedAdminSiteImagesRoute
+  '/admin/site-settings': typeof AuthenticatedAdminSiteSettingsRoute
   '/admin/sponsors': typeof AuthenticatedAdminSponsorsRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/team-admins': typeof AuthenticatedAdminTeamAdminsRoute
   '/admin/troop-admins': typeof AuthenticatedAdminTroopAdminsRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -351,10 +368,12 @@ export interface FileRoutesById {
   '/_authenticated/admin/parent-contacts': typeof AuthenticatedAdminParentContactsRoute
   '/_authenticated/admin/scoutmasters': typeof AuthenticatedAdminScoutmastersRoute
   '/_authenticated/admin/site-images': typeof AuthenticatedAdminSiteImagesRoute
+  '/_authenticated/admin/site-settings': typeof AuthenticatedAdminSiteSettingsRoute
   '/_authenticated/admin/sponsors': typeof AuthenticatedAdminSponsorsRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/admin/team-admins': typeof AuthenticatedAdminTeamAdminsRoute
   '/_authenticated/admin/troop-admins': typeof AuthenticatedAdminTroopAdminsRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -390,10 +409,12 @@ export interface FileRouteTypes {
     | '/admin/parent-contacts'
     | '/admin/scoutmasters'
     | '/admin/site-images'
+    | '/admin/site-settings'
     | '/admin/sponsors'
     | '/admin/team'
     | '/admin/team-admins'
     | '/admin/troop-admins'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -427,10 +448,12 @@ export interface FileRouteTypes {
     | '/admin/parent-contacts'
     | '/admin/scoutmasters'
     | '/admin/site-images'
+    | '/admin/site-settings'
     | '/admin/sponsors'
     | '/admin/team'
     | '/admin/team-admins'
     | '/admin/troop-admins'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -465,10 +488,12 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/parent-contacts'
     | '/_authenticated/admin/scoutmasters'
     | '/_authenticated/admin/site-images'
+    | '/_authenticated/admin/site-settings'
     | '/_authenticated/admin/sponsors'
     | '/_authenticated/admin/team'
     | '/_authenticated/admin/team-admins'
     | '/_authenticated/admin/troop-admins'
+    | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -620,6 +645,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VideosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/announcements': {
       id: '/_authenticated/admin/announcements'
       path: '/admin/announcements'
@@ -718,6 +750,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSiteImagesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/site-settings': {
+      id: '/_authenticated/admin/site-settings'
+      path: '/admin/site-settings'
+      fullPath: '/admin/site-settings'
+      preLoaderRoute: typeof AuthenticatedAdminSiteSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/sponsors': {
       id: '/_authenticated/admin/sponsors'
       path: '/admin/sponsors'
@@ -764,10 +803,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminParentContactsRoute: typeof AuthenticatedAdminParentContactsRoute
   AuthenticatedAdminScoutmastersRoute: typeof AuthenticatedAdminScoutmastersRoute
   AuthenticatedAdminSiteImagesRoute: typeof AuthenticatedAdminSiteImagesRoute
+  AuthenticatedAdminSiteSettingsRoute: typeof AuthenticatedAdminSiteSettingsRoute
   AuthenticatedAdminSponsorsRoute: typeof AuthenticatedAdminSponsorsRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedAdminTeamAdminsRoute: typeof AuthenticatedAdminTeamAdminsRoute
   AuthenticatedAdminTroopAdminsRoute: typeof AuthenticatedAdminTroopAdminsRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -786,10 +827,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminParentContactsRoute: AuthenticatedAdminParentContactsRoute,
   AuthenticatedAdminScoutmastersRoute: AuthenticatedAdminScoutmastersRoute,
   AuthenticatedAdminSiteImagesRoute: AuthenticatedAdminSiteImagesRoute,
+  AuthenticatedAdminSiteSettingsRoute: AuthenticatedAdminSiteSettingsRoute,
   AuthenticatedAdminSponsorsRoute: AuthenticatedAdminSponsorsRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
   AuthenticatedAdminTeamAdminsRoute: AuthenticatedAdminTeamAdminsRoute,
   AuthenticatedAdminTroopAdminsRoute: AuthenticatedAdminTroopAdminsRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

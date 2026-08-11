@@ -1,67 +1,58 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
-import { SITE_NAME } from "@/lib/photos";
+import { brandingRouteLoader, routeTeamName } from "@/lib/team-branding";
 import {
-  BIOGLOW_DOCUMENTS,
-  BIOGLOW_PLAYLIST_URL,
-  BIOGLOW_RESOURCES_URL,
-  BIOGLOW_VIDEOS,
+  seasonVideosForGroup,
+  seasonWatchUrl,
   youtubeThumbnailUrl,
-  youtubeWatchUrl,
   type SeasonDocument,
   type SeasonVideo,
-} from "@/lib/season-videos";
+} from "@/lib/season-from-settings";
+import { useSiteSettings } from "@/lib/site-settings-context";
 import { ExternalLink, FileText, Play } from "lucide-react";
 
 export const Route = createFileRoute("/videos")({
-  head: () => ({
-    meta: [
-      { title: `BIOGLOW Videos & Resources — ${SITE_NAME}` },
-      {
-        name: "description",
-        content: `Official FIRST LEGO League BIOGLOW Future Edition videos and PDFs for ${SITE_NAME} — notebook, rulebook, missions, rubric, and score sheet.`,
-      },
-      { property: "og:title", content: `${SITE_NAME} — BIOGLOW Videos & Resources` },
-      {
-        property: "og:description",
-        content: "Season videos plus Engineering Notebook, Rulebook, Missions, Rubric, and Score Sheet.",
-      },
-    ],
-  }),
+  loader: brandingRouteLoader,
+  head: ({ loaderData }) => {
+    const name = routeTeamName(loaderData);
+    return {
+      meta: [
+        { title: `Season Videos & Resources — ${name}` },
+        {
+          name: "description",
+          content: `Official FIRST LEGO League season videos and PDFs for ${name}.`,
+        },
+        { property: "og:title", content: `${name} — Season Videos & Resources` },
+        {
+          property: "og:description",
+          content: "Season videos plus official team PDFs and resources.",
+        },
+      ],
+    };
+  },
   component: VideosPage,
 });
 
-const GROUPS: { key: SeasonVideo["group"]; title: string; copy: string }[] = [
-  {
-    key: "season",
-    title: "Start here",
-    copy: "Watch the season introduction first.",
-  },
-  {
-    key: "game",
-    title: "Robot Game",
-    copy: "Missions and how to set up the field.",
-  },
-  {
-    key: "roles",
-    title: "Game roles",
-    copy: "Driver, Operator, Specialist, and Technician.",
-  },
-];
-
 function VideosPage() {
+  const settings = useSiteSettings();
+  const {
+    seasonName,
+    seasonPlaylistUrl,
+    seasonResourcesUrl,
+    seasonDocuments,
+    seasonVideoGroups,
+    videosHeroTitle,
+    videosHeroDescription,
+  } = settings;
+
   return (
     <SiteLayout>
-      <PageHero
-        title="BIOGLOW videos & resources"
-        align="center"
-        description="Official Future Edition videos and PDFs — notebook, rulebook, missions, rubric, and score sheet."
-      />
+      <PageHero title={videosHeroTitle} align="center" description={videosHeroDescription} />
 
       <section className="pb-6 pt-2">
         <div className="container-page flex flex-wrap items-center justify-center gap-3">
           <a
-            href={BIOGLOW_PLAYLIST_URL}
+            href={seasonPlaylistUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-primary gap-2"
@@ -69,7 +60,7 @@ function VideosPage() {
             Open full playlist <ExternalLink size={16} />
           </a>
           <a
-            href={BIOGLOW_RESOURCES_URL}
+            href={seasonResourcesUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-outline gap-2"
@@ -88,15 +79,15 @@ function VideosPage() {
             </p>
           </div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {BIOGLOW_DOCUMENTS.map((doc) => (
+            {seasonDocuments.map((doc) => (
               <DocumentTile key={doc.id} doc={doc} />
             ))}
           </div>
         </div>
       </section>
 
-      {GROUPS.map((group) => {
-        const videos = BIOGLOW_VIDEOS.filter((v) => v.group === group.key);
+      {seasonVideoGroups.map((group) => {
+        const videos = seasonVideosForGroup(settings, group.key);
         if (!videos.length) return null;
         return (
           <section key={group.key} className="py-10 md:py-12">
@@ -107,13 +98,19 @@ function VideosPage() {
               </div>
               <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {videos.map((video) => (
-                  <VideoTile key={video.id} video={video} />
+                  <VideoTile key={video.id} video={video} watchUrl={seasonWatchUrl(settings, video.id)} />
                 ))}
               </div>
             </div>
           </section>
         );
       })}
+
+      <section className="border-t border-border/50 bg-sand/30 py-8">
+        <div className="container-page text-center text-sm text-muted-foreground">
+          Current season: <span className="font-medium text-foreground">{seasonName}</span>
+        </div>
+      </section>
     </SiteLayout>
   );
 }
@@ -140,10 +137,10 @@ function DocumentTile({ doc }: { doc: SeasonDocument }) {
   );
 }
 
-function VideoTile({ video }: { video: SeasonVideo }) {
+function VideoTile({ video, watchUrl }: { video: SeasonVideo; watchUrl: string }) {
   return (
     <a
-      href={youtubeWatchUrl(video.id)}
+      href={watchUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="group block overflow-hidden rounded-[1.25rem] border border-border/80 bg-background transition-transform hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest"

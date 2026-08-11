@@ -11,103 +11,51 @@ import {
   Lightbulb,
   Play,
   FileText,
+  Link2,
 } from "lucide-react";
 import type { ComponentType } from "react";
-import { SITE_NAME } from "@/lib/photos";
-import { BIOGLOW_DOCUMENTS, BIOGLOW_PLAYLIST_URL, BIOGLOW_RESOURCES_URL } from "@/lib/season-videos";
+import { brandingRouteLoader, routeTeamName } from "@/lib/team-branding";
+import { useSiteSettings } from "@/lib/site-settings-context";
+import type { QuickLinkCard } from "@/lib/site-settings";
 
 export const Route = createFileRoute("/quick-links")({
-  head: () => ({
-    meta: [
-      { title: `Quick Links — ${SITE_NAME}` },
-      {
-        name: "description",
-        content: `Helpful FIRST LEGO League links and resources for ${SITE_NAME} families.`,
-      },
-      { property: "og:title", content: `${SITE_NAME} Quick Links` },
-      { property: "og:description", content: `Essential FLL resources for ${SITE_NAME} families.` },
-    ],
-  }),
+  loader: brandingRouteLoader,
+  head: ({ loaderData }) => {
+    const name = routeTeamName(loaderData);
+    return {
+      meta: [
+        { title: `Quick Links — ${name}` },
+        {
+          name: "description",
+          content: `Helpful FIRST LEGO League links and resources for ${name} families.`,
+        },
+        { property: "og:title", content: `${name} Quick Links` },
+        { property: "og:description", content: `Essential FLL resources for ${name} families.` },
+      ],
+    };
+  },
   component: QuickLinksPage,
 });
 
-type LinkItem = {
-  label: string;
-  href: string;
-  icon: ComponentType<{ size?: number }>;
-  desc: string;
-};
+type LinkItem = QuickLinkCard & { icon: ComponentType<{ size?: number }> };
 
-const links: LinkItem[] = [
-  {
-    label: "BIOGLOW videos",
-    href: "/videos",
-    icon: Play,
-    desc: "Season intro, missions, field setup, role videos, and official PDFs.",
-  },
-  {
-    label: "Season resources",
-    href: BIOGLOW_RESOURCES_URL,
-    icon: BookOpen,
-    desc: "Official LEGO Education materials for Future Edition (grades 3–8).",
-  },
-  ...BIOGLOW_DOCUMENTS.map((doc) => ({
-    label: doc.title,
-    href: doc.href,
-    icon: FileText,
-    desc: doc.blurb,
-  })),
-  {
-    label: "Full BIOGLOW playlist",
-    href: BIOGLOW_PLAYLIST_URL,
-    icon: Play,
-    desc: "Official FIRST LEGO League YouTube playlist for Future Edition.",
-  },
-  {
-    label: "FIRST LEGO League",
-    href: "https://www.firstlegoleague.org/",
-    icon: Trophy,
-    desc: "Official FLL program site — seasons, challenges, and team resources.",
-  },
-  {
-    label: "FIRST Inspires",
-    href: "https://www.firstinspires.org/",
-    icon: Globe,
-    desc: "Home of FIRST robotics programs for youth of all ages.",
-  },
-  {
-    label: "Season Challenge",
-    href: "https://www.firstinspires.org/robotics/fll",
-    icon: Lightbulb,
-    desc: "Learn about the current FIRST LEGO League challenge theme.",
-  },
-  {
-    label: "Core Values",
-    href: "https://www.firstinspires.org/robotics/fll/core-values",
-    icon: BookOpen,
-    desc: "Discovery, Innovation, Impact, Inclusion, Teamwork, and Fun.",
-  },
-  {
-    label: "Team Resources",
-    href: "https://www.firstinspires.org/resource-library",
-    icon: ClipboardList,
-    desc: "Guides, updates, and materials for FLL teams and coaches.",
-  },
-  {
-    label: "Team calendar",
-    href: "/calendar",
-    icon: Newspaper,
-    desc: "Upcoming practices, Zoom calls, and team events.",
-  },
-  {
-    label: "Photo Gallery",
-    href: "/gallery",
-    icon: Images,
-    desc: "Photos from practices, builds, and events.",
-  },
-];
+function iconForLink(link: QuickLinkCard): ComponentType<{ size?: number }> {
+  if (link.href.includes("youtube") || link.href === "/videos") return Play;
+  if (link.href.includes("lego.com") || link.href.includes("education")) return BookOpen;
+  if (link.href.endsWith(".pdf") || link.label.toLowerCase().includes("notebook") || link.label.toLowerCase().includes("rulebook")) {
+    return FileText;
+  }
+  if (link.href.includes("firstlegoleague")) return Trophy;
+  if (link.href.includes("firstinspires.org/robotics/fll/core-values")) return BookOpen;
+  if (link.href.includes("firstinspires.org/robotics/fll")) return Lightbulb;
+  if (link.href.includes("resource-library")) return ClipboardList;
+  if (link.href === "/calendar") return Newspaper;
+  if (link.href === "/gallery") return Images;
+  if (link.href.includes("firstinspires.org")) return Globe;
+  return Link2;
+}
 
-function QuickLinkCard({ item }: { item: LinkItem }) {
+function QuickLinkCardView({ item }: { item: LinkItem }) {
   const Icon = item.icon;
   const external = item.href.startsWith("http");
   const inner = (
@@ -144,24 +92,23 @@ function QuickLinkCard({ item }: { item: LinkItem }) {
   }
 
   return (
-    <Link to={item.href} className={className}>
+    <Link to={item.href as "/"} className={className}>
       {inner}
     </Link>
   );
 }
 
 function QuickLinksPage() {
+  const { quickLinks, quickLinksHeroTitle, quickLinksHeroDescription } = useSiteSettings();
+  const links: LinkItem[] = quickLinks.map((link) => ({ ...link, icon: iconForLink(link) }));
+
   return (
     <SiteLayout>
-      <PageHero
-        title="Quick links"
-        align="center"
-        description={`FIRST LEGO League resources and helpful links for ${SITE_NAME} families.`}
-      />
+      <PageHero title={quickLinksHeroTitle} align="center" description={quickLinksHeroDescription} />
       <section className="py-16">
         <div className="container-page grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {links.map((item) => (
-            <QuickLinkCard key={item.label} item={item} />
+            <QuickLinkCardView key={item.id} item={item} />
           ))}
         </div>
       </section>

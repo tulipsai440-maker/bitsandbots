@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { AdminReviewPage } from "@/components/admin/AdminShell";
+import { AdminQuickShell } from "@/components/admin/AdminQuickShell";
 import { TeamPhoto } from "@/components/site/TeamPhoto";
 import {
   fetchSiteImageRowsForAdmin,
@@ -87,11 +87,7 @@ function AdminSiteImagesPage() {
   }
 
   return (
-    <AdminReviewPage
-      active="site-images"
-      title="Site images"
-      description="Replace homepage hero and outreach photos. Team/coach/sponsor portraits are managed on their own admin pages."
-    >
+    <AdminQuickShell>
       {needsSetup && (
         <div className="mb-8 rounded-2xl border border-amber-300/60 bg-amber-50 p-6 text-sm text-amber-950">
           <div className="flex items-start gap-3">
@@ -197,6 +193,6 @@ function AdminSiteImagesPage() {
           ))}
         </div>
       )}
-    </AdminReviewPage>
+    </AdminQuickShell>
   );
 }
