@@ -367,24 +367,29 @@ export async function fetchApprovedGalleryPhotos(): Promise<ApprovedGalleryPhoto
   if (usesDemoPlaceholders()) return [];
 
   const tenantId = await tenantIdForQuery();
-  const { data, error } = await supabase
-    .from("gallery_photos")
-    .select("id, approved_path, caption, width, height")
-    .eq("tenant_id", tenantId)
-    .eq("status", "approved")
-    .order("created_at", { ascending: false });
+  const { data, error } = await supabase.rpc("list_approved_gallery_photos", {
+    p_tenant_id: tenantId,
+  });
   if (error) throw toError(error);
 
   return (data ?? [])
-    .filter((row) => Boolean(row.approved_path))
-    .map((row) => ({
-      id: row.id as string,
-      url: supabase.storage.from(APPROVED_BUCKET).getPublicUrl(row.approved_path as string).data
-        .publicUrl,
-      caption: (row.caption as string | null) ?? null,
-      width: (row.width as number | null) ?? null,
-      height: (row.height as number | null) ?? null,
-    }));
+    .filter((row: { approved_path: string | null }) => Boolean(row.approved_path))
+    .map(
+      (row: {
+        id: string;
+        approved_path: string;
+        caption: string | null;
+        width: number | null;
+        height: number | null;
+      }) => ({
+        id: row.id,
+        url: supabase.storage.from(APPROVED_BUCKET).getPublicUrl(row.approved_path).data
+          .publicUrl,
+        caption: row.caption ?? null,
+        width: row.width ?? null,
+        height: row.height ?? null,
+      }),
+    );
 }
 
 export async function fetchPendingGalleryPhotos(): Promise<PendingGalleryPhoto[]> {
@@ -516,6 +521,7 @@ export async function addApprovedGalleryPhotos(
     });
     if (uploadError) throw toError(uploadError);
 
+    const tenantId = await tenantIdForQuery();
     const { error: rowError } = await supabase.from("gallery_photos").insert({
       status: "approved",
       pending_path: null,
@@ -528,6 +534,7 @@ export async function addApprovedGalleryPhotos(
       consent_confirmed: true,
       reviewed_at: now,
       reviewed_by: userData.user?.id ?? null,
+      tenant_id: tenantId,
     });
 
     if (rowError) {

@@ -269,34 +269,19 @@ export async function fetchAssignmentRoster(): Promise<RosterMember[]> {
 }
 
 async function fetchAssignmentRosterForTenant(tenantId: string): Promise<RosterMember[]> {
-  const { data: members, error } = await supabase
-    .from("team_members")
-    .select("id, name, sort_order")
-    .eq("tenant_id", tenantId)
-    .order("sort_order", { ascending: true })
-    .order("name", { ascending: true });
+  const { data, error } = await db.rpc("list_assignment_roster", {
+    p_tenant_id: tenantId,
+  });
   if (error) throw error;
 
-  const rows = members ?? [];
-  const memberIds = rows.map((m) => m.id as string);
-  const pinIds = new Set<string>();
-  if (memberIds.length) {
-    const { data: pins, error: pinError } = await supabase
-      .from("member_pins")
-      .select("team_member_id")
-      .in("team_member_id", memberIds);
-    if (pinError) throw pinError;
-    for (const pin of pins ?? []) {
-      pinIds.add(pin.team_member_id as string);
-    }
-  }
-
-  return rows.map((row) => ({
-    id: row.id as string,
-    name: row.name as string,
-    hasPin: pinIds.has(row.id as string),
-    sortOrder: (row.sort_order as number) ?? 0,
-  }));
+  return (data ?? []).map(
+    (row: { id: string; name: string; has_pin: boolean; sort_order: number | null }) => ({
+      id: row.id,
+      name: row.name,
+      hasPin: Boolean(row.has_pin),
+      sortOrder: row.sort_order ?? 0,
+    }),
+  );
 }
 
 /** Soft check — true when kid file uploads need setup-assignment-attachments.sql. */
