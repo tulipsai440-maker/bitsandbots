@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fetchActiveJoinNotifyEmailAddresses } from "@/lib/join-notify-emails";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { BITSANDBOTS_TENANT_ID } from "@/lib/tenant/types";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 function normalizeList(emails: string[]): string[] {
   const unique = new Set<string>();
@@ -12,7 +15,10 @@ function normalizeList(emails: string[]): string[] {
 
 async function fetchCoachProfileEmails(): Promise<string[]> {
   try {
-    const { data, error } = await supabase.from("coaches").select("email");
+    const tenantId = await tenantIdForQuery();
+    let query = supabase.from("coaches").select("email");
+    query = withTenantFilter(query, tenantId);
+    const { data, error } = await query;
     if (error) {
       const message = error.message.toLowerCase();
       if (message.includes("email") && message.includes("column")) return [];
@@ -57,7 +63,10 @@ export async function loadCoachCcEmailsServer(): Promise<string[]> {
   }
 
   const coachEmails: string[] = [];
-  const { data: coachRows, error: coachError } = await admin.from("coaches").select("email");
+  const { data: coachRows, error: coachError } = await admin
+    .from("coaches")
+    .select("email")
+    .eq("tenant_id", BITSANDBOTS_TENANT_ID);
   if (!coachError) {
     for (const row of coachRows ?? []) {
       coachEmails.push(String(row.email ?? ""));

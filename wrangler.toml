@@ -20,9 +20,23 @@ zone_name = "fllbots.com"
 pattern = "www.fllbots.com/*"
 zone_name = "fllbots.com"
 
+# Demo tenants on fllbots.com (until demo.com zone is registered).
+[[routes]]
+pattern = "*.play.fllbots.com/*"
+zone_name = "fllbots.com"
+
+# Platform demo tenants: {slug}.demo.com (zone demo.com — no fllbots in demo URL).
+# Register demo.com (or set PLATFORM_DEMO_APEX) and add the zone to Cloudflare.
+# [[routes]]
+# pattern = "*.demo.com/*"
+# zone_name = "demo.com"
+#
+# Production Bits & Bots stays on fllbots.com only (routes above).
+
 [vars]
 # Production site origin. Local `npm run dev` still uses http://localhost:8080 via Vite.
 SITE_ORIGIN = "https://fllbots.com"
+PLATFORM_DEMO_APEX = "demo.com"
 SUPABASE_URL = "https://njhiqsbykiggxqkjrxse.supabase.co"
 
 # Daily overdue assignment emails to parents (day after due date). 12:00 UTC = 8 AM Eastern (EDT).

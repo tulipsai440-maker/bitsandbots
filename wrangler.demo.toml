@@ -1,0 +1,25 @@
+# LEGACY — optional separate Worker for early demo experiments.
+# Preferred path: one Worker + tenant slug (see docs/MULTI-TENANT.md, docs/PLATFORM-OPS.md).
+# Local preview: npm run dev:demo with VITE_TENANT_SLUG in .env.demo
+#
+# Demo team site — separate Worker from production bitsandbots (fllbots.com).
+# Deploy: npm run deploy:demo
+# Requires: .env.demo with Supabase keys + Cloudflare secrets (service role, Resend optional).
+
+name = "fll-team-demo"
+compatibility_date = "2026-07-21"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+preview_urls = true
+keep_vars = true
+
+# Add DNS: CNAME demo → fllbots.com zone or use *.workers.dev until subdomain is ready.
+[[routes]]
+pattern = "demo.fllbots.com/*"
+zone_name = "fllbots.com"
+
+[vars]
+SITE_ORIGIN = "https://demo.fllbots.com"
+# SUPABASE_URL set in dashboard or copied from production project reference — use DEMO project only.
+
+# No cron on demo Worker (saves account cron quota for production teams).

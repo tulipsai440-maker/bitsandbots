@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 // Tables from supabase/setup-parent-contacts.sql — cast until types are regenerated.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,22 +54,35 @@ export const PARENT_CONTACTS_SETUP_SQL = `-- See supabase/setup-parent-contacts.
 -- Open that file, copy all, paste into Supabase SQL Editor, Run.`;
 
 export async function fetchFamilyRosterAdmin(): Promise<FamilyRosterRow[]> {
-  const { data: members, error: memberError } = await supabase
+  const tenantId = await tenantIdForQuery();
+  let memberQuery = supabase
     .from("team_members")
     .select("id, name, sort_order")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
+  memberQuery = withTenantFilter(memberQuery, tenantId);
+  const { data: members, error: memberError } = await memberQuery;
   if (memberError) throw toError(memberError);
 
-  const { data: details, error: detailsError } = await db
-    .from("participant_details")
-    .select("team_member_id, email, phone, date_of_birth");
+  const memberIds = (members ?? []).map((m) => m.id as string);
+
+  const { data: details, error: detailsError } =
+    memberIds.length > 0
+      ? await db
+          .from("participant_details")
+          .select("team_member_id, email, phone, date_of_birth")
+          .in("team_member_id", memberIds)
+      : { data: [], error: null };
   if (detailsError) throw toError(detailsError);
 
-  const { data: parents, error: parentsError } = await db
-    .from("parent_contacts")
-    .select("id, team_member_id, parent_name, relation, phone, email, sort_order")
-    .order("sort_order", { ascending: true });
+  const { data: parents, error: parentsError } =
+    memberIds.length > 0
+      ? await db
+          .from("parent_contacts")
+          .select("id, team_member_id, parent_name, relation, phone, email, sort_order")
+          .in("team_member_id", memberIds)
+          .order("sort_order", { ascending: true })
+      : { data: [], error: null };
   if (parentsError) throw toError(parentsError);
 
   const detailsById = new Map(

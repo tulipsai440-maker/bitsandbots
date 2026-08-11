@@ -1,0 +1,33 @@
+/** Static demo placeholder images — AI-generated, committed under public/photos/demo/. */
+const base = "/photos/demo";
+
+export const demoAssets = {
+  hero: `${base}/hero-team-group.png`,
+  teamLogo: `${base}/demo-team-logo.png`,
+  favicon32: `${base}/favicon-32x32.png`,
+  favicon16: `${base}/favicon-16x16.png`,
+  appleTouchIcon: `${base}/apple-touch-icon.png`,
+  ogImage: `${base}/og-share-card.png`,
+  outreachMentoring: `${base}/outreach-mentoring.png`,
+  outreachFestival: `${base}/outreach-festival.png`,
+  outreachSteamExpo: `${base}/outreach-steam-expo.png`,
+  coachAlex: `${base}/coach-alex-morgan.png`,
+  coachJordan: `${base}/coach-jordan-lee.png`,
+  memberSam: `${base}/member-sam.png`,
+  memberRiley: `${base}/member-riley.png`,
+  memberCasey: `${base}/member-casey.png`,
+  memberMorgan: `${base}/member-morgan.png`,
+  memberJordan: `${base}/member-jordan.png`,
+  memberTaylor: `${base}/member-taylor.png`,
+  galleryRobot: `${base}/gallery-robot-mission.png`,
+  galleryBuild: `${base}/gallery-team-build.png`,
+  galleryCompetition: `${base}/gallery-competition.png`,
+  galleryPractice: `${base}/gallery-practice.png`,
+  galleryPresentation: `${base}/gallery-presentation.png`,
+  galleryAward: `${base}/gallery-award.png`,
+  galleryRobotCloseup: `${base}/gallery-robot-closeup.png`,
+  galleryOutreachBooth: `${base}/gallery-outreach-booth.png`,
+  galleryCoreValues: `${base}/gallery-core-values.png`,
+  sponsorBank: `${base}/sponsor-community-bank.png`,
+  sponsorTech: `${base}/sponsor-tech-partners.png`,
+} as const;

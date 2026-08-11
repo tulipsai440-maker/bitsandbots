@@ -23,6 +23,7 @@ import {
 import { SiteSettingsProvider } from "@/lib/site-settings-context";
 import { AdminEditProvider } from "@/components/admin/inline-edit/AdminEditProvider";
 import { BrandColorStyles } from "@/components/site/BrandColorStyles";
+import { DemoBanner } from "@/components/site/DemoBanner";
 import { normalizeBrandColor } from "@/lib/brand-colors";
 import {
   buildDefaultSiteImageOverrides,
@@ -77,18 +78,29 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async () => {
+    let tenantStatus: "demo" | "live" | null = null;
+    if (import.meta.env.SSR) {
+      const { getTenantContext } = await import("@/lib/tenant/context.server");
+      tenantStatus = getTenantContext()?.status ?? null;
+    }
     try {
       const [siteSettings, outreachStories, siteImages] = await Promise.all([
         fetchSiteSettings(),
         fetchOutreachStories(),
         fetchSiteImageOverrides().catch(() => buildDefaultSiteImageOverrides()),
       ]);
-      return { siteSettings, outreachStories, siteImages };
+      return {
+        siteSettings,
+        outreachStories,
+        siteImages,
+        tenantStatus,
+      };
     } catch {
       return {
         siteSettings: DEFAULT_SITE_SETTINGS,
         outreachStories: DEFAULT_OUTREACH_STORIES,
         siteImages: buildDefaultSiteImageOverrides(),
+        tenantStatus,
       };
     }
   },
@@ -161,13 +173,14 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const { siteSettings, outreachStories, siteImages } = Route.useLoaderData();
+  const { siteSettings, outreachStories, siteImages, tenantStatus } = Route.useLoaderData();
   return (
     <QueryClientProvider client={queryClient}>
       <SiteSettingsProvider initialSettings={siteSettings} initialOutreachStories={outreachStories}>
         <SiteImagesProvider initialOverrides={siteImages}>
           <BrandColorStyles />
           <AdminEditProvider>
+            <DemoBanner tenantStatus={tenantStatus} />
             <Outlet />
             <Toaster richColors closeButton position="top-center" />
           </AdminEditProvider>

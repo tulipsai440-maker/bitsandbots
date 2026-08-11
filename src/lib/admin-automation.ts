@@ -10,6 +10,7 @@ import {
   emailSignoff,
   loadTeamBrandingServer,
 } from "@/lib/team-branding";
+import { BITSANDBOTS_TENANT_ID } from "@/lib/tenant/types";
 
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) =>
@@ -83,6 +84,7 @@ async function loadDueSoonReminderRows(): Promise<DueSoonRow[]> {
   const { data: assignments, error: assignError } = await admin
     .from("assignments")
     .select("id, title, due_date")
+    .eq("tenant_id", BITSANDBOTS_TENANT_ID)
     .eq("due_date", dueOn);
   if (assignError) throw new Error(assignError.message);
   if (!assignments?.length) return [];
@@ -248,6 +250,7 @@ async function loadTomorrowEvents(): Promise<CalendarEventRow[]> {
   const { data, error } = await admin
     .from("calendar")
     .select("id, title, event_date, location, start_time, agenda")
+    .eq("tenant_id", BITSANDBOTS_TENANT_ID)
     .eq("event_date", date);
   if (error) throw new Error(error.message);
   return (data ?? []).map((row: Record<string, unknown>) => ({
@@ -264,7 +267,9 @@ async function loadAllParentEmails(): Promise<string[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = supabaseAdmin as any;
-  const { data: rpcData } = await admin.rpc("list_unique_parent_emails");
+  const { data: rpcData } = await admin.rpc("list_unique_parent_emails", {
+    p_tenant_id: BITSANDBOTS_TENANT_ID,
+  });
   if (Array.isArray(rpcData) && rpcData.length) {
     return [
       ...new Set(
@@ -277,7 +282,14 @@ async function loadAllParentEmails(): Promise<string[]> {
       ),
     ];
   }
-  const { data } = await admin.from("parent_contacts").select("email");
+  const { data: members } = await admin
+    .from("team_members")
+    .select("id")
+    .eq("tenant_id", BITSANDBOTS_TENANT_ID);
+  const memberIds = (members ?? []).map((m: { id: string }) => m.id);
+  if (!memberIds.length) return [];
+
+  const { data } = await admin.from("parent_contacts").select("email").in("team_member_id", memberIds);
   const unique = new Set<string>();
   for (const row of data ?? []) {
     const email = String(row.email ?? "")
@@ -407,9 +419,13 @@ export async function sendWeeklyCoachDigest(): Promise<{ sent: boolean; failures
   const { count: pendingGallery } = await admin
     .from("gallery_photos")
     .select("*", { count: "exact", head: true })
+    .eq("tenant_id", BITSANDBOTS_TENANT_ID)
     .eq("status", "pending");
 
-  const { data: members } = await admin.from("team_members").select("id, name");
+  const { data: members } = await admin
+    .from("team_members")
+    .select("id, name")
+    .eq("tenant_id", BITSANDBOTS_TENANT_ID);
   const { data: consents } = await admin.from("parent_media_consents").select("team_member_id");
   const consented = new Set((consents ?? []).map((c: { team_member_id: string }) => c.team_member_id));
   const missingConsent = (members ?? [])
@@ -422,6 +438,7 @@ export async function sendWeeklyCoachDigest(): Promise<{ sent: boolean; failures
   const { data: overdueAssignments } = await admin
     .from("assignments")
     .select("id, title")
+    .eq("tenant_id", BITSANDBOTS_TENANT_ID)
     .eq("due_date", overdueDate);
 
   const subject = `${config.branding.siteName} — weekly coach digest`;

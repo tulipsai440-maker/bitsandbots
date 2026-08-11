@@ -1,4 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemoMode, usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { demoSiteImageDefaultUrl } from "@/lib/demo/demo-defaults";
+import { isDemoTenant } from "@/lib/tenant/context";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
+
+function usesDemoPlaceholderImages(): boolean {
+  return usesDemoPlaceholders() || isDemoTenant();
+}
 
 export const SITE_IMAGES_BUCKET = "site-images";
 
@@ -113,8 +122,11 @@ const SLOT_BY_KEY = Object.fromEntries(SITE_IMAGE_SLOTS.map((slot) => [slot.key,
 
 function defaultOverride(key: SiteImageKey): SiteImageOverride {
   const slot = SLOT_BY_KEY[key];
+  const url = usesDemoPlaceholderImages()
+    ? demoSiteImageDefaultUrl(key, slot.defaultUrl)
+    : slot.defaultUrl;
   return {
-    url: slot.defaultUrl,
+    url,
     alt: slot.defaultAlt,
     updatedAt: null,
     isOverride: false,
@@ -253,7 +265,15 @@ USING (
 export async function fetchSiteImageOverrides(): Promise<SiteImageOverrides> {
   const defaults = buildDefaultSiteImageOverrides();
 
-  const { data, error } = await supabase.rpc("list_site_images");
+  // Demo tenants use bundled AI placeholders — never bleed another team's Supabase uploads.
+  if (usesDemoPlaceholderImages()) {
+    return defaults;
+  }
+
+  const tenantId = await tenantIdForQuery();
+  let query = supabase.from("site_images").select("key, public_url, alt, updated_at");
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query;
   if (error) throw error;
 
   for (const row of data ?? []) {

@@ -4,10 +4,10 @@ import { SiteLayout, PageHero } from "@/components/site/Layout";
 import { TeamPhoto } from "@/components/site/TeamPhoto";
 import { GalleryUploadForm } from "@/components/site/GalleryUploadForm";
 import { galleryPhotos } from "@/lib/gallery-photos";
-import {
-  GALLERY_STATIC_PHOTOS_PUBLIC,
-  GALLERY_UPLOADS_PUBLIC,
-} from "@/lib/gallery-config";
+import { usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { demoAssets } from "@/lib/demo/demo-assets";
+import { galleryStaticPhotosEnabled, galleryUploadsEnabled } from "@/lib/gallery-config";
+import { DEMO_GALLERY_PHOTOS } from "@/lib/demo/demo-fallbacks";
 import {
   fetchApprovedGalleryPhotos,
   type ApprovedGalleryPhoto,
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/gallery")({
     const [{ branding }, uploaded] = await Promise.all([
       brandingRouteLoader(),
       (async () => {
-        if (!GALLERY_UPLOADS_PUBLIC) return [] as ApprovedGalleryPhoto[];
+        if (!galleryUploadsEnabled()) return [] as ApprovedGalleryPhoto[];
         try {
           return await fetchApprovedGalleryPhotos();
         } catch {
@@ -46,7 +46,10 @@ export const Route = createFileRoute("/gallery")({
           property: "og:description",
           content: "Photos from practices, builds, and FLL events.",
         },
-        { property: "og:image", content: photos.ogLogo },
+        {
+          property: "og:image",
+          content: usesDemoPlaceholders() ? demoAssets.ogImage : photos.ogLogo,
+        },
       ],
     };
   },
@@ -73,16 +76,18 @@ function toDisplayPhotos(rows: ApprovedGalleryPhoto[]): DisplayPhoto[] {
   }));
 }
 
-const staticPhotos: DisplayPhoto[] = GALLERY_STATIC_PHOTOS_PUBLIC
-  ? galleryPhotos.map((photo) => ({
-      key: photo.src,
-      src: photo.src,
-      thumb: photo.thumb,
-      width: photo.width,
-      height: photo.height,
-      caption: null,
-    }))
-  : [];
+function getStaticPhotos(): DisplayPhoto[] {
+  if (!galleryStaticPhotosEnabled()) return [];
+  const source = usesDemoPlaceholders() ? DEMO_GALLERY_PHOTOS : galleryPhotos;
+  return source.map((photo) => ({
+    key: photo.src,
+    src: photo.src,
+    thumb: photo.thumb,
+    width: photo.width,
+    height: photo.height,
+    caption: null,
+  }));
+}
 
 function GalleryPage() {
   const { uploaded: loaderUploaded } = Route.useLoaderData();
@@ -98,7 +103,7 @@ function GalleryPage() {
   const [uploaded, setUploaded] = useState<DisplayPhoto[]>(() => toDisplayPhotos(loaderUploaded));
 
   useEffect(() => {
-    if (!GALLERY_UPLOADS_PUBLIC) {
+    if (!galleryUploadsEnabled()) {
       setUploaded([]);
       return;
     }
@@ -116,7 +121,7 @@ function GalleryPage() {
     };
   }, []);
 
-  const allPhotos = useMemo(() => [...uploaded, ...staticPhotos], [uploaded]);
+  const allPhotos = useMemo(() => [...uploaded, ...getStaticPhotos()], [uploaded]);
   const total = allPhotos.length;
 
   const close = useCallback(() => setOpenIndex(null), []);

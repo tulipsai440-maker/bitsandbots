@@ -4,6 +4,8 @@ import { fetchFamilyRosterAdmin, type FamilyRosterRow } from "@/lib/parent-conta
 import { fetchMediaConsentedMemberIds } from "@/lib/parent-consent";
 import { fetchPendingGalleryPhotos } from "@/lib/gallery-uploads";
 import { supabase } from "@/integrations/supabase/client";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export type OverdueItem = {
   memberName: string;
@@ -57,15 +59,17 @@ function familiesWithBothParents(families: FamilyRosterRow[]): number {
 }
 
 async function fetchNextCalendarEvent() {
+  const tenantId = await tenantIdForQuery();
   const today = new Date().toISOString().slice(0, 10);
-  const { data, error } = await supabase
+  let query = supabase
     .from("calendar")
     .select("id, event_date, title, location, start_time")
     .gte("event_date", today)
     .order("event_date", { ascending: true })
     .order("start_time", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query.maybeSingle();
   if (error || !data) return null;
   return {
     id: data.id as string,

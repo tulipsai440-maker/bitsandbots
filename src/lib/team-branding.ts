@@ -1,4 +1,5 @@
 import { DEFAULT_SITE_SETTINGS, fetchSiteSettings, type SiteSettings } from "@/lib/site-settings";
+import { BITSANDBOTS_TENANT_ID } from "@/lib/tenant/types";
 import { normalizeBrandColor } from "@/lib/brand-colors";
 
 export type TeamBranding = {
@@ -44,7 +45,7 @@ export async function loadTeamBrandingServer(): Promise<TeamBranding> {
     const { data } = await admin
       .from("site_settings")
       .select("site_name, site_url, brand_color")
-      .eq("id", 1)
+      .eq("tenant_id", BITSANDBOTS_TENANT_ID)
       .maybeSingle();
 
     if (data) {

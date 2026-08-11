@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { SiteLayout } from "@/components/site/Layout";
 import { EditablePageHero } from "@/components/admin/inline-edit/EditablePageHero";
 import { EditableOutreachStory } from "@/components/admin/inline-edit/EditableOutreachStory";
+import { usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { DEMO_OUTREACH_STORIES } from "@/lib/demo/demo-defaults";
 import {
   buildDefaultSiteImageOverrides,
   fetchSiteImageOverrides,
@@ -26,14 +28,21 @@ function OutreachPage() {
   }, []);
 
   const items = useMemo(() => {
+    const stories = usesDemoPlaceholders() ? DEMO_OUTREACH_STORIES : outreachStories;
     const defaults = outreachItemsFromDefaults();
-    return outreachStories.map((story) => {
+    return stories.map((story) => {
       const imageKey = story.imageKey as SiteImageKey;
       const image = resolveSiteImage(imageKey, imageOverrides);
+      const demoStory = DEMO_OUTREACH_STORIES.find((s) => s.id === story.id);
       const fallback = defaults.find((item) => item.id === story.id);
+      const demoUrl = demoStory?.defaultImageUrl;
       return {
         story,
-        imageUrl: image.isOverride ? image.url : story.defaultImageUrl || fallback?.imageUrl || image.url,
+        imageUrl: usesDemoPlaceholders()
+          ? demoUrl || image.url
+          : image.isOverride
+            ? image.url
+            : story.defaultImageUrl || fallback?.imageUrl || image.url,
         imageAlt: image.alt || story.defaultImageAlt,
       };
     });

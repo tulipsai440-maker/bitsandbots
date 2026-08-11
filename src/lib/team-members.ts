@@ -1,4 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemoMode, usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { DEMO_TEAM_MEMBERS } from "@/lib/demo/demo-fallbacks";
+import { isDemoTenant } from "@/lib/tenant/context";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { resolveTenantIdForFetch } from "@/lib/tenant/resolve";
 
 export type TeamMember = {
   id: string;
@@ -103,15 +108,20 @@ type TeamMemberRow = {
 };
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
+  const useDemoFallbacks = usesDemoPlaceholders() || isDemoTenant();
   try {
-    const { data, error } = await supabase
+    const tenantId = await resolveTenantIdForFetch();
+    let query = supabase
       .from("team_members")
       .select("id, name, description, photo_url, sort_order")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
+    query = withTenantFilter(query, tenantId);
+
+    const { data, error } = await query;
 
     if (error) throw error;
-    if (!data?.length) return TEAM_MEMBERS;
+    if (!data?.length) return useDemoFallbacks ? DEMO_TEAM_MEMBERS : TEAM_MEMBERS;
 
     return (data as TeamMemberRow[]).map((row) => ({
       id: row.id,
@@ -122,6 +132,6 @@ export async function fetchTeamMembers(): Promise<TeamMember[]> {
     }));
   } catch (error) {
     console.error("[team_members]", error);
-    return TEAM_MEMBERS;
+    return useDemoFallbacks ? DEMO_TEAM_MEMBERS : TEAM_MEMBERS;
   }
 }

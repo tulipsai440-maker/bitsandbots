@@ -1,4 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemoMode, usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { DEMO_COACHES } from "@/lib/demo/demo-fallbacks";
+import { isDemoTenant } from "@/lib/tenant/context";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { resolveTenantIdForFetch } from "@/lib/tenant/resolve";
 
 export type Coach = {
   id: string;
@@ -40,15 +45,20 @@ type CoachRow = {
 };
 
 export async function fetchCoaches(): Promise<Coach[]> {
+  const useDemoFallbacks = usesDemoPlaceholders() || isDemoTenant();
   try {
-    const { data, error } = await supabase
+    const tenantId = await resolveTenantIdForFetch();
+    let query = supabase
       .from("coaches")
       .select("id, name, description, photo_url, sort_order")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
+    query = withTenantFilter(query, tenantId);
+
+    const { data, error } = await query;
 
     if (error) throw error;
-    if (!data?.length) return COACHES;
+    if (!data?.length) return useDemoFallbacks ? DEMO_COACHES : COACHES;
 
     return (data as Omit<CoachRow, "email">[]).map((row) => ({
       id: row.id,
@@ -59,6 +69,6 @@ export async function fetchCoaches(): Promise<Coach[]> {
     }));
   } catch (error) {
     console.error("[coaches]", error);
-    return COACHES;
+    return useDemoFallbacks ? DEMO_COACHES : COACHES;
   }
 }

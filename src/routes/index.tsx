@@ -42,7 +42,7 @@ export const Route = createFileRoute("/")({
       ? { ...DEFAULT_SITE_SETTINGS, siteName: loaderData.branding.siteName, siteUrl: loaderData.branding.siteUrl }
       : DEFAULT_SITE_SETTINGS;
     const links =
-      hero.isOverride && hero.url ? [{ rel: "preload" as const, as: "image" as const, href: hero.url }] : [];
+      hero.url ? [{ rel: "preload" as const, as: "image" as const, href: hero.url }] : [];
     return {
       meta: [
         { title: `${s.siteName} — ${s.siteTagline}` },
@@ -85,7 +85,7 @@ function Hero({ hero }: { hero: SiteImageOverride }) {
   } = useSiteSettings();
   return (
     <section className="relative isolate overflow-hidden bg-forest-deep">
-      {hero.isOverride && hero.url ? (
+      {hero.url ? (
         <TeamPhoto
           src={hero.url}
           alt={hero.alt || `${siteName} FIRST LEGO League team`}

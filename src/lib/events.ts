@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export type EventRow = {
   id: string;
@@ -76,11 +78,14 @@ export function calendarRowsToEvents(rows: CalendarRow[]): EventRow[] {
 }
 
 async function fetchCalendarRows(): Promise<CalendarRow[]> {
-  const { data, error } = await supabase
+  const tenantId = await tenantIdForQuery();
+  let query = supabase
     .from("calendar")
     .select("id, event_date, title, agenda, location, start_time, end_time")
     .order("event_date", { ascending: true })
     .order("start_time", { ascending: true });
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query;
 
   if (error) {
     console.error("[calendar]", error.message);

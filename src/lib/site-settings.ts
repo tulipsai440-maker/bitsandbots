@@ -15,6 +15,10 @@ import {
   type SeasonVideoGroup,
 } from "@/lib/site-content-defaults";
 import type { SeasonDocument, SeasonVideo } from "@/lib/season-videos";
+import { isDemoMode } from "@/lib/demo/app-mode";
+import { buildDemoSiteSettings, demoOutreachStories } from "@/lib/demo/demo-defaults";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export type NavLinkItem =
   | { kind: "internal"; label: string; to: string }
@@ -234,7 +238,7 @@ export const DEFAULT_CORE_VALUES: CoreValueContent[] = [
   },
 ];
 
-export const DEFAULT_OUTREACH_STORIES: OutreachStoryRow[] = [
+export const PRODUCTION_OUTREACH_STORIES: OutreachStoryRow[] = [
   {
     id: "mentoring-teams",
     sortOrder: 0,
@@ -274,7 +278,11 @@ export const DEFAULT_JOIN_NEXT_STEPS = [
   "FIRST LEGO League Challenge is typically for ages 9–16 (grades 4–8).",
 ];
 
-export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+export const DEFAULT_OUTREACH_STORIES: OutreachStoryRow[] = isDemoMode
+  ? demoOutreachStories(PRODUCTION_OUTREACH_STORIES)
+  : PRODUCTION_OUTREACH_STORIES;
+
+export const PRODUCTION_SITE_SETTINGS: SiteSettings = {
   siteName: "Bits & Bots",
   siteTagline: "Community Robotics Team · Collier County",
   brandColor: DEFAULT_BRAND_COLOR,
@@ -378,6 +386,10 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   footerExternalLinks: DEFAULT_FOOTER_EXTERNAL_LINKS,
   visitBarLinks: DEFAULT_VISIT_BAR_LINKS,
 };
+
+export const DEFAULT_SITE_SETTINGS: SiteSettings = isDemoMode
+  ? buildDemoSiteSettings(PRODUCTION_SITE_SETTINGS)
+  : PRODUCTION_SITE_SETTINGS;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -615,17 +627,23 @@ export function isSiteSettingsSetupMissing(error: unknown): boolean {
 }
 
 export async function fetchSiteSettings(): Promise<SiteSettings> {
-  const { data, error } = await db.from("site_settings").select("*").eq("id", 1).maybeSingle();
-  if (error) throw error;
+  const tenantId = await tenantIdForQuery();
+  let query = db.from("site_settings").select("*");
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query.maybeSingle();
+  if (error) {
+    if (isSiteSettingsSetupMissing(error)) return DEFAULT_SITE_SETTINGS;
+    throw error;
+  }
   if (!data) return DEFAULT_SITE_SETTINGS;
   return mapSettingsRow(data as Record<string, unknown>);
 }
 
 export async function fetchOutreachStories(): Promise<OutreachStoryRow[]> {
-  const { data, error } = await db
-    .from("outreach_stories")
-    .select("*")
-    .order("sort_order", { ascending: true });
+  const tenantId = await tenantIdForQuery();
+  let query = db.from("outreach_stories").select("*").order("sort_order", { ascending: true });
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query;
   if (error) throw error;
   if (!data?.length) return DEFAULT_OUTREACH_STORIES;
   return (data as Record<string, unknown>[]).map(mapOutreachRow);

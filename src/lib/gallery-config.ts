@@ -1,9 +1,21 @@
+import { isDemoMode, usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { isDemoTenant } from "@/lib/tenant/context";
+
 /** Bundled photos from public/photos/gallery/ — off while the collection is refreshed. */
 export const GALLERY_STATIC_PHOTOS_PUBLIC = false;
 
-/** Admin-approved parent uploads from Supabase — show on /gallery. */
-export const GALLERY_UPLOADS_PUBLIC = true;
+/** Demo tenants use bundled sample gallery photos under public/photos/demo/. */
+export function galleryStaticPhotosEnabled(): boolean {
+  return usesDemoPlaceholders() || isDemoTenant() || GALLERY_STATIC_PHOTOS_PUBLIC;
+}
 
-/** @deprecated Use GALLERY_STATIC_PHOTOS_PUBLIC and GALLERY_UPLOADS_PUBLIC instead. */
+/** Admin-approved parent uploads from Supabase — show on /gallery (not on demo tenants). */
+export function galleryUploadsEnabled(): boolean {
+  return !usesDemoPlaceholders() && !isDemoTenant();
+}
+
+/** @deprecated Use galleryUploadsEnabled(). */
+export const GALLERY_UPLOADS_PUBLIC = true;
+/** @deprecated Use galleryStaticPhotosEnabled() and GALLERY_UPLOADS_PUBLIC instead. */
 export const GALLERY_PHOTOS_PUBLIC =
-  GALLERY_STATIC_PHOTOS_PUBLIC || GALLERY_UPLOADS_PUBLIC;
+  galleryStaticPhotosEnabled() || GALLERY_UPLOADS_PUBLIC;

@@ -3,6 +3,8 @@ import {
   normalizeWhatsAppPhone,
   uniquePhonesFromParentRows,
 } from "@/lib/broadcast-phones";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export { normalizeWhatsAppPhone, uniquePhonesFromParentRows };
 
@@ -30,7 +32,11 @@ export function isBroadcastSetupMissing(error: unknown): boolean {
 
 /** True when broadcast_settings exists and the current admin can read it. */
 export async function probeBroadcastSettingsTable(): Promise<boolean> {
-  const { error } = await db.from("broadcast_settings").select("id").eq("id", 1).maybeSingle();
+  const tenantId = await tenantIdForQuery();
+  const { error } = await withTenantFilter(
+    db.from("broadcast_settings").select("id"),
+    tenantId,
+  ).maybeSingle();
   if (!error) return true;
   return !isBroadcastSetupMissing(error);
 }
@@ -51,10 +57,27 @@ export function uniqueEmailsFromParentRows(
 
 /** Unique parent emails from parent_contacts (admin RLS). */
 export async function fetchParentBroadcastEmails(): Promise<string[]> {
-  const { data, error } = await db.from("parent_contacts").select("email");
+  const tenantId = await tenantIdForQuery();
+  const { data: members, error: memberError } = await withTenantFilter(
+    db.from("team_members").select("id"),
+    tenantId,
+  );
+  if (memberError) {
+    const rpc = await db.rpc("list_unique_parent_emails", { p_tenant_id: tenantId });
+    if (!rpc.error) {
+      return uniqueEmailsFromParentRows(rpc.data ?? []);
+    }
+    throw memberError;
+  }
+  const memberIds = (members ?? []).map((m: { id: string }) => m.id);
+  if (!memberIds.length) return [];
+
+  const { data, error } = await db
+    .from("parent_contacts")
+    .select("email")
+    .in("team_member_id", memberIds);
   if (error) {
-    // Prefer RPC if table select is blocked / types lag
-    const rpc = await db.rpc("list_unique_parent_emails");
+    const rpc = await db.rpc("list_unique_parent_emails", { p_tenant_id: tenantId });
     if (!rpc.error) {
       return uniqueEmailsFromParentRows(rpc.data ?? []);
     }
@@ -66,7 +89,19 @@ export async function fetchParentBroadcastEmails(): Promise<string[]> {
 
 /** Unique parent phones from parent_contacts (admin RLS). */
 export async function fetchParentBroadcastPhones(): Promise<string[]> {
-  const { data, error } = await db.from("parent_contacts").select("phone");
+  const tenantId = await tenantIdForQuery();
+  const { data: members, error: memberError } = await withTenantFilter(
+    db.from("team_members").select("id"),
+    tenantId,
+  );
+  if (memberError) throw memberError;
+  const memberIds = (members ?? []).map((m: { id: string }) => m.id);
+  if (!memberIds.length) return [];
+
+  const { data, error } = await db
+    .from("parent_contacts")
+    .select("phone")
+    .in("team_member_id", memberIds);
   if (error) throw error;
   return uniquePhonesFromParentRows(data ?? []);
 }
@@ -78,11 +113,11 @@ export async function fetchCoachBroadcastEmails(): Promise<string[]> {
 }
 
 export async function fetchWhatsAppGroupUrl(): Promise<string> {
-  const { data, error } = await db
-    .from("broadcast_settings")
-    .select("whatsapp_group_url")
-    .eq("id", 1)
-    .maybeSingle();
+  const tenantId = await tenantIdForQuery();
+  const { data, error } = await withTenantFilter(
+    db.from("broadcast_settings").select("whatsapp_group_url"),
+    tenantId,
+  ).maybeSingle();
 
   if (error) {
     if (isBroadcastSetupMissing(error)) return DEFAULT_WHATSAPP_GROUP_URL;
@@ -99,9 +134,24 @@ export async function saveWhatsAppGroupUrl(url: string): Promise<void> {
     throw new Error("Use a WhatsApp group invite link (https://chat.whatsapp.com/…)");
   }
 
+  const tenantId = await tenantIdForQuery();
+  let rowId = 1;
+  const { data: existing } = await withTenantFilter(
+    db.from("broadcast_settings").select("id"),
+    tenantId,
+  ).maybeSingle();
+  if (existing?.id != null) {
+    rowId = existing.id as number;
+  }
+
   const { error } = await db.from("broadcast_settings").upsert(
-    { id: 1, whatsapp_group_url: trimmed, updated_at: new Date().toISOString() },
-    { onConflict: "id" },
+    {
+      id: rowId,
+      tenant_id: tenantId,
+      whatsapp_group_url: trimmed,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "tenant_id" },
   );
   if (error) throw error;
 }

@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export const PENDING_BUCKET = "gallery-pending";
 export const APPROVED_BUCKET = "gallery-approved";
@@ -338,6 +340,7 @@ export async function submitGalleryPhotos(
     });
     if (uploadError) throw toError(uploadError);
 
+    const tenantId = await tenantIdForQuery();
     const { error: rowError } = await supabase.rpc("submit_gallery_photo", {
       p_pending_path: path,
       p_caption: details.caption,
@@ -346,6 +349,7 @@ export async function submitGalleryPhotos(
       p_consent_confirmed: true,
       p_width: width,
       p_height: height,
+      p_tenant_id: tenantId,
     });
 
     if (rowError) {
@@ -360,25 +364,35 @@ export async function submitGalleryPhotos(
 }
 
 export async function fetchApprovedGalleryPhotos(): Promise<ApprovedGalleryPhoto[]> {
-  const { data, error } = await supabase.rpc("list_approved_gallery_photos");
+  if (usesDemoPlaceholders()) return [];
+
+  const tenantId = await tenantIdForQuery();
+  const { data, error } = await supabase
+    .from("gallery_photos")
+    .select("id, approved_path, caption, width, height")
+    .eq("tenant_id", tenantId)
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
   if (error) throw toError(error);
 
   return (data ?? [])
     .filter((row) => Boolean(row.approved_path))
     .map((row) => ({
-      id: row.id,
+      id: row.id as string,
       url: supabase.storage.from(APPROVED_BUCKET).getPublicUrl(row.approved_path as string).data
         .publicUrl,
-      caption: row.caption,
-      width: row.width,
-      height: row.height,
+      caption: (row.caption as string | null) ?? null,
+      width: (row.width as number | null) ?? null,
+      height: (row.height as number | null) ?? null,
     }));
 }
 
 export async function fetchPendingGalleryPhotos(): Promise<PendingGalleryPhoto[]> {
+  const tenantId = await tenantIdForQuery();
   const { data, error } = await supabase
     .from("gallery_photos")
     .select("*")
+    .eq("tenant_id", tenantId)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
   if (error) throw toError(error);

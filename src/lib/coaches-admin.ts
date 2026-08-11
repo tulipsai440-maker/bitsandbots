@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Coach } from "@/lib/coaches";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export type CoachAdminRow = Coach & {
   email?: string;
@@ -27,11 +29,14 @@ function mapRow(row: Row): CoachAdminRow {
 }
 
 export async function fetchAllCoachesAdmin(): Promise<CoachAdminRow[]> {
-  const { data, error } = await supabase
+  const tenantId = await tenantIdForQuery();
+  let query = supabase
     .from("coaches")
     .select("id, name, email, description, photo_url, sort_order")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query;
   if (error) throw error;
   return (data as Row[]).map(mapRow);
 }
@@ -44,12 +49,14 @@ export async function saveCoach(input: {
   photoUrl?: string | null;
   sortOrder?: number;
 }): Promise<void> {
+  const tenantId = await tenantIdForQuery();
   const payload: Record<string, unknown> = {
     name: input.name.trim(),
     description: input.description?.trim() || null,
     photo_url: input.photoUrl || null,
     sort_order: input.sortOrder ?? 0,
     updated_at: new Date().toISOString(),
+    tenant_id: tenantId,
   };
   const email = input.email?.trim().toLowerCase();
   if (email !== undefined) {
@@ -57,7 +64,11 @@ export async function saveCoach(input: {
   }
 
   if (input.id) {
-    const { error } = await supabase.from("coaches").update(payload).eq("id", input.id);
+    const { error } = await supabase
+      .from("coaches")
+      .update(payload)
+      .eq("id", input.id)
+      .eq("tenant_id", tenantId);
     if (error) throw error;
     return;
   }
@@ -67,6 +78,7 @@ export async function saveCoach(input: {
 }
 
 export async function deleteCoach(id: string): Promise<void> {
-  const { error } = await supabase.from("coaches").delete().eq("id", id);
+  const tenantId = await tenantIdForQuery();
+  const { error } = await supabase.from("coaches").delete().eq("id", id).eq("tenant_id", tenantId);
   if (error) throw error;
 }

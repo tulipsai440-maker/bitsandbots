@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { CalendarRow } from "@/lib/events";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export type CalendarAdminRow = CalendarRow;
 
@@ -24,11 +26,14 @@ function explainError(error: { message?: string; code?: string; details?: string
 }
 
 export async function fetchAllCalendarAdmin(): Promise<CalendarAdminRow[]> {
-  const { data, error } = await supabase
+  const tenantId = await tenantIdForQuery();
+  let query = supabase
     .from("calendar")
     .select("id, event_date, title, agenda, location, start_time, end_time")
     .order("event_date", { ascending: true })
     .order("start_time", { ascending: true });
+  query = withTenantFilter(query, tenantId);
+  const { data, error } = await query;
   if (error) throw new Error(explainError(error));
   return (data ?? []) as CalendarAdminRow[];
 }
@@ -42,6 +47,7 @@ export async function saveCalendarEvent(input: {
   start_time?: string | null;
   end_time?: string | null;
 }): Promise<void> {
+  const tenantId = await tenantIdForQuery();
   const payload = {
     event_date: input.event_date,
     title: input.title.trim(),
@@ -50,10 +56,15 @@ export async function saveCalendarEvent(input: {
     start_time: normalizeTime(input.start_time),
     end_time: normalizeTime(input.end_time),
     updated_at: new Date().toISOString(),
+    tenant_id: tenantId,
   };
 
   if (input.id) {
-    const { error } = await supabase.from("calendar").update(payload).eq("id", input.id);
+    const { error } = await supabase
+      .from("calendar")
+      .update(payload)
+      .eq("id", input.id)
+      .eq("tenant_id", tenantId);
     if (error) throw new Error(explainError(error));
     return;
   }
@@ -63,6 +74,7 @@ export async function saveCalendarEvent(input: {
 }
 
 export async function deleteCalendarEvent(id: string): Promise<void> {
-  const { error } = await supabase.from("calendar").delete().eq("id", id);
+  const tenantId = await tenantIdForQuery();
+  const { error } = await supabase.from("calendar").delete().eq("id", id).eq("tenant_id", tenantId);
   if (error) throw new Error(explainError(error));
 }

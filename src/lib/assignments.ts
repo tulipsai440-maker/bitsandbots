@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-
-// Tables/RPCs added by supabase/setup-assignments.sql — cast until types are regenerated.
+import { resolveTenantIdForFetch } from "@/lib/tenant/resolve";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
@@ -264,13 +264,38 @@ export async function adminResetMemberPin(memberId: string): Promise<void> {
 }
 
 export async function fetchAssignmentRoster(): Promise<RosterMember[]> {
-  const { data, error } = await db.rpc("list_assignment_roster");
+  const tenantId = (await resolveTenantIdForFetch()) ?? (await tenantIdForQuery());
+  return fetchAssignmentRosterForTenant(tenantId);
+}
+
+async function fetchAssignmentRosterForTenant(tenantId: string): Promise<RosterMember[]> {
+  const { data: members, error } = await supabase
+    .from("team_members")
+    .select("id, name, sort_order")
+    .eq("tenant_id", tenantId)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((row: { id: string; name: string; has_pin: boolean; sort_order: number }) => ({
-    id: row.id,
-    name: row.name,
-    hasPin: row.has_pin,
-    sortOrder: row.sort_order,
+
+  const rows = members ?? [];
+  const memberIds = rows.map((m) => m.id as string);
+  const pinIds = new Set<string>();
+  if (memberIds.length) {
+    const { data: pins, error: pinError } = await supabase
+      .from("member_pins")
+      .select("team_member_id")
+      .in("team_member_id", memberIds);
+    if (pinError) throw pinError;
+    for (const pin of pins ?? []) {
+      pinIds.add(pin.team_member_id as string);
+    }
+  }
+
+  return rows.map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    hasPin: pinIds.has(row.id as string),
+    sortOrder: (row.sort_order as number) ?? 0,
   }));
 }
 

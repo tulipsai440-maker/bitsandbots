@@ -5,6 +5,8 @@ import {
   buildMediaConsentIntro,
   buildMediaConsentTerms,
 } from "@/lib/media-consent-copy";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 export {
   buildMediaConsentBothParentsNote,
@@ -52,11 +54,19 @@ export function normalizeMemberId(id: unknown): string {
 export async function fetchMediaConsentedMemberIds(): Promise<string[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
+  const tenantId = await tenantIdForQuery();
 
-  // Prefer direct table read for admins (always in sync after a form submit).
+  let memberQuery = supabase.from("team_members").select("id");
+  memberQuery = withTenantFilter(memberQuery, tenantId);
+  const { data: members, error: memberError } = await memberQuery;
+  if (memberError) throw new Error(memberError.message);
+  const memberIds = (members ?? []).map((m) => m.id as string);
+  if (!memberIds.length) return [];
+
   const { data: rows, error: tableError } = await db
     .from("parent_media_consents")
-    .select("team_member_id");
+    .select("team_member_id")
+    .in("team_member_id", memberIds);
 
   if (!tableError && Array.isArray(rows)) {
     const ids = new Set<string>();
@@ -67,12 +77,13 @@ export async function fetchMediaConsentedMemberIds(): Promise<string[]> {
     return [...ids];
   }
 
-  // Table missing or RLS blocked — fall back to public RPC (uuid list only).
   if (tableError && !isParentConsentSetupMissing(tableError)) {
     console.warn("[parent-consent] table read failed, using RPC", tableError.message);
   }
 
-  const { data, error } = await db.rpc("list_media_consented_member_ids");
+  const { data, error } = await db.rpc("list_media_consented_member_ids", {
+    p_tenant_id: tenantId,
+  });
   if (error) {
     if (isParentConsentSetupMissing(error)) return [];
     throw new Error(error.message);

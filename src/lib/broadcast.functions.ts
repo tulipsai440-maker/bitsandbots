@@ -7,6 +7,7 @@ import {
 import { createClient } from "@supabase/supabase-js";
 import { uniquePhonesFromParentRows } from "@/lib/broadcast-phones";
 import { loadCoachCcEmailsServer } from "@/lib/coach-cc-emails";
+import { BITSANDBOTS_TENANT_ID } from "@/lib/tenant/types";
 
 const schema = z.object({
   subject: z.string().min(1, "Subject is required").max(200),
@@ -63,7 +64,9 @@ async function loadParentEmails(): Promise<string[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = supabaseAdmin as any;
 
-  const { data: rpcData, error: rpcError } = await admin.rpc("list_unique_parent_emails");
+  const { data: rpcData, error: rpcError } = await admin.rpc("list_unique_parent_emails", {
+    p_tenant_id: BITSANDBOTS_TENANT_ID,
+  });
   if (!rpcError && Array.isArray(rpcData)) {
     const emails = rpcData
       .map((row: { email?: string } | string) =>

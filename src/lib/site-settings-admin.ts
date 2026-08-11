@@ -1,10 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
-import { normalizeAccentColor, normalizeBrandColor } from "@/lib/brand-colors";import {
+import { normalizeAccentColor, normalizeBrandColor } from "@/lib/brand-colors";
+import {
   DEFAULT_SITE_SETTINGS,
   siteSettingsErrorMessage,
   type OutreachStoryRow,
   type SiteSettings,
 } from "@/lib/site-settings";
+import { withTenantFilter } from "@/lib/tenant/query";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -16,9 +19,10 @@ export type SiteContentAdminData = {
   outreachStories: OutreachStoryRow[];
 };
 
-function settingsToRow(settings: SiteSettings) {
+function settingsToRow(settings: SiteSettings, tenantId: string, rowId: number) {
   return {
-    id: 1,
+    id: rowId,
+    tenant_id: tenantId,
     site_name: settings.siteName,
     site_tagline: settings.siteTagline,
     brand_color: normalizeBrandColor(settings.brandColor),
@@ -120,15 +124,38 @@ export async function fetchSiteContentAdmin(): Promise<SiteContentAdminData> {
 }
 
 export async function saveSiteSettings(settings: SiteSettings): Promise<void> {
-  const { error } = await db.from("site_settings").upsert(settingsToRow(settings), { onConflict: "id" });
+  const tenantId = await tenantIdForQuery();
+  let rowId = 1;
+  const { data: existing, error: readError } = await withTenantFilter(
+    db.from("site_settings").select("id"),
+    tenantId,
+  ).maybeSingle();
+  if (readError) throw readError;
+  if (existing?.id != null) {
+    rowId = existing.id as number;
+  } else {
+    const { data: maxRow } = await db
+      .from("site_settings")
+      .select("id")
+      .order("id", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    rowId = ((maxRow?.id as number | undefined) ?? 0) + 1;
+  }
+
+  const { error } = await db
+    .from("site_settings")
+    .upsert(settingsToRow(settings, tenantId, rowId), { onConflict: "tenant_id" });
   if (error) throw error;
 }
 
 export async function saveOutreachStories(stories: OutreachStoryRow[]): Promise<void> {
+  const tenantId = await tenantIdForQuery();
   for (const story of stories) {
     const { error } = await db.from("outreach_stories").upsert(
       {
         id: story.id,
+        tenant_id: tenantId,
         sort_order: story.sortOrder,
         title: story.title,
         description: story.description,
@@ -136,7 +163,7 @@ export async function saveOutreachStories(stories: OutreachStoryRow[]): Promise<
         default_image_url: story.defaultImageUrl,
         default_image_alt: story.defaultImageAlt,
       },
-      { onConflict: "id" },
+      { onConflict: "tenant_id,id" },
     );
     if (error) throw error;
   }
