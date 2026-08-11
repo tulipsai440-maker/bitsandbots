@@ -15,14 +15,16 @@ export function getBroadcastTemplates(branding: TeamBranding): BroadcastTemplate
 
   return [
     {
-      id: "practice-cancelled",
-      label: "Practice cancelled",
-      subject: `${siteName} — practice cancelled`,
+      id: "general-update",
+      label: "General update",
+      subject: `${siteName} team update`,
       body: `Hi families,
 
-Today's ${siteName} practice is cancelled. We'll share the next meeting time on the calendar.
+A quick update from the ${signoff}:
 
-Thanks,
+[Your message here]
+
+Thank you,
 ${signoff}`,
     },
     {
@@ -72,16 +74,14 @@ Thanks,
 ${signoff}`,
     },
     {
-      id: "general-update",
-      label: "General update",
-      subject: `${siteName} team update`,
+      id: "practice-cancelled",
+      label: "Practice cancelled",
+      subject: `${siteName} — practice cancelled`,
       body: `Hi families,
 
-A quick update from the ${signoff}:
+Today's ${siteName} practice is cancelled. We'll share the next meeting time on the calendar.
 
-[Your message here]
-
-Thank you,
+Thanks,
 ${signoff}`,
     },
   ];

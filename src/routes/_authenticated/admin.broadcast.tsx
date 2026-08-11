@@ -30,12 +30,14 @@ const SQL_EDITOR_URL = "https://supabase.com/dashboard/project/njhiqsbykiggxqkjr
 function AdminBroadcastPage() {
   const siteSettings = useSiteSettings();
   const broadcastTemplates = getBroadcastTemplates(brandingFromSettings(siteSettings));
+  const defaultTemplate =
+    broadcastTemplates.find((t) => t.id === "general-update") ?? broadcastTemplates[0];
   const [toEmails, setToEmails] = useState<string[]>([]);
   const [coachCcEmails, setCoachCcEmails] = useState<string[]>([]);
   const [phones, setPhones] = useState<string[]>([]);
   const [whatsappUrl, setWhatsappUrl] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const [subject, setSubject] = useState(defaultTemplate.subject);
+  const [body, setBody] = useState(defaultTemplate.body);
   const [busy, setBusy] = useState<"email" | "whatsapp" | "whatsapp-group" | "save-wa" | null>(
     null,
   );
@@ -394,7 +396,7 @@ function AdminBroadcastPage() {
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2"
-            placeholder="Practice cancelled this Sunday"
+            placeholder="Reminder: team practice this Sunday"
             maxLength={200}
           />
         </label>
