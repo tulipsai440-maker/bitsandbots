@@ -87,11 +87,20 @@ export async function fetchMediaConsentedMemberIds(): Promise<string[]> {
 }
 
 export function parentConsentErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (error && typeof error === "object" && "message" in error) {
-    return String((error as { message: unknown }).message);
+  const raw =
+    error instanceof Error
+      ? error.message
+      : error && typeof error === "object" && "message" in error
+        ? String((error as { message: unknown }).message)
+        : String(error ?? "Request failed");
+  const lower = raw.toLowerCase();
+  if (
+    lower.includes("importing a module script failed") ||
+    lower.includes("failed to fetch dynamically imported module")
+  ) {
+    return "The form could not connect. Refresh this page and try again.";
   }
-  return String(error ?? "Request failed");
+  return raw;
 }
 
 export function isParentConsentSetupMissing(error: unknown): boolean {

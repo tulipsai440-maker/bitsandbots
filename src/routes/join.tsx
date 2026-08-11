@@ -6,6 +6,7 @@ import { EditableText } from "@/components/admin/inline-edit/EditableText";
 import { useEffect, useState } from "react";
 import { CheckCircle2, Send } from "lucide-react";
 import { fetchJoinContactEmail, sendJoinEmailFromBrowser } from "@/lib/join-client-email";
+import { submitJoinRequest } from "@/lib/join.functions";
 import { useSiteSettings } from "@/lib/site-settings-context";
 import { brandingRouteLoader, routeTeamName } from "@/lib/team-branding";
 
@@ -70,7 +71,6 @@ function JoinPage() {
     setStatus("submitting");
     setError(null);
     try {
-      const { submitJoinRequest } = await import("@/lib/join.functions");
       const result = await submitJoinRequest({ data: form });
       if (result.useClientFormSubmit) {
         await sendJoinEmailFromBrowser(form);

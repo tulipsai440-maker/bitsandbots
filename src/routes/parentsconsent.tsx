@@ -12,6 +12,7 @@ import {
 import { resolveConsentCopy } from "@/lib/consent-copy";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { brandingFromSettings } from "@/lib/team-branding";
+import { submitParentMediaConsent } from "@/lib/parent-consent.functions";
 
 export const Route = createFileRoute("/parentsconsent")({
   loader: async () => {
@@ -94,7 +95,6 @@ function ParentsConsentPage() {
     setStatus("submitting");
     setError(null);
     try {
-      const { submitParentMediaConsent } = await import("@/lib/parent-consent.functions");
       const result = await submitParentMediaConsent({ data: form });
       setSubmittedKid(result.memberName);
       setMembers((current) => current.filter((m) => m.id !== result.memberId));
