@@ -4,6 +4,7 @@ import { AdminQuickShell } from "@/components/admin/AdminQuickShell";
 import { TeamPhoto } from "@/components/site/TeamPhoto";
 import {
   fetchSiteImageRowsForAdmin,
+  clearSiteImageSlot,
   isSiteImagesSetupMissing,
   resetSiteImageOverride,
   SITE_IMAGES_SETUP_SQL,
@@ -11,8 +12,9 @@ import {
   uploadSiteImageOverride,
   type SiteImageKey,
 } from "@/lib/site-images";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { toast } from "sonner";
-import { AlertTriangle, Copy, RotateCcw, Upload } from "lucide-react";
+import { AlertTriangle, Copy, RotateCcw, Trash2, Upload } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/site-images")({
   component: AdminSiteImagesPage,
@@ -35,11 +37,13 @@ function AdminSiteImagesPage() {
   const [busyKey, setBusyKey] = useState<SiteImageKey | null>(null);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   async function load() {
     setLoading(true);
     try {
+      setIsDemo(await shouldUseDemoAssets());
       setRows(await fetchSiteImageRowsForAdmin());
       setNeedsSetup(false);
       setError(null);
@@ -86,8 +90,29 @@ function AdminSiteImagesPage() {
     }
   }
 
+  async function onClear(key: SiteImageKey) {
+    if (!confirm("Remove this photo from the site? You can upload a new one anytime.")) return;
+    setBusyKey(key);
+    try {
+      await clearSiteImageSlot(key);
+      toast.success("Photo removed");
+      await load();
+    } catch (e) {
+      toast.error(siteImagesErrorMessage(e));
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
   return (
     <AdminQuickShell>
+      <div className="mb-6">
+        <h1 className="font-display text-3xl text-foreground">Site images</h1>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          Homepage hero, logo, outreach photos, and social share image. Remove demo placeholders or
+          upload your own team photos.
+        </p>
+      </div>
       {needsSetup && (
         <div className="mb-8 rounded-2xl border border-amber-300/60 bg-amber-50 p-6 text-sm text-amber-950">
           <div className="flex items-start gap-3">
@@ -141,12 +166,14 @@ function AdminSiteImagesPage() {
                   </div>
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      row.isOverride
-                        ? "bg-forest/10 text-forest"
-                        : "bg-muted text-muted-foreground"
+                      !row.url
+                        ? "bg-muted text-muted-foreground"
+                        : row.isOverride
+                          ? "bg-forest/10 text-forest"
+                          : "bg-amber-100 text-amber-900"
                     }`}
                   >
-                    {row.isOverride ? "Custom upload" : "Default"}
+                    {!row.url ? "Empty" : row.isOverride ? "Custom upload" : isDemo ? "Demo placeholder" : "Default"}
                   </span>
                 </div>
 
@@ -178,6 +205,14 @@ function AdminSiteImagesPage() {
                   >
                     <Upload size={16} />
                     {busyKey === row.key ? "Uploading…" : "Upload replacement"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyKey === row.key || !row.url || needsSetup}
+                    onClick={() => void onClear(row.key)}
+                    className="btn-outline gap-2 text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 size={16} /> Remove photo
                   </button>
                   <button
                     type="button"

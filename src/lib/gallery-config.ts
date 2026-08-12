@@ -10,10 +10,9 @@ export function galleryStaticPhotosEnabled(isDemo?: boolean): boolean {
   return demo || GALLERY_STATIC_PHOTOS_PUBLIC;
 }
 
-/** Admin-approved parent uploads from Supabase — show on /gallery (not on demo tenants). */
-export function galleryUploadsEnabled(isDemo?: boolean): boolean {
-  const demo = isDemo ?? (usesDemoPlaceholders() || isDemoTenant());
-  return !demo;
+/** Admin-approved parent uploads from Supabase — tenant-scoped on /gallery. */
+export function galleryUploadsEnabled(_isDemo?: boolean): boolean {
+  return true;
 }
 
 /** @deprecated Use galleryUploadsEnabled(). */

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AdminQuickShell } from "@/components/admin/AdminQuickShell";
 import { SiteContentExtendedSections } from "@/components/admin/SiteContentExtendedSections";
+import { NavLinksEditor } from "@/components/admin/NavLinksEditor";
 import {
   fetchSiteContentAdmin,
   isSiteSettingsSetupMissing,
@@ -9,7 +10,7 @@ import {
   siteSettingsErrorMessage,
   type SiteContentAdminData,
 } from "@/lib/site-settings-admin";
-import type { HomepagePillar, NavLinkItem, SiteSettings } from "@/lib/site-settings";
+import type { HomepagePillar, SiteSettings } from "@/lib/site-settings";
 import { propagateTeamNameChange, propagateTeamNameInOutreach } from "@/lib/site-settings";
 import { DEFAULT_BRAND_COLOR, normalizeBrandColor } from "@/lib/brand-colors";
 import { toast } from "sonner";
@@ -138,6 +139,9 @@ function AdminSiteSettingsPage() {
           </Section>
 
           <Section title="Header navigation">
+            <p className="text-sm text-muted-foreground">
+              Order matches the top menu left to right. Use the arrows to move items, then Save all.
+            </p>
             <NavLinksEditor
               links={form.settings.navLinks}
               onChange={(navLinks) => patchSettings(setForm, { navLinks })}
@@ -373,82 +377,6 @@ function StringListEditor({
       ))}
       <button type="button" className="btn-outline gap-2 text-sm" onClick={() => onChange([...items, ""])}>
         <Plus size={14} /> Add line
-      </button>
-    </div>
-  );
-}
-
-function NavLinksEditor({
-  links,
-  onChange,
-}: {
-  links: NavLinkItem[];
-  onChange: (links: NavLinkItem[]) => void;
-}) {
-  return (
-    <div className="space-y-3">
-      {links.map((link, index) => (
-        <div key={index} className="grid gap-2 rounded-xl border border-border/80 p-3 md:grid-cols-[120px_1fr_1fr_auto] md:items-end">
-          <label className="grid gap-1">
-            <span className="text-xs font-medium">Type</span>
-            <select
-              value={link.kind}
-              onChange={(e) => {
-                const next = [...links];
-                if (e.target.value === "external") {
-                  next[index] = { kind: "external", label: link.label, href: "https://" };
-                } else {
-                  next[index] = { kind: "internal", label: link.label, to: "/" };
-                }
-                onChange(next);
-              }}
-              className="rounded-lg border border-input bg-background px-2 py-2 text-sm"
-            >
-              <option value="internal">Internal page</option>
-              <option value="external">External URL</option>
-            </select>
-          </label>
-          <Field
-            label="Label"
-            value={link.label}
-            onChange={(label) => {
-              const next = [...links];
-              next[index] = { ...next[index], label } as NavLinkItem;
-              onChange(next);
-            }}
-          />
-          {link.kind === "internal" ? (
-            <Field
-              label="Path"
-              value={link.to}
-              onChange={(to) => {
-                const next = [...links];
-                next[index] = { kind: "internal", label: link.label, to };
-                onChange(next);
-              }}
-            />
-          ) : (
-            <Field
-              label="URL"
-              value={link.href}
-              onChange={(href) => {
-                const next = [...links];
-                next[index] = { kind: "external", label: link.label, href };
-                onChange(next);
-              }}
-            />
-          )}
-          <button type="button" className="btn-outline px-3" onClick={() => onChange(links.filter((_, i) => i !== index))}>
-            <Trash2 size={14} />
-          </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        className="btn-outline gap-2 text-sm"
-        onClick={() => onChange([...links, { kind: "internal", label: "New link", to: "/" }])}
-      >
-        <Plus size={14} /> Add link
       </button>
     </div>
   );

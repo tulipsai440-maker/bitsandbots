@@ -10,6 +10,7 @@ import type {
 } from "@/lib/site-settings";
 import { DEFAULT_ACCENT_COLOR } from "@/lib/site-content-defaults";
 import { DEFAULT_BRAND_COLOR, normalizeAccentColor } from "@/lib/brand-colors";
+import { NavLinksEditor } from "@/components/admin/NavLinksEditor";
 
 type SetForm = React.Dispatch<React.SetStateAction<SiteContentAdminData | null>>;
 
@@ -115,6 +116,7 @@ export function SiteContentExtendedSections({
         <NavLinksEditor
           links={form.settings.footerExternalLinks}
           onChange={(footerExternalLinks) => patchSettings({ footerExternalLinks })}
+          defaultNewLink={{ kind: "external", label: "New link", href: "https://" }}
         />
       </Section>
 
@@ -299,60 +301,6 @@ function StringListEditor({
   );
 }
 
-function NavLinksEditor({ links, onChange }: { links: NavLinkItem[]; onChange: (links: NavLinkItem[]) => void }) {
-  return (
-    <div className="space-y-3">
-      {links.map((link, index) => (
-        <div key={index} className="grid gap-2 rounded-xl border border-border/80 p-3 md:grid-cols-[120px_1fr_1fr_auto] md:items-end">
-          <label className="grid gap-1">
-            <span className="text-xs font-medium">Type</span>
-            <select
-              value={link.kind}
-              onChange={(e) => {
-                const next = [...links];
-                if (e.target.value === "external") {
-                  next[index] = { kind: "external", label: link.label, href: "https://" };
-                } else {
-                  next[index] = { kind: "internal", label: link.label, to: "/" };
-                }
-                onChange(next);
-              }}
-              className="rounded-lg border border-input bg-background px-2 py-2 text-sm"
-            >
-              <option value="internal">Internal page</option>
-              <option value="external">External URL</option>
-            </select>
-          </label>
-          <Field label="Label" value={link.label} onChange={(label) => {
-            const next = [...links];
-            next[index] = { ...next[index], label } as NavLinkItem;
-            onChange(next);
-          }} />
-          {link.kind === "internal" ? (
-            <Field label="Path" value={link.to} onChange={(to) => {
-              const next = [...links];
-              next[index] = { kind: "internal", label: link.label, to };
-              onChange(next);
-            }} />
-          ) : (
-            <Field label="URL" value={link.href} onChange={(href) => {
-              const next = [...links];
-              next[index] = { kind: "external", label: link.label, href };
-              onChange(next);
-            }} />
-          )}
-          <button type="button" className="btn-outline px-3" onClick={() => onChange(links.filter((_, i) => i !== index))}>
-            <Trash2 size={14} />
-          </button>
-        </div>
-      ))}
-      <button type="button" className="btn-outline gap-2 text-sm" onClick={() => onChange([...links, { kind: "external", label: "New link", href: "https://" }])}>
-        <Plus size={14} /> Add link
-      </button>
-    </div>
-  );
-}
-
 function SeasonDocumentsEditor({
   documents,
   onChange,
@@ -363,6 +311,10 @@ function SeasonDocumentsEditor({
   return (
     <div className="space-y-3">
       <span className="text-sm font-medium">Season PDFs</span>
+      <p className="text-xs text-muted-foreground">
+        Official PDFs on the Resources page (notebook, rulebook, missions, etc.). Remove any your team
+        does not use — then Save all in Site Content.
+      </p>
       {documents.map((doc, index) => (
         <div key={doc.id || index} className="space-y-2 rounded-xl border border-border/80 p-3">
           <Grid>
@@ -387,8 +339,12 @@ function SeasonDocumentsEditor({
             next[index] = { ...next[index], blurb };
             onChange(next);
           }} />
-          <button type="button" className="btn-outline text-sm" onClick={() => onChange(documents.filter((_, i) => i !== index))}>
-            Remove document
+          <button
+            type="button"
+            className="btn-outline gap-2 text-sm text-destructive hover:bg-destructive/10"
+            onClick={() => onChange(documents.filter((_, i) => i !== index))}
+          >
+            <Trash2 size={14} /> Delete document
           </button>
         </div>
       ))}

@@ -5,7 +5,7 @@ import { AdminAccessPending } from "@/components/admin/AdminAccessPending";
 import { supabase, getSupabaseProjectRef } from "@/integrations/supabase/client";
 import { checkIsAdmin } from "@/lib/admin";
 import {
-  demoAdminLoginForSlug,
+  demoAdminLoginHint,
   normalizeDemoAdminEmail,
 } from "@/lib/demo/demo-admin-login";
 import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
@@ -31,11 +31,13 @@ export const Route = createFileRoute("/auth")({
         demoSlug = ctx.slug;
       }
     }
+    const brandingData = await brandingRouteLoader();
+    const teamName = routeTeamName(brandingData);
     return {
-      ...(await brandingRouteLoader()),
+      ...brandingData,
       isDemo,
       demoSlug,
-      demoLogin: isDemo && demoSlug ? demoAdminLoginForSlug(demoSlug) : null,
+      demoLogin: isDemo && demoSlug ? demoAdminLoginHint(demoSlug, teamName) : null,
     };
   },
   head: ({ loaderData }) => {
@@ -57,7 +59,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const { isDemo, demoSlug, demoLogin } = Route.useLoaderData();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => (demoLogin?.username ? demoLogin.username : ""));
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
@@ -128,7 +130,7 @@ function AuthPage() {
     setBusy(true);
     setMessage(null);
     const trimmedEmail = isDemo
-      ? normalizeDemoAdminEmail(rawEmail, demoSlug)
+      ? normalizeDemoAdminEmail(rawEmail, demoSlug, demoLogin?.username)
       : rawEmail.trim();
     const trimmedPassword = rawPassword;
     try {
@@ -210,33 +212,12 @@ function AuthPage() {
           <h1 className="mt-3 font-display text-4xl">{mode === "signup" ? "Create account" : "Sign in"}</h1>
 
           {isDemo && demoLogin ? (
-            <div className="mt-4 space-y-4">
-              <div className="rounded-2xl border border-forest/25 bg-forest/5 p-4 text-sm">
-                <p className="font-medium text-foreground">Quick demo admin login</p>
-                <p className="mt-1 text-muted-foreground">
-                  Use this shared coach account to explore Admin. Remove it after you create your
-                  own login.
-                </p>
-                <dl className="mt-3 grid gap-1 font-mono text-xs text-foreground">
-                  <div className="flex gap-2">
-                    <dt className="text-muted-foreground">Username</dt>
-                    <dd>{demoLogin.username}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="text-muted-foreground">Password</dt>
-                    <dd>{demoLogin.password}</dd>
-                  </div>
-                </dl>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="btn-primary mt-4 w-full"
-                  onClick={() => void signInWithCredentials(demoLogin.email, demoLogin.password)}
-                >
-                  {busy ? "Signing in…" : "Use demo admin login"}
-                </button>
-              </div>
-              <p className="text-center text-xs text-muted-foreground">or sign in with your own account</p>
+            <div className="mt-4 rounded-2xl border border-forest/25 bg-forest/5 p-4 text-sm">
+              <p className="font-medium text-foreground">Demo coach sign in</p>
+              <p className="mt-1 text-muted-foreground">
+                Use your team username and the password provided to you. You can create your own
+                account later and ask the platform owner to enable admin.
+              </p>
             </div>
           ) : isDemo ? (
             <div className="mt-4 rounded-2xl border border-amber-200/80 bg-amber-50/80 p-4 text-sm text-amber-950">
@@ -263,7 +244,7 @@ function AuthPage() {
           <form onSubmit={onSubmit} className="mt-8 space-y-3">
             <div>
               <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                {isDemo ? "Email or username" : "Email"}
+                {isDemo ? "Username" : "Email"}
               </label>
               <input
                 type={isDemo ? "text" : "email"}

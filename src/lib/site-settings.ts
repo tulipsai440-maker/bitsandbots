@@ -113,6 +113,8 @@ export type SiteSettings = {
   galleryEmptyTitle: string;
   galleryEmptyMessage: string;
   galleryShareButtonLabel: string;
+  /** Bundled / demo gallery photo URLs hidden by admin (tenant-scoped in site_settings). */
+  galleryHiddenStaticSrcs: string[];
   eventsHeroTitle: string;
   eventsHeroDescription: string;
   calendarHeroTitle: string;
@@ -153,7 +155,6 @@ export const DEFAULT_NAV_LINKS: NavLinkItem[] = [
   { kind: "internal", label: "Our Team", to: "/about" },
   { kind: "internal", label: "Coaches", to: "/coaches" },
   { kind: "internal", label: "Calendar", to: "/calendar" },
-  { kind: "internal", label: "Assignments", to: "/assignments" },
   { kind: "internal", label: "Resources", to: "/resources" },
   { kind: "internal", label: "Gallery", to: "/gallery" },
   { kind: "internal", label: "Outreach", to: "/outreach" },
@@ -164,7 +165,6 @@ export const DEFAULT_FOOTER_EXPLORE_LINKS: NavLinkItem[] = [
   { kind: "internal", label: "Our Team", to: "/about" },
   { kind: "internal", label: "Coaches", to: "/coaches" },
   { kind: "internal", label: "Calendar", to: "/calendar" },
-  { kind: "internal", label: "Assignments", to: "/assignments" },
   { kind: "internal", label: "Gallery", to: "/gallery" },
   { kind: "internal", label: "Resources", to: "/resources" },
   { kind: "internal", label: "Outreach", to: "/outreach" },
@@ -179,7 +179,6 @@ export const DEFAULT_FOOTER_EXTERNAL_LINKS: NavLinkItem[] = [
 
 export const DEFAULT_VISIT_BAR_LINKS: NavLinkItem[] = [
   { kind: "internal", label: "Calendar", to: "/calendar" },
-  { kind: "internal", label: "Assignments", to: "/assignments" },
 ];
 
 export const DEFAULT_HOMEPAGE_PILLARS: HomepagePillar[] = [
@@ -365,6 +364,7 @@ export const PRODUCTION_SITE_SETTINGS: SiteSettings = {
   galleryEmptyTitle: "No photos yet.",
   galleryEmptyMessage: "Share photos below — a coach approves them before they appear here.",
   galleryShareButtonLabel: "Share your photos",
+  galleryHiddenStaticSrcs: [],
   eventsHeroTitle: "Upcoming meetings",
   eventsHeroDescription: "Team practice on Sundays and Zoom check-ins on Wednesdays.",
   calendarHeroTitle: "Calendar",
@@ -424,6 +424,14 @@ function ensureSponsorsAfterOutreach(links: NavLinkItem[]): NavLinkItem[] {
   return next;
 }
 
+const HIDDEN_NAV_PATHS = ["/assignments"];
+
+function stripHiddenNavPaths(links: NavLinkItem[]): NavLinkItem[] {
+  return links.filter(
+    (item) => !(item.kind === "internal" && HIDDEN_NAV_PATHS.includes(item.to)),
+  );
+}
+
 function mergeNavLinksForResources(links: NavLinkItem[], fallback: NavLinkItem[]): NavLinkItem[] {
   const base = links.length ? links : fallback;
   let changed = false;
@@ -440,10 +448,10 @@ function mergeNavLinksForResources(links: NavLinkItem[], fallback: NavLinkItem[]
   );
   if (!hasResources) {
     changed = true;
-    const afterAssignments = filtered.findIndex(
-      (item) => item.kind === "internal" && item.to === "/assignments",
+    const afterCalendar = filtered.findIndex(
+      (item) => item.kind === "internal" && item.to === "/calendar",
     );
-    const insertAt = afterAssignments >= 0 ? afterAssignments + 1 : filtered.length;
+    const insertAt = afterCalendar >= 0 ? afterCalendar + 1 : filtered.length;
     filtered.splice(insertAt, 0, RESOURCES_NAV_LINK);
   }
 
@@ -461,9 +469,10 @@ function parseNavLinks(
   options?: { ensureSponsorsAfterOutreach?: boolean },
 ): NavLinkItem[] {
   if (!Array.isArray(value)) {
-    return options?.ensureSponsorsAfterOutreach
+    const base = options?.ensureSponsorsAfterOutreach
       ? ensureSponsorsAfterOutreach(fallback)
       : fallback;
+    return stripHiddenNavPaths(base);
   }
   const parsed = value.filter(
     (item): item is NavLinkItem =>
@@ -481,20 +490,21 @@ function parseNavLinks(
   if (options?.ensureSponsorsAfterOutreach) {
     result = ensureSponsorsAfterOutreach(result);
   }
-  return result;
+  return stripHiddenNavPaths(result);
 }
 
 function parsePillars(value: unknown): HomepagePillar[] {
+  if (value == null) return DEFAULT_HOMEPAGE_PILLARS;
   if (!Array.isArray(value)) return DEFAULT_HOMEPAGE_PILLARS;
-  const parsed = value
+  return value
     .filter((item) => item && typeof item === "object" && typeof (item as HomepagePillar).title === "string")
     .map((item) => ({
       title: String((item as HomepagePillar).title),
       copy: String((item as HomepagePillar).copy ?? ""),
       href: (item as HomepagePillar).href || undefined,
       linkLabel: (item as HomepagePillar).linkLabel || undefined,
-    }));
-  return parsed.length ? parsed : DEFAULT_HOMEPAGE_PILLARS;
+    }))
+    .filter((pillar) => pillar.title.trim());
 }
 
 function parseCoreValues(value: unknown): CoreValueContent[] {
@@ -517,8 +527,9 @@ function parseStringArray(value: unknown, fallback: string[]): string[] {
 }
 
 function parseSeasonDocuments(value: unknown): SeasonDocument[] {
+  if (value == null) return DEFAULT_SEASON_CONTENT.seasonDocuments;
   if (!Array.isArray(value)) return DEFAULT_SEASON_CONTENT.seasonDocuments;
-  const parsed = value
+  return value
     .filter((item) => item && typeof item === "object" && typeof (item as SeasonDocument).id === "string")
     .map((item) => ({
       id: String((item as SeasonDocument).id),
@@ -527,7 +538,6 @@ function parseSeasonDocuments(value: unknown): SeasonDocument[] {
       href: String((item as SeasonDocument).href ?? ""),
     }))
     .filter((doc) => doc.title && doc.href);
-  return parsed.length ? parsed : DEFAULT_SEASON_CONTENT.seasonDocuments;
 }
 
 function parseSeasonVideos(value: unknown): SeasonVideo[] {
@@ -646,6 +656,7 @@ function mapSettingsRow(row: Record<string, unknown>): SiteSettings {
     galleryEmptyTitle: String(row.gallery_empty_title ?? DEFAULT_SITE_SETTINGS.galleryEmptyTitle),
     galleryEmptyMessage: String(row.gallery_empty_message ?? DEFAULT_SITE_SETTINGS.galleryEmptyMessage),
     galleryShareButtonLabel: String(row.gallery_share_button_label ?? DEFAULT_SITE_SETTINGS.galleryShareButtonLabel),
+    galleryHiddenStaticSrcs: parseStringArray(row.gallery_hidden_static_srcs, []),
     eventsHeroTitle: String(row.events_hero_title ?? DEFAULT_SITE_SETTINGS.eventsHeroTitle),
     eventsHeroDescription: String(row.events_hero_description ?? DEFAULT_SITE_SETTINGS.eventsHeroDescription),
     calendarHeroTitle: String(row.calendar_hero_title ?? DEFAULT_SITE_SETTINGS.calendarHeroTitle),
@@ -673,9 +684,10 @@ function mapSettingsRow(row: Record<string, unknown>): SiteSettings {
   };
 }
 
-function mapOutreachRow(row: Record<string, unknown>): OutreachStoryRow {
+function mapOutreachRow(row: Record<string, unknown>, tenantId: string): OutreachStoryRow {
+  const storageId = String(row.id ?? "");
   return {
-    id: String(row.id),
+    id: outreachLogicalId(tenantId, storageId),
     sortOrder: Number(row.sort_order ?? 0),
     title: String(row.title ?? ""),
     description: String(row.description ?? ""),
@@ -683,6 +695,17 @@ function mapOutreachRow(row: Record<string, unknown>): OutreachStoryRow {
     defaultImageUrl: String(row.default_image_url ?? ""),
     defaultImageAlt: String(row.default_image_alt ?? ""),
   };
+}
+
+/** DB row id — globally unique across tenants (legacy rows may use bare logical ids). */
+export function outreachStorageId(tenantId: string, logicalId: string): string {
+  return `${tenantId}:${logicalId}`;
+}
+
+/** App-facing story id from a DB row. */
+export function outreachLogicalId(tenantId: string, storageId: string): string {
+  const prefix = `${tenantId}:`;
+  return storageId.startsWith(prefix) ? storageId.slice(prefix.length) : storageId;
 }
 
 export function siteSettingsErrorMessage(error: unknown): string {
@@ -723,7 +746,7 @@ export async function fetchOutreachStoriesFromDb(): Promise<OutreachStoryRow[]> 
   const { data, error } = await query;
   if (error) throw error;
   if (!data?.length) return [];
-  return (data as Record<string, unknown>[]).map(mapOutreachRow);
+  return (data as Record<string, unknown>[]).map((row) => mapOutreachRow(row, tenantId));
 }
 
 export async function fetchSiteSettings(): Promise<SiteSettings> {

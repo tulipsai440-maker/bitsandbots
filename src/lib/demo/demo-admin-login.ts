@@ -1,4 +1,4 @@
-/** Shared demo coach login — replace or delete after the team sets up their own admin. */
+/** Default password for provisioned demo coach accounts (not shown on the sign-in page). */
 export const DEMO_ADMIN_DEFAULT_PASSWORD = "First@2026";
 
 export function demoAdminEmailForSlug(slug: string): string {
@@ -7,28 +7,31 @@ export function demoAdminEmailForSlug(slug: string): string {
   return `${s}@demo.fllbots.com`;
 }
 
-/** Accept slug-only input (e.g. bots4life) or full demo email. */
-export function normalizeDemoAdminEmail(input: string, slug: string): string {
-  const trimmed = input.trim().toLowerCase();
+/** Accept team name, slug-only username, or full demo email. */
+export function normalizeDemoAdminEmail(
+  input: string,
+  slug: string,
+  teamName?: string,
+): string {
+  const trimmed = input.trim();
   if (!trimmed) return demoAdminEmailForSlug(slug);
-  if (trimmed.includes("@")) return trimmed;
-  return demoAdminEmailForSlug(trimmed);
+  if (trimmed.includes("@")) return trimmed.toLowerCase();
+  const normalized = trimmed.toLowerCase();
+  if (teamName && normalized === teamName.trim().toLowerCase()) {
+    return demoAdminEmailForSlug(slug);
+  }
+  return demoAdminEmailForSlug(normalized);
 }
 
-export type DemoAdminLogin = {
+export type DemoAdminLoginHint = {
   slug: string;
-  email: string;
+  /** Team display name shown as the default username on demo sign-in. */
   username: string;
-  password: string;
 };
 
-export function demoAdminLoginForSlug(slug: string): DemoAdminLogin | null {
+export function demoAdminLoginHint(slug: string, teamName: string): DemoAdminLoginHint | null {
   const s = slug.trim().toLowerCase();
   if (!s) return null;
-  return {
-    slug: s,
-    email: demoAdminEmailForSlug(s),
-    username: s,
-    password: DEMO_ADMIN_DEFAULT_PASSWORD,
-  };
+  const username = teamName.trim() || s;
+  return { slug: s, username };
 }

@@ -161,5 +161,5 @@ console.log(`  Sign in URL: https://${slug}-demo.fllbots.com/auth`);
 console.log(`  Username:    ${slug}`);
 console.log(`  Email:       ${email}`);
 console.log(`  Password:    ${password}`);
-console.log("\nRecipient can click “Use demo admin login” on /auth or sign in manually.");
+console.log("\nRecipient signs in at /auth with their team username and this password (share offline).");
 console.log("To remove later: delete user in Supabase Auth or revoke admin in user_roles.");

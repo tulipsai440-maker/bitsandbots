@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SettingsNavLink } from "@/components/site/SettingsNavLink";
 import { SiteLayout } from "@/components/site/Layout";
-import { ManageInAdmin } from "@/components/admin/inline-edit/AdminLiveEditBar";
 import { EditableBlock, EditableText } from "@/components/admin/inline-edit/EditableText";
+import { EditableHomepagePillar } from "@/components/admin/inline-edit/EditableHomepagePillar";
 import { TeamPhoto } from "@/components/site/TeamPhoto";
 import { useEffect, useState } from "react";
 import { ArrowRight, Clock } from "lucide-react";
@@ -252,26 +252,10 @@ function WhatWeDo() {
               {whatWeDoSubtitle}
             </EditableText>
           </p>
-          <div className="mt-3">
-            <ManageInAdmin label="Edit pillars" to="/admin/site-settings" />
-          </div>
         </div>
         <div className="mt-12 grid gap-10 md:grid-cols-3 md:gap-12">
-          {homepagePillars.map((c, index) => (
-            <article
-              key={c.title}
-              className="animate-rise border-t border-forest/25 pt-6"
-              style={{ animationDelay: `${120 + index * 90}ms` }}
-            >
-              <p className="font-display text-sm text-forest">0{index + 1}</p>
-              <h3 className="mt-2 font-display text-2xl md:text-3xl">{c.title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">{c.copy}</p>
-              {c.href ? (
-                <Link to={c.href as "/core-values"} className="mt-4 inline-block text-sm font-medium text-forest hover:underline">
-                  {c.linkLabel ?? "Learn more →"}
-                </Link>
-              ) : null}
-            </article>
+          {homepagePillars.map((pillar, index) => (
+            <EditableHomepagePillar key={`${pillar.title}-${index}`} pillar={pillar} index={index} />
           ))}
         </div>
       </div>

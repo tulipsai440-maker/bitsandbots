@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { FileText, Pencil, Play } from "lucide-react";
+import { FileText, Pencil, Play, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -252,6 +252,14 @@ export function EditableDocumentTile({ doc }: { doc: SeasonDocument }) {
     setOpen(false);
   }
 
+  async function handleDelete() {
+    if (!confirm(`Remove "${doc.title}" from Season documents?`)) return;
+    const seasonDocuments = settings.seasonDocuments.filter((entry) => entry.id !== doc.id);
+    patchSettings({ seasonDocuments });
+    await saveSettings();
+    setOpen(false);
+  }
+
   return (
     <>
       <EditableCardShell
@@ -261,7 +269,21 @@ export function EditableDocumentTile({ doc }: { doc: SeasonDocument }) {
           setOpen(true);
         }}
       >
-        {tile}
+        <div className="relative">
+          {tile}
+          <button
+            type="button"
+            aria-label={`Delete ${doc.title}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void handleDelete();
+            }}
+            className="absolute right-2 bottom-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-destructive/30 bg-white text-destructive shadow-md transition hover:bg-destructive hover:text-cream"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       </EditableCardShell>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -294,13 +316,23 @@ export function EditableDocumentTile({ doc }: { doc: SeasonDocument }) {
               className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
             />
           </label>
-          <DialogFooter>
-            <button type="button" className="btn-outline" onClick={() => setOpen(false)}>
-              Cancel
+          <DialogFooter className="gap-2 sm:justify-between">
+            <button
+              type="button"
+              className="btn-outline text-destructive hover:bg-destructive/10"
+              disabled={saving}
+              onClick={handleDelete}
+            >
+              Delete document
             </button>
-            <button type="button" className="btn-primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Saving…" : "Save"}
-            </button>
+            <div className="flex gap-2">
+              <button type="button" className="btn-outline" onClick={() => setOpen(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn-primary" disabled={saving} onClick={handleSave}>
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

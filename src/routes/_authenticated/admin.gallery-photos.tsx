@@ -1,6 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AdminQuickShell } from "@/components/admin/AdminQuickShell";
+import { GallerySectionTabs } from "@/components/site/GallerySectionTabs";
+import { galleryPhotos } from "@/lib/gallery-photos";
+import { DEMO_GALLERY_PHOTOS } from "@/lib/demo/demo-fallbacks";
+import { galleryStaticPhotosEnabled } from "@/lib/gallery-config";
+import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
+import { hideGalleryStaticPhoto } from "@/lib/site-settings-admin";
+import { fetchSiteSettingsFromDb } from "@/lib/site-settings";
 import {
   addApprovedGalleryPhotos,
   approveGalleryPhoto,
@@ -51,10 +58,16 @@ function AdminGalleryPhotosPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
+  const [hiddenStaticSrcs, setHiddenStaticSrcs] = useState<string[]>([]);
 
   async function load() {
     setLoading(true);
     try {
+      const demo = await shouldUseDemoAssets();
+      setIsDemo(demo);
+      const settings = await fetchSiteSettingsFromDb();
+      setHiddenStaticSrcs(settings.galleryHiddenStaticSrcs);
       const [pendingRows, approvedRows] = await Promise.all([
         fetchPendingGalleryPhotos(),
         fetchApprovedGalleryRows(),
@@ -128,13 +141,37 @@ function AdminGalleryPhotosPage() {
     }
   }
 
+  const visibleStaticPhotos = (() => {
+    if (!galleryStaticPhotosEnabled(isDemo)) return [];
+    const hidden = new Set(hiddenStaticSrcs);
+    const source = isDemo ? DEMO_GALLERY_PHOTOS : galleryPhotos;
+    return source.filter((photo) => !hidden.has(photo.src));
+  })();
+
+  async function removeStaticPhoto(src: string) {
+    if (!confirm("Remove this sample photo from the public gallery?")) return;
+    setBusyId(src);
+    try {
+      await hideGalleryStaticPhoto(src);
+      toast.success("Sample photo removed from gallery");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove photo");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <AdminQuickShell>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-foreground">Gallery</h1>
+          <div className="mb-4">
+            <GallerySectionTabs active="review" pendingCount={pending.length} />
+          </div>
+          <h1 className="font-display text-3xl text-foreground">Photo review</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Review family photo submissions, manage approved gallery photos, or upload directly.
+            Review family photo submissions and manage published gallery photos.
           </p>
         </div>
         {!needsSetup && (
@@ -249,7 +286,43 @@ function AdminGalleryPhotosPage() {
 
       {!loading && !needsSetup && tab === "approved" && (
         <>
-          {approved.length === 0 ? (
+          {visibleStaticPhotos.length > 0 && (
+            <div className="mb-10">
+              <h2 className="font-display text-xl text-foreground">
+                {isDemo ? "Demo sample photos" : "Bundled gallery photos"}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                These ship with the site template. Remove any you do not want on the public gallery.
+              </p>
+              <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {visibleStaticPhotos.map((photo) => (
+                  <div
+                    key={photo.src}
+                    className="overflow-hidden rounded-2xl border border-border bg-card"
+                  >
+                    <div className="aspect-[4/3] bg-sand">
+                      <img
+                        src={photo.thumb}
+                        alt="Gallery sample photo"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <button
+                        onClick={() => void removeStaticPhoto(photo.src)}
+                        disabled={busyId === photo.src}
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-40"
+                      >
+                        <Trash2 size={14} /> Remove from gallery
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {approved.length === 0 && visibleStaticPhotos.length === 0 ? (
             <div className="rounded-2xl border border-border bg-card p-10 text-center">
               <p className="font-display text-xl text-foreground">No photos in the gallery yet.</p>
               <p className="mt-2 text-sm text-muted-foreground">

@@ -123,6 +123,7 @@ function ResourcesPage() {
         </div>
       </section>
 
+      {seasonDocuments.length > 0 && (
       <section className="border-y border-border/50 bg-sand/40 py-10 md:py-12">
         <div className="container-page">
           <EditableResourcesSectionHeading
@@ -139,6 +140,7 @@ function ResourcesPage() {
           </div>
         </div>
       </section>
+      )}
 
       {seasonVideoGroups.map((group) => {
         const videos = seasonVideosForGroup(settings, group.key);

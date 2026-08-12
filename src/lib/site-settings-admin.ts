@@ -7,6 +7,8 @@ import {
   DEFAULT_OUTREACH_STORIES,
   fetchOutreachStoriesFromDb,
   fetchSiteSettingsFromDb,
+  outreachLogicalId,
+  outreachStorageId,
   siteSettingsErrorMessage,
   type OutreachStoryRow,
   type SiteSettings,
@@ -93,6 +95,7 @@ function settingsToRow(settings: SiteSettings, tenantId: string, rowId: number) 
     gallery_empty_title: settings.galleryEmptyTitle,
     gallery_empty_message: settings.galleryEmptyMessage,
     gallery_share_button_label: settings.galleryShareButtonLabel,
+    gallery_hidden_static_srcs: settings.galleryHiddenStaticSrcs,
     events_hero_title: settings.eventsHeroTitle,
     events_hero_description: settings.eventsHeroDescription,
     calendar_hero_title: settings.calendarHeroTitle,
@@ -162,10 +165,40 @@ export async function saveSiteSettings(settings: SiteSettings): Promise<void> {
 
 export async function saveOutreachStories(stories: OutreachStoryRow[]): Promise<void> {
   const tenantId = await tenantIdForQuery();
+
+  const { data: existingRows, error: readError } = await withTenantFilter(
+    db.from("outreach_stories").select("id"),
+    tenantId,
+  );
+  if (readError) throw readError;
+
+  const keepLogicalIds = new Set(stories.map((story) => story.id));
+  for (const row of existingRows ?? []) {
+    const storageId = String(row.id);
+    const logicalId = outreachLogicalId(tenantId, storageId);
+    if (keepLogicalIds.has(logicalId)) continue;
+    const { error } = await withTenantFilter(
+      db.from("outreach_stories").delete().eq("id", storageId),
+      tenantId,
+    );
+    if (error) throw error;
+  }
+
   for (const story of stories) {
+    const storageId = outreachStorageId(tenantId, story.id);
+    const legacyId = story.id;
+
+    if (legacyId !== storageId) {
+      const { error: legacyDeleteError } = await withTenantFilter(
+        db.from("outreach_stories").delete().eq("id", legacyId),
+        tenantId,
+      );
+      if (legacyDeleteError) throw legacyDeleteError;
+    }
+
     const { error } = await db.from("outreach_stories").upsert(
       {
-        id: story.id,
+        id: storageId,
         tenant_id: tenantId,
         sort_order: story.sortOrder,
         title: story.title,
@@ -174,10 +207,19 @@ export async function saveOutreachStories(stories: OutreachStoryRow[]): Promise<
         default_image_url: story.defaultImageUrl,
         default_image_alt: story.defaultImageAlt,
       },
-      { onConflict: "tenant_id,id" },
+      { onConflict: "id" },
     );
     if (error) throw error;
   }
+}
+
+export async function hideGalleryStaticPhoto(src: string): Promise<void> {
+  const settings = await fetchSiteSettingsFromDb();
+  if (settings.galleryHiddenStaticSrcs.includes(src)) return;
+  await saveSiteSettings({
+    ...settings,
+    galleryHiddenStaticSrcs: [...settings.galleryHiddenStaticSrcs, src],
+  });
 }
 
 export async function saveSiteContentAdmin(data: SiteContentAdminData): Promise<void> {

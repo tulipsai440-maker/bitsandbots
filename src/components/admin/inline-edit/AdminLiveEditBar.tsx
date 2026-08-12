@@ -2,8 +2,6 @@ import { useRouterState, useNavigate, Link } from "@tanstack/react-router";
 
 import {
 
-  ClipboardList,
-
   Contact,
 
   FileCheck,
@@ -11,8 +9,6 @@ import {
   FileText,
 
   ImageIcon,
-
-  Images,
 
   LayoutDashboard,
 
@@ -48,11 +44,7 @@ const ADMIN_QUICK_LINKS = [
 
   { to: "/admin/parent-contacts", label: "Parents", icon: Contact, kind: "admin" as const },
 
-  { to: "/assignments", label: "Assignments", icon: ClipboardList, kind: "public" as const },
-
   { to: "/admin/parent-consents", label: "Consents", icon: FileCheck, kind: "admin" as const },
-
-  { to: "/admin/gallery-photos", label: "Gallery", icon: Images, kind: "admin" as const },
 
   { to: "/admin/site-images", label: "Site images", icon: ImageIcon, kind: "admin" as const },
 

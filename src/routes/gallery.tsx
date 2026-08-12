@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { SiteLayout, PageHero } from "@/components/site/Layout";
 import { TeamPhoto } from "@/components/site/TeamPhoto";
 import { GalleryUploadForm } from "@/components/site/GalleryUploadForm";
+import { GallerySectionTabs } from "@/components/site/GallerySectionTabs";
+import { useAdminEdit } from "@/components/admin/inline-edit/AdminEditProvider";
 import { galleryPhotos } from "@/lib/gallery-photos";
 import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { demoAssets } from "@/lib/demo/demo-assets";
@@ -10,6 +12,7 @@ import { galleryStaticPhotosEnabled, galleryUploadsEnabled } from "@/lib/gallery
 import { DEMO_GALLERY_PHOTOS } from "@/lib/demo/demo-fallbacks";
 import {
   fetchApprovedGalleryPhotos,
+  fetchPendingGalleryPhotos,
   type ApprovedGalleryPhoto,
 } from "@/lib/gallery-uploads";
 import { photos } from "@/lib/photos";
@@ -78,10 +81,13 @@ function toDisplayPhotos(rows: ApprovedGalleryPhoto[]): DisplayPhoto[] {
   }));
 }
 
-function getStaticPhotos(isDemo: boolean): DisplayPhoto[] {
+function getStaticPhotos(isDemo: boolean, hiddenSrcs: string[]): DisplayPhoto[] {
   if (!galleryStaticPhotosEnabled(isDemo)) return [];
+  const hidden = new Set(hiddenSrcs);
   const source = isDemo ? DEMO_GALLERY_PHOTOS : galleryPhotos;
-  return source.map((photo) => ({
+  return source
+    .filter((photo) => !hidden.has(photo.src))
+    .map((photo) => ({
     key: photo.src,
     src: photo.src,
     thumb: photo.thumb,
@@ -93,6 +99,7 @@ function getStaticPhotos(isDemo: boolean): DisplayPhoto[] {
 
 function GalleryPage() {
   const { uploaded: loaderUploaded, isDemo } = Route.useLoaderData();
+  const { isAdmin } = useAdminEdit();
   const {
     siteName,
     galleryHeroTitle,
@@ -100,9 +107,29 @@ function GalleryPage() {
     galleryEmptyTitle,
     galleryEmptyMessage,
     galleryShareButtonLabel,
+    galleryHiddenStaticSrcs,
   } = useSiteSettings();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [uploaded, setUploaded] = useState<DisplayPhoto[]>(() => toDisplayPhotos(loaderUploaded));
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isAdmin || !galleryUploadsEnabled(isDemo)) {
+      setPendingCount(null);
+      return;
+    }
+    let cancelled = false;
+    fetchPendingGalleryPhotos()
+      .then((rows) => {
+        if (!cancelled) setPendingCount(rows.length);
+      })
+      .catch(() => {
+        if (!cancelled) setPendingCount(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, isDemo]);
 
   useEffect(() => {
     if (!galleryUploadsEnabled(isDemo)) {
@@ -123,7 +150,10 @@ function GalleryPage() {
     };
   }, [isDemo]);
 
-  const allPhotos = useMemo(() => [...uploaded, ...getStaticPhotos(isDemo)], [uploaded, isDemo]);
+  const allPhotos = useMemo(
+    () => [...uploaded, ...getStaticPhotos(isDemo, galleryHiddenStaticSrcs)],
+    [uploaded, isDemo, galleryHiddenStaticSrcs],
+  );
   const total = allPhotos.length;
 
   const close = useCallback(() => setOpenIndex(null), []);
@@ -165,7 +195,13 @@ function GalleryPage() {
         }
       />
 
-      <section className="py-16">
+      <section className="py-8">
+        <div className="container-page flex justify-center">
+          <GallerySectionTabs active="gallery" pendingCount={pendingCount ?? undefined} />
+        </div>
+      </section>
+
+      <section className="pb-16 pt-0">
         <div className="container-page">
           <div className="mb-8 flex flex-wrap items-center justify-center gap-3">
             <a href="#share-photos" className="btn-primary gap-2">
