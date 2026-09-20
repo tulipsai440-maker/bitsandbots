@@ -136,6 +136,12 @@ export type SiteSettings = {
   genericCoachBio: string;
   genericMemberBio: string;
   footerMeetTeamLabel: string;
+  /** False hides the Assignments nav/footer links; the /assignments page stays reachable by URL. */
+  showAssignmentsNav: boolean;
+  /** False hides the Core Values links and makes /core-values render not-found for this tenant. */
+  showCoreValuesNav: boolean;
+  /** False hides every Zoom meeting row; teams that only meet in person. */
+  showZoomMeeting: boolean;
   navLinks: NavLinkItem[];
   footerExploreLinks: NavLinkItem[];
   footerExternalLinks: NavLinkItem[];
@@ -151,6 +157,9 @@ export type OutreachStoryRow = {
   defaultImageUrl: string;
   defaultImageAlt: string;
 };
+
+const ASSIGNMENTS_NAV_PATH = "/assignments";
+const CORE_VALUES_NAV_PATH = "/core-values";
 
 export const DEFAULT_NAV_LINKS: NavLinkItem[] = [
   { kind: "internal", label: "Our Team", to: "/about" },
@@ -393,14 +402,49 @@ export const PRODUCTION_SITE_SETTINGS: SiteSettings = {
   genericCoachBio: DEFAULT_GENERIC_COACH_BIO,
   genericMemberBio: DEFAULT_GENERIC_MEMBER_BIO,
   footerMeetTeamLabel: DEFAULT_FOOTER_MEET_TEAM_LABEL,
+  showAssignmentsNav: true,
+  showCoreValuesNav: true,
+  showZoomMeeting: true,
   navLinks: DEFAULT_NAV_LINKS,
   footerExploreLinks: DEFAULT_FOOTER_EXPLORE_LINKS,
   footerExternalLinks: DEFAULT_FOOTER_EXTERNAL_LINKS,
   visitBarLinks: DEFAULT_VISIT_BAR_LINKS,
 };
 
+/** Internal paths this tenant has turned off. Empty for tenants showing everything. */
+export function hiddenNavPaths(settings: SiteSettings): string[] {
+  const hidden: string[] = [];
+  if (!settings.showAssignmentsNav) hidden.push(ASSIGNMENTS_NAV_PATH);
+  if (!settings.showCoreValuesNav) hidden.push(CORE_VALUES_NAV_PATH);
+  return hidden;
+}
+
+/**
+ * Drops links to pages this tenant has turned off, across every surface that renders
+ * them: header nav, footer "Explore", visit bar, and homepage pillar links.
+ * Routes, page components, and stored content stay untouched — only the links go.
+ */
+export function applyNavVisibility(settings: SiteSettings): SiteSettings {
+  const hidden = hiddenNavPaths(settings);
+  if (!hidden.length) return settings;
+  const keepVisible = (links: NavLinkItem[]) =>
+    links.filter((item) => !(item.kind === "internal" && hidden.includes(item.to)));
+  return {
+    ...settings,
+    navLinks: keepVisible(settings.navLinks),
+    footerExploreLinks: keepVisible(settings.footerExploreLinks),
+    visitBarLinks: keepVisible(settings.visitBarLinks),
+    // Keep the pillar copy (Core Values is still a judged category) but drop the dead link.
+    homepagePillars: settings.homepagePillars.map((pillar) =>
+      pillar.href && hidden.includes(pillar.href)
+        ? { ...pillar, href: undefined, linkLabel: undefined }
+        : pillar,
+    ),
+  };
+}
+
 export const DEFAULT_SITE_SETTINGS: SiteSettings = isDemoMode
-  ? buildDemoSiteSettings(PRODUCTION_SITE_SETTINGS)
+  ? applyNavVisibility(buildDemoSiteSettings(PRODUCTION_SITE_SETTINGS))
   : PRODUCTION_SITE_SETTINGS;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -569,7 +613,7 @@ function parseSeasonDocuments(value: unknown): SeasonDocument[] {
     .filter((doc) => doc.title && doc.href);
 }
 
-function parseSeasonVideos(value: unknown): SeasonVideo[] {
+function parseSeasonVideos(value: unknown, cleared = false): SeasonVideo[] {
   if (!Array.isArray(value)) return DEFAULT_SEASON_CONTENT.seasonVideos;
   const parsed = value
     .filter((item) => item && typeof item === "object" && typeof (item as SeasonVideo).id === "string")
@@ -582,10 +626,10 @@ function parseSeasonVideos(value: unknown): SeasonVideo[] {
         : "season") as SeasonVideo["group"],
     }))
     .filter((video) => video.title);
-  return parsed.length ? parsed : DEFAULT_SEASON_CONTENT.seasonVideos;
+  return parsed.length || cleared ? parsed : DEFAULT_SEASON_CONTENT.seasonVideos;
 }
 
-function parseSeasonVideoGroups(value: unknown): SeasonVideoGroup[] {
+function parseSeasonVideoGroups(value: unknown, cleared = false): SeasonVideoGroup[] {
   if (!Array.isArray(value)) return DEFAULT_SEASON_CONTENT.seasonVideoGroups;
   const parsed = value
     .filter((item) => item && typeof item === "object" && typeof (item as SeasonVideoGroup).key === "string")
@@ -597,10 +641,10 @@ function parseSeasonVideoGroups(value: unknown): SeasonVideoGroup[] {
       copy: String((item as SeasonVideoGroup).copy ?? ""),
     }))
     .filter((group) => group.title);
-  return parsed.length ? parsed : DEFAULT_SEASON_CONTENT.seasonVideoGroups;
+  return parsed.length || cleared ? parsed : DEFAULT_SEASON_CONTENT.seasonVideoGroups;
 }
 
-function parseQuickLinks(value: unknown): QuickLinkCard[] {
+function parseQuickLinks(value: unknown, cleared = false): QuickLinkCard[] {
   if (!Array.isArray(value)) return DEFAULT_SEASON_CONTENT.quickLinks;
   const parsed = value
     .filter((item) => item && typeof item === "object" && typeof (item as QuickLinkCard).id === "string")
@@ -611,10 +655,23 @@ function parseQuickLinks(value: unknown): QuickLinkCard[] {
       desc: String((item as QuickLinkCard).desc ?? ""),
     }))
     .filter((link) => link.label && link.href);
-  return parsed.length ? parsed : DEFAULT_SEASON_CONTENT.quickLinks;
+  return parsed.length || cleared ? parsed : DEFAULT_SEASON_CONTENT.quickLinks;
 }
 
 function mapSettingsRow(row: Record<string, unknown>): SiteSettings {
+  const showAssignmentsNav =
+    typeof row.show_assignments_nav === "boolean"
+      ? row.show_assignments_nav
+      : DEFAULT_SITE_SETTINGS.showAssignmentsNav;
+  const showCoreValuesNav =
+    typeof row.show_core_values_nav === "boolean"
+      ? row.show_core_values_nav
+      : DEFAULT_SITE_SETTINGS.showCoreValuesNav;
+  const showZoomMeeting =
+    typeof row.show_zoom_meeting === "boolean"
+      ? row.show_zoom_meeting
+      : DEFAULT_SITE_SETTINGS.showZoomMeeting;
+  const resourcesPageSections = parseResourcesPageSections(row.resources_page_sections);
   return {
     siteName: String(row.site_name ?? DEFAULT_SITE_SETTINGS.siteName),
     siteTagline: String(row.site_tagline ?? DEFAULT_SITE_SETTINGS.siteTagline),
@@ -668,9 +725,12 @@ function mapSettingsRow(row: Record<string, unknown>): SiteSettings {
     seasonPlaylistUrl: String(row.season_playlist_url ?? DEFAULT_SITE_SETTINGS.seasonPlaylistUrl),
     seasonResourcesUrl: String(row.season_resources_url ?? DEFAULT_SITE_SETTINGS.seasonResourcesUrl),
     seasonDocuments: parseSeasonDocuments(row.season_documents),
-    seasonVideos: parseSeasonVideos(row.season_videos),
-    seasonVideoGroups: parseSeasonVideoGroups(row.season_video_groups),
-    quickLinks: parseQuickLinks(row.quick_links),
+    seasonVideos: parseSeasonVideos(row.season_videos, resourcesPageSections.videosCleared),
+    seasonVideoGroups: parseSeasonVideoGroups(
+      row.season_video_groups,
+      resourcesPageSections.videoGroupsCleared,
+    ),
+    quickLinks: parseQuickLinks(row.quick_links, resourcesPageSections.quickLinksCleared),
     whatWeDoTitle: String(row.what_we_do_title ?? DEFAULT_SITE_SETTINGS.whatWeDoTitle),
     whatWeDoSubtitle: String(row.what_we_do_subtitle ?? DEFAULT_SITE_SETTINGS.whatWeDoSubtitle),
     homepagePillars: parsePillars(row.homepage_pillars),
@@ -695,7 +755,7 @@ function mapSettingsRow(row: Record<string, unknown>): SiteSettings {
     calendarHeroDescription: String(row.calendar_hero_description ?? DEFAULT_SITE_SETTINGS.calendarHeroDescription),
     videosHeroTitle: String(row.videos_hero_title ?? DEFAULT_SITE_SETTINGS.videosHeroTitle),
     videosHeroDescription: String(row.videos_hero_description ?? DEFAULT_SITE_SETTINGS.videosHeroDescription),
-    resourcesPageSections: parseResourcesPageSections(row.resources_page_sections),
+    resourcesPageSections,
     quickLinksHeroTitle: String(row.quick_links_hero_title ?? DEFAULT_SITE_SETTINGS.quickLinksHeroTitle),
     quickLinksHeroDescription: String(row.quick_links_hero_description ?? DEFAULT_SITE_SETTINGS.quickLinksHeroDescription),
     consentHeroTitle: String(row.consent_hero_title ?? DEFAULT_SITE_SETTINGS.consentHeroTitle),
@@ -709,12 +769,15 @@ function mapSettingsRow(row: Record<string, unknown>): SiteSettings {
     genericCoachBio: String(row.generic_coach_bio ?? DEFAULT_SITE_SETTINGS.genericCoachBio),
     genericMemberBio: String(row.generic_member_bio ?? DEFAULT_SITE_SETTINGS.genericMemberBio),
     footerMeetTeamLabel: String(row.footer_meet_team_label ?? DEFAULT_SITE_SETTINGS.footerMeetTeamLabel),
+    showAssignmentsNav,
+    showCoreValuesNav,
+    showZoomMeeting,
     navLinks: parseNavLinks(row.nav_links, DEFAULT_NAV_LINKS, {
       ensureSponsorsAfterOutreach: true,
-      ensureAssignments: true,
+      ensureAssignments: showAssignmentsNav,
     }),
     footerExploreLinks: parseNavLinks(row.footer_explore_links, DEFAULT_FOOTER_EXPLORE_LINKS, {
-      ensureAssignments: true,
+      ensureAssignments: showAssignmentsNav,
     }),
     footerExternalLinks: parseNavLinks(row.footer_external_links, DEFAULT_FOOTER_EXTERNAL_LINKS),
     visitBarLinks: parseNavLinks(row.visit_bar_links, DEFAULT_VISIT_BAR_LINKS),
@@ -788,8 +851,8 @@ export async function fetchOutreachStoriesFromDb(): Promise<OutreachStoryRow[]> 
 
 export async function fetchSiteSettings(): Promise<SiteSettings> {
   let settings = await fetchSiteSettingsFromDb();
-  if (isDemoMode) return buildDemoSiteSettings(settings);
-  return settings;
+  if (isDemoMode) settings = buildDemoSiteSettings(settings);
+  return applyNavVisibility(settings);
 }
 
 export async function fetchOutreachStories(): Promise<OutreachStoryRow[]> {

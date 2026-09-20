@@ -3,6 +3,10 @@ import { SiteLayout } from "@/components/site/Layout";
 import { EditablePageHero } from "@/components/admin/inline-edit/EditablePageHero";
 import { ManageInAdmin } from "@/components/admin/inline-edit/AdminLiveEditBar";
 import {
+  AddDocumentTile,
+  AddQuickLinkCard,
+  AddSeasonVideoGroupButton,
+  AddVideoTile,
   EditableDocumentTile,
   EditableQuickLinkCard,
   EditableResourcesButton,
@@ -11,8 +15,10 @@ import {
   EditableSeasonVideoGroupHeading,
   EditableVideoTile,
 } from "@/components/admin/inline-edit/EditableResourcesContent";
+import { useAdminEdit } from "@/components/admin/inline-edit/AdminEditProvider";
 import { brandingRouteLoader, routeTeamName } from "@/lib/team-branding";
 import { partitionQuickLinks } from "@/lib/resources-links";
+import { quickLinksForMeetingStyle } from "@/lib/site-content-defaults";
 import { seasonVideosForGroup, seasonWatchUrl } from "@/lib/season-from-settings";
 import { useSiteSettings } from "@/lib/site-settings-context";
 import type { QuickLinkCard } from "@/lib/site-settings";
@@ -79,6 +85,7 @@ function linkIcon(link: QuickLinkCard): ReactNode {
 
 function ResourcesPage() {
   const settings = useSiteSettings();
+  const { canInlineEdit } = useAdminEdit();
   const {
     seasonName,
     seasonPlaylistUrl,
@@ -91,7 +98,9 @@ function ResourcesPage() {
     resourcesPageSections,
   } = settings;
 
-  const { programLinks, teamLinks } = partitionQuickLinks(quickLinks);
+  const { programLinks, teamLinks } = partitionQuickLinks(
+    quickLinksForMeetingStyle(quickLinks, settings.showZoomMeeting),
+  );
 
   return (
     <SiteLayout>
@@ -123,7 +132,7 @@ function ResourcesPage() {
         </div>
       </section>
 
-      {seasonDocuments.length > 0 && (
+      {(seasonDocuments.length > 0 || canInlineEdit) && (
       <section className="border-y border-border/50 bg-sand/40 py-10 md:py-12">
         <div className="container-page">
           <EditableResourcesSectionHeading
@@ -137,6 +146,7 @@ function ResourcesPage() {
             {seasonDocuments.map((doc) => (
               <EditableDocumentTile key={doc.id} doc={doc} />
             ))}
+            <AddDocumentTile />
           </div>
         </div>
       </section>
@@ -144,26 +154,29 @@ function ResourcesPage() {
 
       {seasonVideoGroups.map((group) => {
         const videos = seasonVideosForGroup(settings, group.key);
-        if (!videos.length) return null;
+        if (!videos.length && !canInlineEdit) return null;
         return (
           <section key={group.key} className="py-10 md:py-12">
             <div className="container-page">
               <EditableSeasonVideoGroupHeading group={group} />
               <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {videos.map((video) => (
+                {videos.map((video, index) => (
                   <EditableVideoTile
-                    key={video.id}
+                    key={video.id || index}
                     video={video}
                     watchUrl={seasonWatchUrl(settings, video.id)}
                   />
                 ))}
+                <AddVideoTile group={group.key} />
               </div>
             </div>
           </section>
         );
       })}
 
-      {programLinks.length > 0 && (
+      <AddSeasonVideoGroupButton />
+
+      {(programLinks.length > 0 || canInlineEdit) && (
         <section className="border-t border-border/50 bg-sand/30 py-10 md:py-12">
           <div className="container-page">
             <EditableResourcesSectionHeading
@@ -177,12 +190,13 @@ function ResourcesPage() {
               {programLinks.map((link) => (
                 <EditableQuickLinkCard key={link.id} link={link} icon={linkIcon(link)} />
               ))}
+              <AddQuickLinkCard kind="program" />
             </div>
           </div>
         </section>
       )}
 
-      {teamLinks.length > 0 && (
+      {(teamLinks.length > 0 || canInlineEdit) && (
         <section className="py-10 md:py-12">
           <div className="container-page">
             <EditableResourcesSectionHeading
@@ -196,6 +210,7 @@ function ResourcesPage() {
               {teamLinks.map((link) => (
                 <EditableQuickLinkCard key={link.id} link={link} icon={linkIcon(link)} />
               ))}
+              <AddQuickLinkCard kind="team" />
             </div>
           </div>
         </section>

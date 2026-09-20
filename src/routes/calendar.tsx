@@ -100,7 +100,7 @@ function CalendarPage() {
 }
 
 function PublicCalendarView() {
-  const { practiceSummary, practicePlace, zoomSummary, zoomPlace } = useSiteSettings();
+  const { practiceSummary, practicePlace, zoomSummary, zoomPlace, showZoomMeeting } = useSiteSettings();
   const [cursor, setCursor] = useState(() => startOfMonth(new Date()));
   const [events, setEvents] = useState<EventRow[]>([]);
   const [selected, setSelected] = useState<EventRow | null>(null);
@@ -171,9 +171,9 @@ function PublicCalendarView() {
     const seen = new Set<string>();
     for (const e of events) seen.add(e.type);
     return ["Practice", "Zoom", "Meeting", "Competition", "Outreach", "Deadline", "Event", "Other"].filter(
-      (t) => seen.has(t) || t === "Practice" || t === "Zoom",
+      (t) => (t === "Zoom" ? showZoomMeeting : seen.has(t) || t === "Practice"),
     );
-  }, [events]);
+  }, [events, showZoomMeeting]);
 
   return (
     <>
@@ -199,15 +199,19 @@ function PublicCalendarView() {
           {practicePlace}
         </EditableText>
         .{" "}
-        <strong className="font-medium text-foreground">Zoom call</strong> ·{" "}
-        <EditableText settingKey="zoomSummary" label="Zoom schedule">
-          {zoomSummary}
-        </EditableText>{" "}
-        (
-        <EditableText settingKey="zoomPlace" label="Zoom location">
-          {zoomPlace}
-        </EditableText>
-        ).
+        {showZoomMeeting && (
+          <>
+            <strong className="font-medium text-foreground">Zoom call</strong> ·{" "}
+            <EditableText settingKey="zoomSummary" label="Zoom schedule">
+              {zoomSummary}
+            </EditableText>{" "}
+            (
+            <EditableText settingKey="zoomPlace" label="Zoom location">
+              {zoomPlace}
+            </EditableText>
+            ).
+          </>
+        )}
       </p>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

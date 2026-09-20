@@ -82,6 +82,32 @@ export const DEFAULT_QUICK_LINKS: QuickLinkCard[] = [
   },
 ];
 
+/**
+ * Drops the Zoom item from a comma-separated list, e.g.
+ * "Upcoming practices, Zoom calls, and team events." → "Upcoming practices and team events."
+ */
+function withoutZoomClause(text: string): string {
+  if (!/\bzoom\b/i.test(text)) return text;
+  const parts = text.split(",").map((part) => part.trim()).filter(Boolean);
+  const kept = parts.filter((part) => !/\bzoom\b/i.test(part.replace(/^and\s+/i, "")));
+  if (kept.length === parts.length || kept.length === 0) return text;
+  const last = kept[kept.length - 1].replace(/^and\s+/i, "");
+  const head = kept.slice(0, -1);
+  return head.length ? `${head.join(", ")} and ${last}` : last;
+}
+
+/** Quick link copy for teams that meet in person only (`showZoomMeeting === false`). */
+export function quickLinksForMeetingStyle(
+  links: QuickLinkCard[],
+  showZoomMeeting: boolean,
+): QuickLinkCard[] {
+  if (showZoomMeeting) return links;
+  return links.map((link) => {
+    const desc = withoutZoomClause(link.desc);
+    return desc === link.desc ? link : { ...link, desc };
+  });
+}
+
 export type SeasonContentDefaults = {
   seasonName: string;
   seasonPlaylistId: string;

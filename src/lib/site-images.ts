@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { isDemoMode, usesDemoPlaceholders } from "@/lib/demo/app-mode";
+import { demoTenantSlug, isDemoMode, usesDemoPlaceholders } from "@/lib/demo/app-mode";
 import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { demoSiteImageDefaultUrl } from "@/lib/demo/demo-defaults";
 import { isDemoTenant } from "@/lib/tenant/context";
@@ -123,14 +123,27 @@ const SLOT_BY_KEY = Object.fromEntries(SITE_IMAGE_SLOTS.map((slot) => [slot.key,
   SiteImageSlot
 >;
 
+/**
+ * Bundled photo for a real team previewed through VITE_TENANT_SLUG (Bots4Life ships one).
+ * Slug-preview builds only, so the live site keeps resolving Supabase `site_images` rows.
+ */
+function slugPreviewImage(key: SiteImageKey): { url: string; alt: string } | null {
+  if (demoTenantSlug !== "bots4life" || key !== "hero") return null;
+  return {
+    url: "/photos/demo/hero-bots4life-team.webp",
+    alt: "Bots4Life FIRST Tech Challenge team with their robot at a Gulf Coast Robotics competition",
+  };
+}
+
 function defaultOverride(key: SiteImageKey, forceDemo?: boolean): SiteImageOverride {
   const slot = SLOT_BY_KEY[key];
-  const url = usesDemoPlaceholderImages(forceDemo)
-    ? demoSiteImageDefaultUrl(key, slot.defaultUrl)
-    : slot.defaultUrl;
+  const useDemo = usesDemoPlaceholderImages(forceDemo);
+  const preview = slugPreviewImage(key);
+  const url =
+    preview?.url ?? (useDemo ? demoSiteImageDefaultUrl(key, slot.defaultUrl) : slot.defaultUrl);
   return {
     url,
-    alt: slot.defaultAlt,
+    alt: preview?.alt ?? slot.defaultAlt,
     updatedAt: null,
     isOverride: false,
   };
@@ -285,6 +298,19 @@ export async function fetchSiteImageOverrides(): Promise<SiteImageOverrides> {
       alt: row.alt || SLOT_BY_KEY[key].defaultAlt,
       updatedAt: row.updated_at ?? null,
       isOverride: true,
+    };
+  }
+
+  // A slug preview shows the bundled photo even when Supabase already has a row, so a new
+  // photo can be reviewed locally before it is published to the live site.
+  for (const slot of SITE_IMAGE_SLOTS) {
+    const preview = slugPreviewImage(slot.key);
+    if (!preview) continue;
+    defaults[slot.key] = {
+      url: preview.url,
+      alt: preview.alt,
+      updatedAt: null,
+      isOverride: false,
     };
   }
 

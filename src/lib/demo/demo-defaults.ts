@@ -11,7 +11,7 @@ export const DEMO_SITE_SETTINGS_OVERRIDES: Partial<SiteSettings> = {
   aboutBlurb:
     "We are a community robotics team from Collier County, Florida, competing in First Tech Challenge. Each season we design and program robots, prepare for competitions, and practice Core Values like discovery, innovation, impact, inclusion, teamwork, and fun.",
   aboutHeroDescription:
-    "Bots4Life is a First Tech Challenge team founded in 2025. Team practice Saturdays 10:00 AM–12:00 PM in Naples, plus a midweek Zoom check-in.",
+    "Bots4Life is a First Tech Challenge team founded in 2025. Team practice Saturdays 10:00 AM–12:00 PM in Naples.",
   coachesHeroDescription:
     "The coaches who guide Bots4Life through design, coding, Core Values, and competition season.",
   sponsorsHeroDescription:
@@ -32,27 +32,29 @@ export const DEMO_SITE_SETTINGS_OVERRIDES: Partial<SiteSettings> = {
   quickLinksHeroDescription:
     "Official season videos and PDFs, plus FIRST links for Bots4Life families.",
   consentHeroDescription: "Permission for Bots4Life to share team photos and videos.",
+  // Kids use the page directly, not the menu — /assignments stays reachable by URL.
+  showAssignmentsNav: false,
+  showCoreValuesNav: false,
   assignmentsIntro:
     "This page is for Bots4Life team members only. On your first visit, choose your name and create a private 4-digit PIN. After that, enter your PIN each time you sign in to view and update your tasks. If you forget your PIN, ask a coach — they can reset it so you can set a new one.",
   galleryHeroDescription: "Approved photos from practices, builds, and team events.",
   galleryEmptyTitle: "No photos yet.",
   galleryEmptyMessage: "Share photos below — a coach approves them before they appear here.",
-  meetingsBlurb:
-    "Team practice Saturdays 10:00 AM–12:00 PM in Naples, plus a Wednesday Zoom call 6:00–6:30 PM.",
-  meetingSummary: "Saturdays 10–12 · Wednesdays Zoom 6–6:30",
+  // Team meets in person only — no midweek Zoom call.
+  showZoomMeeting: false,
+  meetingsBlurb: "Team practice Saturdays 10:00 AM–12:00 PM in Naples.",
+  meetingSummary: "Saturdays 10–12",
   practiceSummary: "Saturdays · 10:00 AM–12:00 PM",
   practicePlace: "Naples, FL",
-  zoomSummary: "Wednesdays · 6:00–6:30 PM",
-  zoomPlace: "Online · Zoom",
   ctaTitle: "Come to a practice",
   ctaBody:
-    "Team practice Saturdays 10:00 AM–12:00 PM in Naples, plus a Wednesday Zoom call 6:00–6:30 PM. Watch a robot run, meet the team, or just say hello.",
+    "Team practice Saturdays 10:00 AM–12:00 PM in Naples. Watch a robot run, meet the team, or just say hello.",
   joinHeroDescription:
     "Send a short message and a coach will follow up. You can also visit a Saturday team practice.",
   coreValuesIntro:
     "The FIRST Core Values guide how Bots4Life learns, competes, and works with others. Official definitions below are from FIRST.",
-  eventsHeroDescription: "Team practice on Saturdays and Zoom check-ins on Wednesdays.",
-  calendarHeroDescription: "Practices, Zoom calls, and team events.",
+  eventsHeroDescription: "Team practice on Saturdays.",
+  calendarHeroDescription: "Practices and team events.",
   footerExternalLinks: [
     {
       kind: "external",

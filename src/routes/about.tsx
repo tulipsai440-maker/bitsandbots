@@ -38,6 +38,7 @@ function AboutPage() {
     practicePlace,
     zoomSummary,
     zoomPlace,
+    showZoomMeeting,
     genericMemberBio,
   } = useSiteSettings();
 
@@ -116,7 +117,9 @@ function AboutPage() {
             </EditableText>
           </h2>
           <p className="mt-4 max-w-xl text-muted-foreground">
-            Weekly team practice in person, plus a short midweek Zoom check-in.
+            {showZoomMeeting
+              ? "Weekly team practice in person, plus a short midweek Zoom check-in."
+              : "Weekly team practice in person."}
           </p>
           <ul className="mt-6 space-y-3 text-foreground">
             <li className="flex gap-3">
@@ -132,19 +135,21 @@ function AboutPage() {
                 </EditableText>
               </span>
             </li>
-            <li className="flex gap-3">
-              <Clock className="mt-0.5 shrink-0 text-forest" size={20} />
-              <span>
-                Zoom call ·{" "}
-                <EditableText settingKey="zoomSummary" label="Zoom schedule">
-                  {zoomSummary}
-                </EditableText>{" "}
-                ·{" "}
-                <EditableText settingKey="zoomPlace" label="Zoom location">
-                  {zoomPlace}
-                </EditableText>
-              </span>
-            </li>
+            {showZoomMeeting && (
+              <li className="flex gap-3">
+                <Clock className="mt-0.5 shrink-0 text-forest" size={20} />
+                <span>
+                  Zoom call ·{" "}
+                  <EditableText settingKey="zoomSummary" label="Zoom schedule">
+                    {zoomSummary}
+                  </EditableText>{" "}
+                  ·{" "}
+                  <EditableText settingKey="zoomPlace" label="Zoom location">
+                    {zoomPlace}
+                  </EditableText>
+                </span>
+              </li>
+            )}
           </ul>
         </div>
       </section>

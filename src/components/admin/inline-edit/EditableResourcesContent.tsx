@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { FileText, Pencil, Play, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, FileText, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,57 @@ import type { ResourcesPageSections } from "@/lib/resources-page-sections";
 import type { SeasonDocument, SeasonVideo } from "@/lib/season-videos";
 import type { SeasonVideoGroup } from "@/lib/site-content-defaults";
 import { youtubeThumbnailUrl } from "@/lib/season-from-settings";
+
+/** The editable copy fields of a section heading — excludes the bookkeeping booleans. */
+type ResourcesTextField = {
+  [K in keyof ResourcesPageSections]: ResourcesPageSections[K] extends string ? K : never;
+}[keyof ResourcesPageSections];
+
+const VIDEO_GROUP_KEYS: SeasonVideo["group"][] = ["season", "game", "roles"];
+
+const VIDEO_GROUP_LABELS: Record<SeasonVideo["group"], string> = {
+  season: "Season intro",
+  game: "Robot game",
+  roles: "Roles",
+};
+
+/**
+ * Saves an explicit next value. `patchSettings` only updates local state, so a save fired in the
+ * same handler would still send the pre-edit settings to Supabase.
+ */
+function useResourcesEditor() {
+  const { canInlineEdit } = useAdminEdit();
+  const { settings, saveSettingsData, saving } = useSiteContent();
+
+  async function commit(patch: Partial<SiteSettings>) {
+    await saveSettingsData({ ...settings, ...patch });
+  }
+
+  /** Computed keys widen to a string index signature, so narrow it back once here. */
+  function sectionsWith(fields: Record<string, string>): Partial<SiteSettings> {
+    return {
+      resourcesPageSections: {
+        ...settings.resourcesPageSections,
+        ...fields,
+      } as ResourcesPageSections,
+    };
+  }
+
+  return { canInlineEdit, settings, saving, commit, sectionsWith };
+}
+
+function moveItem<T>(items: T[], index: number, delta: number): T[] {
+  const target = index + delta;
+  if (index < 0 || target < 0 || target >= items.length) return items;
+  const next = [...items];
+  const [item] = next.splice(index, 1);
+  next.splice(target, 0, item);
+  return next;
+}
+
+function newId(prefix: string): string {
+  return `${prefix}-${Date.now().toString(36)}`;
+}
 
 function EditPencil({ label, onClick, className }: { label: string; onClick: () => void; className?: string }) {
   return (
@@ -32,6 +83,195 @@ function EditPencil({ label, onClick, className }: { label: string; onClick: () 
   );
 }
 
+function TextField({
+  label,
+  value,
+  onChange,
+  mono,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  mono?: boolean;
+  hint?: string;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-medium">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`rounded-lg border border-input bg-background px-3 py-2 text-sm ${mono ? "font-mono" : ""}`}
+      />
+      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+    </label>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  onChange,
+  rows = 3,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-medium">{label}</span>
+      <textarea
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
+      />
+    </label>
+  );
+}
+
+function ItemDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  children,
+  saving,
+  canSave = true,
+  onSave,
+  onDelete,
+  deleteLabel,
+  onMove,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string;
+  children: ReactNode;
+  saving: boolean;
+  canSave?: boolean;
+  onSave: () => void;
+  onDelete?: () => void;
+  deleteLabel?: string;
+  onMove?: (delta: number) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description ? <DialogDescription>{description}</DialogDescription> : null}
+        </DialogHeader>
+        {children}
+        {onMove ? (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-medium">Order</span>
+            <button
+              type="button"
+              className="btn-outline gap-1 px-3 py-1 text-xs"
+              disabled={saving}
+              onClick={() => onMove(-1)}
+            >
+              <ArrowUp size={14} /> Move up
+            </button>
+            <button
+              type="button"
+              className="btn-outline gap-1 px-3 py-1 text-xs"
+              disabled={saving}
+              onClick={() => onMove(1)}
+            >
+              <ArrowDown size={14} /> Move down
+            </button>
+          </div>
+        ) : null}
+        <DialogFooter className="gap-2 sm:justify-between">
+          {onDelete ? (
+            <button
+              type="button"
+              className="btn-outline text-destructive hover:bg-destructive/10"
+              disabled={saving}
+              onClick={onDelete}
+            >
+              {deleteLabel ?? "Delete"}
+            </button>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-2">
+            <button type="button" className="btn-outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={saving || !canSave}
+              onClick={onSave}
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AddTile({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-[6rem] items-center justify-center gap-2 rounded-[1.25rem] border-2 border-dashed border-forest/40 bg-forest/5 p-6 text-sm font-medium text-forest transition hover:border-forest hover:bg-forest/10"
+    >
+      <Plus size={16} /> {label}
+    </button>
+  );
+}
+
+function EditableCardShell({
+  label,
+  onEdit,
+  onDelete,
+  deleteLabel,
+  children,
+}: {
+  label: string;
+  onEdit: () => void;
+  onDelete?: () => void;
+  deleteLabel?: string;
+  children: ReactNode;
+}) {
+  const { canInlineEdit } = useAdminEdit();
+  if (!canInlineEdit) return <>{children}</>;
+  return (
+    <div className="group/edit relative">
+      {children}
+      <EditPencil
+        label={label}
+        onClick={onEdit}
+        className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-forest/30 bg-white text-forest shadow-md transition hover:bg-forest hover:text-cream"
+      />
+      {onDelete ? (
+        <button
+          type="button"
+          aria-label={deleteLabel ?? "Delete"}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="absolute bottom-2 right-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-destructive/30 bg-white text-destructive shadow-md transition hover:bg-destructive hover:text-cream"
+        >
+          <Trash2 size={14} />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function EditableResourcesSectionHeading({
   title,
   description,
@@ -41,12 +281,11 @@ export function EditableResourcesSectionHeading({
 }: {
   title: string;
   description: string;
-  titleField: keyof ResourcesPageSections;
-  descriptionField: keyof ResourcesPageSections;
+  titleField: ResourcesTextField;
+  descriptionField: ResourcesTextField;
   sectionLabel: string;
 }) {
-  const { canInlineEdit } = useAdminEdit();
-  const { settings, patchSettings, saveSettings, saving } = useSiteContent();
+  const { canInlineEdit, saving, sectionsWith, commit } = useResourcesEditor();
   const [open, setOpen] = useState(false);
   const [draftTitle, setDraftTitle] = useState(title);
   const [draftDescription, setDraftDescription] = useState(description);
@@ -61,14 +300,12 @@ export function EditableResourcesSectionHeading({
   }
 
   async function handleSave() {
-    patchSettings({
-      resourcesPageSections: {
-        ...settings.resourcesPageSections,
+    await commit(
+      sectionsWith({
         [titleField]: draftTitle.trim(),
         [descriptionField]: draftDescription.trim(),
-      },
-    });
-    await saveSettings();
+      }),
+    );
     setOpen(false);
   }
 
@@ -87,46 +324,23 @@ export function EditableResourcesSectionHeading({
         />
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit {sectionLabel}</DialogTitle>
-            <DialogDescription>Section heading on the Resources page.</DialogDescription>
-          </DialogHeader>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">Title</span>
-            <input
-              value={draftTitle}
-              onChange={(e) => setDraftTitle(e.target.value)}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">Description</span>
-            <textarea
-              rows={3}
-              value={draftDescription}
-              onChange={(e) => setDraftDescription(e.target.value)}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <DialogFooter>
-            <button type="button" className="btn-outline" onClick={() => setOpen(false)}>
-              Cancel
-            </button>
-            <button type="button" className="btn-primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Saving…" : "Save"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={`Edit ${sectionLabel}`}
+        description="Section heading on the Resources page."
+        saving={saving}
+        onSave={handleSave}
+      >
+        <TextField label="Title" value={draftTitle} onChange={setDraftTitle} />
+        <TextAreaField label="Description" value={draftDescription} onChange={setDraftDescription} />
+      </ItemDialog>
     </>
   );
 }
 
 export function EditableSeasonVideoGroupHeading({ group }: { group: SeasonVideoGroup }) {
-  const { canInlineEdit } = useAdminEdit();
-  const { settings, patchSettings, saveSettings, saving } = useSiteContent();
+  const { canInlineEdit, settings, saving, commit } = useResourcesEditor();
   const [open, setOpen] = useState(false);
   const [draftTitle, setDraftTitle] = useState(group.title);
   const [draftCopy, setDraftCopy] = useState(group.copy);
@@ -144,9 +358,35 @@ export function EditableSeasonVideoGroupHeading({ group }: { group: SeasonVideoG
     const seasonVideoGroups = settings.seasonVideoGroups.map((entry) =>
       entry.key === group.key ? { ...entry, title: draftTitle.trim(), copy: draftCopy.trim() } : entry,
     );
-    patchSettings({ seasonVideoGroups });
-    await saveSettings();
+    await commit({ seasonVideoGroups });
     setOpen(false);
+  }
+
+  async function handleDelete() {
+    const videoCount = settings.seasonVideos.filter((video) => video.group === group.key).length;
+    const message = videoCount
+      ? `Remove the "${group.title}" section and its ${videoCount} video${videoCount === 1 ? "" : "s"}?`
+      : `Remove the "${group.title}" section?`;
+    if (!confirm(message)) return;
+    const seasonVideoGroups = settings.seasonVideoGroups.filter((entry) => entry.key !== group.key);
+    const seasonVideos = settings.seasonVideos.filter((video) => video.group !== group.key);
+    await commit({
+      seasonVideoGroups,
+      seasonVideos,
+      resourcesPageSections: {
+        ...settings.resourcesPageSections,
+        videoGroupsCleared: seasonVideoGroups.length === 0,
+        videosCleared: seasonVideos.length === 0,
+      },
+    });
+    setOpen(false);
+  }
+
+  async function handleMove(delta: number) {
+    const index = settings.seasonVideoGroups.findIndex((entry) => entry.key === group.key);
+    const seasonVideoGroups = moveItem(settings.seasonVideoGroups, index, delta);
+    if (seasonVideoGroups === settings.seasonVideoGroups) return;
+    await commit({ seasonVideoGroups });
   }
 
   return (
@@ -164,65 +404,94 @@ export function EditableSeasonVideoGroupHeading({ group }: { group: SeasonVideoG
         />
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit video section</DialogTitle>
-            <DialogDescription>Heading above a group of season videos.</DialogDescription>
-          </DialogHeader>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">Title</span>
-            <input
-              value={draftTitle}
-              onChange={(e) => setDraftTitle(e.target.value)}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">Description</span>
-            <textarea
-              rows={3}
-              value={draftCopy}
-              onChange={(e) => setDraftCopy(e.target.value)}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <DialogFooter>
-            <button type="button" className="btn-outline" onClick={() => setOpen(false)}>
-              Cancel
-            </button>
-            <button type="button" className="btn-primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Saving…" : "Save"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Edit video section"
+        description="Heading above a group of season videos."
+        saving={saving}
+        canSave={Boolean(draftTitle.trim())}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        deleteLabel="Delete section"
+        onMove={handleMove}
+      >
+        <TextField label="Title" value={draftTitle} onChange={setDraftTitle} />
+        <TextAreaField label="Description" value={draftCopy} onChange={setDraftCopy} />
+      </ItemDialog>
     </>
   );
 }
 
-function EditableCardShell({ label, onEdit, children }: { label: string; onEdit: () => void; children: ReactNode }) {
-  const { canInlineEdit } = useAdminEdit();
-  if (!canInlineEdit) return <>{children}</>;
+export function AddSeasonVideoGroupButton() {
+  const { canInlineEdit, settings, saving, commit } = useResourcesEditor();
+  const used = new Set(settings.seasonVideoGroups.map((group) => group.key));
+  const available = VIDEO_GROUP_KEYS.filter((key) => !used.has(key));
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<SeasonVideoGroup>({
+    key: available[0] ?? "season",
+    title: "",
+    copy: "",
+  });
+
+  if (!canInlineEdit || !available.length) return null;
+
+  async function handleSave() {
+    const seasonVideoGroups = [
+      ...settings.seasonVideoGroups,
+      { ...draft, title: draft.title.trim(), copy: draft.copy.trim() },
+    ];
+    await commit({
+      seasonVideoGroups,
+      resourcesPageSections: { ...settings.resourcesPageSections, videoGroupsCleared: false },
+    });
+    setOpen(false);
+  }
+
   return (
-    <div className="group/edit relative">
-      {children}
-      <EditPencil
-        label={label}
-        onClick={onEdit}
-        className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-forest/30 bg-white text-forest shadow-md transition hover:bg-forest hover:text-cream"
-      />
-    </div>
+    <section className="py-6">
+      <div className="container-page">
+        <AddTile
+          label="Add video section"
+          onClick={() => {
+            setDraft({ key: available[0], title: "", copy: "" });
+            setOpen(true);
+          }}
+        />
+      </div>
+
+      <ItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Add video section"
+        description="Groups the season videos on this page."
+        saving={saving}
+        canSave={Boolean(draft.title.trim())}
+        onSave={handleSave}
+      >
+        <label className="grid gap-2">
+          <span className="text-sm font-medium">Group</span>
+          <select
+            value={draft.key}
+            onChange={(e) => setDraft({ ...draft, key: e.target.value as SeasonVideo["group"] })}
+            className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
+          >
+            {available.map((key) => (
+              <option key={key} value={key}>
+                {VIDEO_GROUP_LABELS[key]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <TextField label="Title" value={draft.title} onChange={(title) => setDraft({ ...draft, title })} />
+        <TextAreaField label="Description" value={draft.copy} onChange={(copy) => setDraft({ ...draft, copy })} />
+      </ItemDialog>
+    </section>
   );
 }
 
-export function EditableDocumentTile({ doc }: { doc: SeasonDocument }) {
-  const { canInlineEdit } = useAdminEdit();
-  const { settings, patchSettings, saveSettings, saving } = useSiteContent();
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(doc);
-
-  const tile = (
+function DocumentTile({ doc }: { doc: SeasonDocument }) {
+  return (
     <a
       href={doc.href}
       target="_blank"
@@ -238,8 +507,14 @@ export function EditableDocumentTile({ doc }: { doc: SeasonDocument }) {
       </div>
     </a>
   );
+}
 
-  if (!canInlineEdit) return tile;
+export function EditableDocumentTile({ doc }: { doc: SeasonDocument }) {
+  const { canInlineEdit, settings, saving, commit } = useResourcesEditor();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(doc);
+
+  if (!canInlineEdit) return <DocumentTile doc={doc} />;
 
   async function handleSave() {
     const seasonDocuments = settings.seasonDocuments.map((entry) =>
@@ -247,17 +522,22 @@ export function EditableDocumentTile({ doc }: { doc: SeasonDocument }) {
         ? { ...draft, title: draft.title.trim(), blurb: draft.blurb.trim(), href: draft.href.trim() }
         : entry,
     );
-    patchSettings({ seasonDocuments });
-    await saveSettings();
+    await commit({ seasonDocuments });
     setOpen(false);
   }
 
   async function handleDelete() {
     if (!confirm(`Remove "${doc.title}" from Season documents?`)) return;
     const seasonDocuments = settings.seasonDocuments.filter((entry) => entry.id !== doc.id);
-    patchSettings({ seasonDocuments });
-    await saveSettings();
+    await commit({ seasonDocuments });
     setOpen(false);
+  }
+
+  async function handleMove(delta: number) {
+    const index = settings.seasonDocuments.findIndex((entry) => entry.id === doc.id);
+    const seasonDocuments = moveItem(settings.seasonDocuments, index, delta);
+    if (seasonDocuments === settings.seasonDocuments) return;
+    await commit({ seasonDocuments });
   }
 
   return (
@@ -268,85 +548,83 @@ export function EditableDocumentTile({ doc }: { doc: SeasonDocument }) {
           setDraft(doc);
           setOpen(true);
         }}
+        onDelete={() => void handleDelete()}
+        deleteLabel={`Delete ${doc.title}`}
       >
-        <div className="relative">
-          {tile}
-          <button
-            type="button"
-            aria-label={`Delete ${doc.title}`}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              void handleDelete();
-            }}
-            className="absolute right-2 bottom-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-destructive/30 bg-white text-destructive shadow-md transition hover:bg-destructive hover:text-cream"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
+        <DocumentTile doc={doc} />
       </EditableCardShell>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit document</DialogTitle>
-          </DialogHeader>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">Title</span>
-            <input
-              value={draft.title}
-              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">URL</span>
-            <input
-              value={draft.href}
-              onChange={(e) => setDraft({ ...draft, href: e.target.value })}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">Description</span>
-            <textarea
-              rows={3}
-              value={draft.blurb}
-              onChange={(e) => setDraft({ ...draft, blurb: e.target.value })}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <DialogFooter className="gap-2 sm:justify-between">
-            <button
-              type="button"
-              className="btn-outline text-destructive hover:bg-destructive/10"
-              disabled={saving}
-              onClick={handleDelete}
-            >
-              Delete document
-            </button>
-            <div className="flex gap-2">
-              <button type="button" className="btn-outline" onClick={() => setOpen(false)}>
-                Cancel
-              </button>
-              <button type="button" className="btn-primary" disabled={saving} onClick={handleSave}>
-                {saving ? "Saving…" : "Save"}
-              </button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Edit document"
+        saving={saving}
+        canSave={Boolean(draft.title.trim() && draft.href.trim())}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        deleteLabel="Delete document"
+        onMove={handleMove}
+      >
+        <TextField label="Title" value={draft.title} onChange={(title) => setDraft({ ...draft, title })} />
+        <TextField label="URL" value={draft.href} onChange={(href) => setDraft({ ...draft, href })} />
+        <TextAreaField label="Description" value={draft.blurb} onChange={(blurb) => setDraft({ ...draft, blurb })} />
+      </ItemDialog>
     </>
   );
 }
 
-export function EditableVideoTile({ video, watchUrl }: { video: SeasonVideo; watchUrl: string }) {
-  const { canInlineEdit } = useAdminEdit();
-  const { settings, patchSettings, saveSettings, saving } = useSiteContent();
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(video);
+const EMPTY_DOCUMENT: SeasonDocument = { id: "", title: "", blurb: "", href: "https://" };
 
-  const tile = (
+export function AddDocumentTile() {
+  const { canInlineEdit, settings, saving, commit } = useResourcesEditor();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(EMPTY_DOCUMENT);
+
+  if (!canInlineEdit) return null;
+
+  async function handleSave() {
+    const seasonDocuments = [
+      ...settings.seasonDocuments,
+      {
+        id: newId("doc"),
+        title: draft.title.trim(),
+        blurb: draft.blurb.trim(),
+        href: draft.href.trim(),
+      },
+    ];
+    await commit({ seasonDocuments });
+    setOpen(false);
+  }
+
+  return (
+    <>
+      <AddTile
+        label="Add document"
+        onClick={() => {
+          setDraft(EMPTY_DOCUMENT);
+          setOpen(true);
+        }}
+      />
+
+      <ItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Add document"
+        description="A PDF or link shown in Season documents."
+        saving={saving}
+        canSave={Boolean(draft.title.trim() && draft.href.trim())}
+        onSave={handleSave}
+      >
+        <TextField label="Title" value={draft.title} onChange={(title) => setDraft({ ...draft, title })} />
+        <TextField label="URL" value={draft.href} onChange={(href) => setDraft({ ...draft, href })} />
+        <TextAreaField label="Description" value={draft.blurb} onChange={(blurb) => setDraft({ ...draft, blurb })} />
+      </ItemDialog>
+    </>
+  );
+}
+
+function VideoTile({ video, watchUrl }: { video: SeasonVideo; watchUrl: string }) {
+  return (
     <a
       href={watchUrl}
       target="_blank"
@@ -373,8 +651,14 @@ export function EditableVideoTile({ video, watchUrl }: { video: SeasonVideo; wat
       </div>
     </a>
   );
+}
 
-  if (!canInlineEdit) return tile;
+export function EditableVideoTile({ video, watchUrl }: { video: SeasonVideo; watchUrl: string }) {
+  const { canInlineEdit, settings, saving, commit } = useResourcesEditor();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(video);
+
+  if (!canInlineEdit) return <VideoTile video={video} watchUrl={watchUrl} />;
 
   async function handleSave() {
     const seasonVideos = settings.seasonVideos.map((entry) =>
@@ -382,9 +666,28 @@ export function EditableVideoTile({ video, watchUrl }: { video: SeasonVideo; wat
         ? { ...draft, title: draft.title.trim(), blurb: draft.blurb.trim(), id: draft.id.trim() }
         : entry,
     );
-    patchSettings({ seasonVideos });
-    await saveSettings();
+    await commit({ seasonVideos });
     setOpen(false);
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Remove "${video.title}" from this page?`)) return;
+    const seasonVideos = settings.seasonVideos.filter((entry) => entry.id !== video.id);
+    await commit({
+      seasonVideos,
+      resourcesPageSections: {
+        ...settings.resourcesPageSections,
+        videosCleared: seasonVideos.length === 0,
+      },
+    });
+    setOpen(false);
+  }
+
+  async function handleMove(delta: number) {
+    const index = settings.seasonVideos.findIndex((entry) => entry.id === video.id);
+    const seasonVideos = moveItem(settings.seasonVideos, index, delta);
+    if (seasonVideos === settings.seasonVideos) return;
+    await commit({ seasonVideos });
   }
 
   return (
@@ -395,61 +698,95 @@ export function EditableVideoTile({ video, watchUrl }: { video: SeasonVideo; wat
           setDraft(video);
           setOpen(true);
         }}
+        onDelete={() => void handleDelete()}
+        deleteLabel={`Delete ${video.title}`}
       >
-        {tile}
+        <VideoTile video={video} watchUrl={watchUrl} />
       </EditableCardShell>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit video</DialogTitle>
-          </DialogHeader>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">YouTube video ID</span>
-            <input
-              value={draft.id}
-              onChange={(e) => setDraft({ ...draft, id: e.target.value })}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono"
-            />
-          </label>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">Title</span>
-            <input
-              value={draft.title}
-              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">Description</span>
-            <textarea
-              rows={3}
-              value={draft.blurb}
-              onChange={(e) => setDraft({ ...draft, blurb: e.target.value })}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <DialogFooter>
-            <button type="button" className="btn-outline" onClick={() => setOpen(false)}>
-              Cancel
-            </button>
-            <button type="button" className="btn-primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Saving…" : "Save"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Edit video"
+        saving={saving}
+        canSave={Boolean(draft.id.trim() && draft.title.trim())}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        deleteLabel="Delete video"
+        onMove={handleMove}
+      >
+        <TextField
+          label="YouTube video ID"
+          value={draft.id}
+          onChange={(id) => setDraft({ ...draft, id })}
+          mono
+        />
+        <TextField label="Title" value={draft.title} onChange={(title) => setDraft({ ...draft, title })} />
+        <TextAreaField label="Description" value={draft.blurb} onChange={(blurb) => setDraft({ ...draft, blurb })} />
+      </ItemDialog>
     </>
   );
 }
 
-export function EditableQuickLinkCard({ link, icon }: { link: QuickLinkCard; icon: ReactNode }) {
-  const { canInlineEdit } = useAdminEdit();
-  const { settings, patchSettings, saveSettings, saving } = useSiteContent();
+export function AddVideoTile({ group }: { group: SeasonVideo["group"] }) {
+  const { canInlineEdit, settings, saving, commit } = useResourcesEditor();
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(link);
+  const [draft, setDraft] = useState<SeasonVideo>({ id: "", title: "", blurb: "", group });
 
+  if (!canInlineEdit) return null;
+
+  const trimmedId = draft.id.trim();
+  const duplicate = settings.seasonVideos.some((entry) => entry.id === trimmedId);
+
+  async function handleSave() {
+    const seasonVideos = [
+      ...settings.seasonVideos,
+      { ...draft, id: trimmedId, title: draft.title.trim(), blurb: draft.blurb.trim() },
+    ];
+    await commit({
+      seasonVideos,
+      resourcesPageSections: { ...settings.resourcesPageSections, videosCleared: false },
+    });
+    setOpen(false);
+  }
+
+  return (
+    <>
+      <AddTile
+        label="Add video"
+        onClick={() => {
+          setDraft({ id: "", title: "", blurb: "", group });
+          setOpen(true);
+        }}
+      />
+
+      <ItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Add video"
+        description="Paste the YouTube video ID — the part after v= in the watch URL."
+        saving={saving}
+        canSave={Boolean(trimmedId && draft.title.trim() && !duplicate)}
+        onSave={handleSave}
+      >
+        <TextField
+          label="YouTube video ID"
+          value={draft.id}
+          onChange={(id) => setDraft({ ...draft, id })}
+          mono
+          hint={duplicate ? "This video is already on the page." : undefined}
+        />
+        <TextField label="Title" value={draft.title} onChange={(title) => setDraft({ ...draft, title })} />
+        <TextAreaField label="Description" value={draft.blurb} onChange={(blurb) => setDraft({ ...draft, blurb })} />
+      </ItemDialog>
+    </>
+  );
+}
+
+function QuickLinkTile({ link, icon }: { link: QuickLinkCard; icon: ReactNode }) {
   const external = link.href.startsWith("http");
+  const className =
+    "group flex gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-forest";
   const inner = (
     <>
       {icon}
@@ -459,10 +796,8 @@ export function EditableQuickLinkCard({ link, icon }: { link: QuickLinkCard; ico
       </div>
     </>
   );
-  const className =
-    "group flex gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-forest";
 
-  const card = external ? (
+  return external ? (
     <a href={link.href} target="_blank" rel="noopener noreferrer" className={className}>
       {inner}
     </a>
@@ -471,8 +806,14 @@ export function EditableQuickLinkCard({ link, icon }: { link: QuickLinkCard; ico
       {inner}
     </a>
   );
+}
 
-  if (!canInlineEdit) return card;
+export function EditableQuickLinkCard({ link, icon }: { link: QuickLinkCard; icon: ReactNode }) {
+  const { canInlineEdit, settings, saving, commit } = useResourcesEditor();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(link);
+
+  if (!canInlineEdit) return <QuickLinkTile link={link} icon={icon} />;
 
   async function handleSave() {
     const quickLinks = settings.quickLinks.map((entry) =>
@@ -480,9 +821,28 @@ export function EditableQuickLinkCard({ link, icon }: { link: QuickLinkCard; ico
         ? { ...draft, label: draft.label.trim(), desc: draft.desc.trim(), href: draft.href.trim() }
         : entry,
     );
-    patchSettings({ quickLinks });
-    await saveSettings();
+    await commit({ quickLinks });
     setOpen(false);
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Remove the "${link.label}" link?`)) return;
+    const quickLinks = settings.quickLinks.filter((entry) => entry.id !== link.id);
+    await commit({
+      quickLinks,
+      resourcesPageSections: {
+        ...settings.resourcesPageSections,
+        quickLinksCleared: quickLinks.length === 0,
+      },
+    });
+    setOpen(false);
+  }
+
+  async function handleMove(delta: number) {
+    const index = settings.quickLinks.findIndex((entry) => entry.id === link.id);
+    const quickLinks = moveItem(settings.quickLinks, index, delta);
+    if (quickLinks === settings.quickLinks) return;
+    await commit({ quickLinks });
   }
 
   return (
@@ -493,50 +853,89 @@ export function EditableQuickLinkCard({ link, icon }: { link: QuickLinkCard; ico
           setDraft(link);
           setOpen(true);
         }}
+        onDelete={() => void handleDelete()}
+        deleteLabel={`Delete ${link.label}`}
       >
-        {card}
+        <QuickLinkTile link={link} icon={icon} />
       </EditableCardShell>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit link</DialogTitle>
-          </DialogHeader>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">Label</span>
-            <input
-              value={draft.label}
-              onChange={(e) => setDraft({ ...draft, label: e.target.value })}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">URL or path</span>
-            <input
-              value={draft.href}
-              onChange={(e) => setDraft({ ...draft, href: e.target.value })}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">Description</span>
-            <textarea
-              rows={3}
-              value={draft.desc}
-              onChange={(e) => setDraft({ ...draft, desc: e.target.value })}
-              className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            />
-          </label>
-          <DialogFooter>
-            <button type="button" className="btn-outline" onClick={() => setOpen(false)}>
-              Cancel
-            </button>
-            <button type="button" className="btn-primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Saving…" : "Save"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Edit link"
+        saving={saving}
+        canSave={Boolean(draft.label.trim() && draft.href.trim())}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        deleteLabel="Delete link"
+        onMove={handleMove}
+      >
+        <TextField label="Label" value={draft.label} onChange={(label) => setDraft({ ...draft, label })} />
+        <TextField label="URL or path" value={draft.href} onChange={(href) => setDraft({ ...draft, href })} />
+        <TextAreaField label="Description" value={draft.desc} onChange={(desc) => setDraft({ ...draft, desc })} />
+      </ItemDialog>
+    </>
+  );
+}
+
+/** `program` links point off-site; `team` links point at a page on this site. */
+export function AddQuickLinkCard({ kind }: { kind: "program" | "team" }) {
+  const { canInlineEdit, settings, saving, commit } = useResourcesEditor();
+  const blank: QuickLinkCard = {
+    id: "",
+    label: "",
+    href: kind === "program" ? "https://" : "/",
+    desc: "",
+  };
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(blank);
+
+  if (!canInlineEdit) return null;
+
+  async function handleSave() {
+    const quickLinks = [
+      ...settings.quickLinks,
+      {
+        id: newId("link"),
+        label: draft.label.trim(),
+        href: draft.href.trim(),
+        desc: draft.desc.trim(),
+      },
+    ];
+    await commit({
+      quickLinks,
+      resourcesPageSections: { ...settings.resourcesPageSections, quickLinksCleared: false },
+    });
+    setOpen(false);
+  }
+
+  return (
+    <>
+      <AddTile
+        label={kind === "program" ? "Add program link" : "Add page link"}
+        onClick={() => {
+          setDraft(blank);
+          setOpen(true);
+        }}
+      />
+
+      <ItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={kind === "program" ? "Add program link" : "Add page link"}
+        description={
+          kind === "program"
+            ? "Links starting with https:// appear under the program links heading."
+            : "Links starting with / point at a page on this site, like /calendar."
+        }
+        saving={saving}
+        canSave={Boolean(draft.label.trim() && draft.href.trim())}
+        onSave={handleSave}
+      >
+        <TextField label="Label" value={draft.label} onChange={(label) => setDraft({ ...draft, label })} />
+        <TextField label="URL or path" value={draft.href} onChange={(href) => setDraft({ ...draft, href })} />
+        <TextAreaField label="Description" value={draft.desc} onChange={(desc) => setDraft({ ...draft, desc })} />
+      </ItemDialog>
     </>
   );
 }
@@ -548,12 +947,11 @@ export function EditableResourcesButton({
   className,
 }: {
   label: string;
-  field: keyof ResourcesPageSections;
+  field: ResourcesTextField;
   href: string;
   className?: string;
 }) {
-  const { canInlineEdit } = useAdminEdit();
-  const { settings, patchSettings, saveSettings, saving } = useSiteContent();
+  const { canInlineEdit, saving, commit, sectionsWith } = useResourcesEditor();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(label);
 
@@ -566,13 +964,7 @@ export function EditableResourcesButton({
   if (!canInlineEdit) return button;
 
   async function handleSave() {
-    patchSettings({
-      resourcesPageSections: {
-        ...settings.resourcesPageSections,
-        [field]: draft.trim(),
-      },
-    });
-    await saveSettings();
+    await commit(sectionsWith({ [field]: draft.trim() }));
     setOpen(false);
   }
 
@@ -590,33 +982,22 @@ export function EditableResourcesButton({
         />
       </span>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit button label</DialogTitle>
-          </DialogHeader>
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-          />
-          <DialogFooter>
-            <button type="button" className="btn-outline" onClick={() => setOpen(false)}>
-              Cancel
-            </button>
-            <button type="button" className="btn-primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Saving…" : "Save"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Edit button label"
+        saving={saving}
+        canSave={Boolean(draft.trim())}
+        onSave={handleSave}
+      >
+        <TextField label="Label" value={draft} onChange={setDraft} />
+      </ItemDialog>
     </>
   );
 }
 
 export function EditableSeasonName({ seasonName }: { seasonName: string }) {
-  const { canInlineEdit } = useAdminEdit();
-  const { patchSettings, saveSettings, saving } = useSiteContent();
+  const { canInlineEdit, saving, commit } = useResourcesEditor();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(seasonName);
 
@@ -625,8 +1006,7 @@ export function EditableSeasonName({ seasonName }: { seasonName: string }) {
   }
 
   async function handleSave() {
-    patchSettings({ seasonName: draft.trim() } as Partial<SiteSettings>);
-    await saveSettings();
+    await commit({ seasonName: draft.trim() });
     setOpen(false);
   }
 
@@ -647,26 +1027,16 @@ export function EditableSeasonName({ seasonName }: { seasonName: string }) {
         </button>
       </span>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit current season name</DialogTitle>
-          </DialogHeader>
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-          />
-          <DialogFooter>
-            <button type="button" className="btn-outline" onClick={() => setOpen(false)}>
-              Cancel
-            </button>
-            <button type="button" className="btn-primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Saving…" : "Save"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Edit current season name"
+        saving={saving}
+        canSave={Boolean(draft.trim())}
+        onSave={handleSave}
+      >
+        <TextField label="Season name" value={draft} onChange={setDraft} />
+      </ItemDialog>
     </>
   );
 }

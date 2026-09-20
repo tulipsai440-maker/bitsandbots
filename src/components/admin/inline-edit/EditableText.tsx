@@ -65,8 +65,7 @@ function HeroTextColorField({
 
 export function EditableText({ settingKey, label, multiline, className, children, heroText }: EditableTextProps) {
   const { canInlineEdit } = useAdminEdit();
-  const { settings, outreachStories, patchSettings, saveSettings, saveSettingsData, saving } =
-    useSiteContent();
+  const { settings, outreachStories, patchSettings, saveSettingsData, saving } = useSiteContent();
   const value = settings[settingKey] as string;
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -88,8 +87,7 @@ export function EditableText({ settingKey, label, multiline, className, children
     } else {
       const patch: Partial<SiteSettings> = { [settingKey]: draft };
       if (heroText) patch.heroTextColor = heroColor;
-      patchSettings(patch);
-      await saveSettings();
+      await saveSettingsData({ ...settings, ...patch });
     }
     setOpen(false);
   }
@@ -159,7 +157,7 @@ export function EditableBlock({
   heroText,
 }: EditableTextProps & { children: ReactNode }) {
   const { canInlineEdit } = useAdminEdit();
-  const { settings, patchSettings, saveSettings, saving } = useSiteContent();
+  const { settings, saveSettingsData, saving } = useSiteContent();
   const value = settings[settingKey] as string;
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -172,8 +170,7 @@ export function EditableBlock({
   async function handleSave() {
     const patch: Partial<SiteSettings> = { [settingKey]: draft };
     if (heroText) patch.heroTextColor = normalizeHeroTextColor(draftHeroColor);
-    patchSettings(patch);
-    await saveSettings();
+    await saveSettingsData({ ...settings, ...patch });
     setOpen(false);
   }
 

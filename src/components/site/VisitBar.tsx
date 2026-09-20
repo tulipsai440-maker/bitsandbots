@@ -5,7 +5,8 @@ import { useSiteSettings } from "@/lib/site-settings-context";
 import type { NavLinkItem } from "@/lib/site-settings";
 
 export function VisitBar() {
-  const { practiceSummary, practicePlace, zoomSummary, zoomPlace, visitBarLinks } = useSiteSettings();
+  const { practiceSummary, practicePlace, zoomSummary, zoomPlace, showZoomMeeting, visitBarLinks } =
+    useSiteSettings();
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
 
@@ -19,9 +20,11 @@ export function VisitBar() {
           <p className="mt-1 text-sm leading-snug text-cream/90">
             {practiceSummary} · {practicePlace}
           </p>
-          <p className="mt-0.5 text-sm leading-snug text-cream/75">
-            {zoomSummary} · {zoomPlace}
-          </p>
+          {showZoomMeeting && (
+            <p className="mt-0.5 text-sm leading-snug text-cream/75">
+              {zoomSummary} · {zoomPlace}
+            </p>
+          )}
           <div className="mt-2 flex flex-wrap gap-2">
             {visitBarLinks.map((item, index) => (
               <VisitBarButton key={visitBarKey(item)} item={item} primary={index === 0} />

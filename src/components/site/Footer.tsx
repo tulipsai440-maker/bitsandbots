@@ -17,6 +17,7 @@ export function Footer() {
     practicePlace,
     zoomSummary,
     zoomPlace,
+    showZoomMeeting,
     meetingSummary,
     footerExploreLinks,
     footerExternalLinks,
@@ -76,19 +77,21 @@ export function Footer() {
                 </EditableText>
               </span>
             </li>
-            <li className="flex gap-2">
-              <Clock size={16} className="mt-0.5 shrink-0 text-gold" />
-              <span>
-                Zoom call ·{" "}
-                <EditableText settingKey="zoomSummary" label="Zoom schedule">
-                  {zoomSummary}
-                </EditableText>{" "}
-                ·{" "}
-                <EditableText settingKey="zoomPlace" label="Zoom location">
-                  {zoomPlace}
-                </EditableText>
-              </span>
-            </li>
+            {showZoomMeeting && (
+              <li className="flex gap-2">
+                <Clock size={16} className="mt-0.5 shrink-0 text-gold" />
+                <span>
+                  Zoom call ·{" "}
+                  <EditableText settingKey="zoomSummary" label="Zoom schedule">
+                    {zoomSummary}
+                  </EditableText>{" "}
+                  ·{" "}
+                  <EditableText settingKey="zoomPlace" label="Zoom location">
+                    {zoomPlace}
+                  </EditableText>
+                </span>
+              </li>
+            )}
             <li className="flex gap-2">
               <Mail size={16} className="mt-0.5 shrink-0 text-gold" />
               <Link to="/about" className="underline-offset-4 hover:underline">

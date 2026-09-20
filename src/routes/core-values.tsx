@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { SiteLayout } from "@/components/site/Layout";
 
@@ -18,13 +18,35 @@ export const Route = createFileRoute("/core-values")({
 
 });
 
+function CoreValuesNotFound() {
+  return (
+    <SiteLayout>
+      <div className="flex flex-1 items-center justify-center px-4 py-24">
+        <div className="max-w-md text-center">
+          <p className="mb-3 text-sm text-muted-foreground">404</p>
+          <h1 className="font-display text-5xl text-foreground">Page not found</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            That address is not on this site. Use the menu or return to the homepage.
+          </p>
+          <div className="mt-6">
+            <Link to="/" className="btn-primary">
+              Return home
+            </Link>
+          </div>
+        </div>
+      </div>
+    </SiteLayout>
+  );
+}
+
 
 
 function CoreValuesPage() {
 
-  const { siteName, coreValuesIntro, coreValues, coreValuesPageTitle, coreValuesOfficialBlurb } = useSiteSettings();
+  const { siteName, coreValuesIntro, coreValues, coreValuesPageTitle, coreValuesOfficialBlurb, showCoreValuesNav } = useSiteSettings();
 
-
+  /** Tenants with Core Values turned off get a not-found page instead of the content. */
+  if (!showCoreValuesNav) return <CoreValuesNotFound />;
 
   return (
 

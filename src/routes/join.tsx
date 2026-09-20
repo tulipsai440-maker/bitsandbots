@@ -54,6 +54,7 @@ function JoinPage() {
     practicePlace,
     zoomSummary,
     zoomPlace,
+    showZoomMeeting,
   } = useSiteSettings();
   const [form, setForm] = useState<FormState>(empty);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
@@ -129,17 +130,21 @@ function JoinPage() {
                     {practicePlace}
                   </EditableText>
                 </div>
-                <div className="mt-3 font-medium">
-                  Zoom call ·{" "}
-                  <EditableText settingKey="zoomSummary" label="Zoom schedule">
-                    {zoomSummary}
-                  </EditableText>
-                </div>
-                <div className="mt-1 text-muted-foreground">
-                  <EditableText settingKey="zoomPlace" label="Zoom location">
-                    {zoomPlace}
-                  </EditableText>
-                </div>
+                {showZoomMeeting && (
+                  <>
+                    <div className="mt-3 font-medium">
+                      Zoom call ·{" "}
+                      <EditableText settingKey="zoomSummary" label="Zoom schedule">
+                        {zoomSummary}
+                      </EditableText>
+                    </div>
+                    <div className="mt-1 text-muted-foreground">
+                      <EditableText settingKey="zoomPlace" label="Zoom location">
+                        {zoomPlace}
+                      </EditableText>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </aside>

@@ -7,6 +7,13 @@ export type ResourcesPageSections = {
   teamDescription: string;
   playlistButtonLabel: string;
   materialsButtonLabel: string;
+  /**
+   * Set when an admin deliberately empties a list. Without it an empty list falls back to the
+   * bundled FLL defaults, so tenants that never stored their own content keep showing them.
+   */
+  videosCleared: boolean;
+  videoGroupsCleared: boolean;
+  quickLinksCleared: boolean;
 };
 
 export const DEFAULT_RESOURCES_PAGE_SECTIONS: ResourcesPageSections = {
@@ -19,6 +26,9 @@ export const DEFAULT_RESOURCES_PAGE_SECTIONS: ResourcesPageSections = {
   teamDescription: "Team calendar, gallery, and other pages for families.",
   playlistButtonLabel: "Full season playlist",
   materialsButtonLabel: "All LEGO Education materials",
+  videosCleared: false,
+  videoGroupsCleared: false,
+  quickLinksCleared: false,
 };
 
 export function parseResourcesPageSections(value: unknown): ResourcesPageSections {
@@ -41,5 +51,8 @@ export function parseResourcesPageSections(value: unknown): ResourcesPageSection
     materialsButtonLabel: String(
       row.materialsButtonLabel ?? DEFAULT_RESOURCES_PAGE_SECTIONS.materialsButtonLabel,
     ),
+    videosCleared: row.videosCleared === true,
+    videoGroupsCleared: row.videoGroupsCleared === true,
+    quickLinksCleared: row.quickLinksCleared === true,
   };
 }

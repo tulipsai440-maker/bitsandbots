@@ -100,7 +100,15 @@ export function SiteContentExtendedSections({
         />
         <SeasonVideosEditor
           videos={form.settings.seasonVideos}
-          onChange={(seasonVideos) => patchSettings({ seasonVideos })}
+          onChange={(seasonVideos) =>
+            patchSettings({
+              seasonVideos,
+              resourcesPageSections: {
+                ...form.settings.resourcesPageSections,
+                videosCleared: seasonVideos.length === 0,
+              },
+            })
+          }
         />
       </Section>
 
@@ -109,7 +117,18 @@ export function SiteContentExtendedSections({
           Season videos and PDFs appear automatically on the Resources page. Add FIRST program links and
           shortcuts to team pages below.
         </p>
-        <QuickLinksEditor links={form.settings.quickLinks} onChange={(quickLinks) => patchSettings({ quickLinks })} />
+        <QuickLinksEditor
+          links={form.settings.quickLinks}
+          onChange={(quickLinks) =>
+            patchSettings({
+              quickLinks,
+              resourcesPageSections: {
+                ...form.settings.resourcesPageSections,
+                quickLinksCleared: quickLinks.length === 0,
+              },
+            })
+          }
+        />
       </Section>
 
       <Section title="Footer external links">
