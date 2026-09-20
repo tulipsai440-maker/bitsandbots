@@ -116,9 +116,7 @@ function AuthPage() {
   function authErrorMessage(err: unknown): string {
     const msg = err instanceof Error ? err.message : "Sign in failed";
     if (msg.includes("Invalid login credentials")) {
-      return isDemo
-        ? "Wrong email or password. First time? Click “Create account” below."
-        : "Wrong email or password. If this is your first time, click “Need an account? Sign up” below.";
+      return "Wrong email or password. If this is your first time, click “Need an account? Sign up” below.";
     }
     if (msg.includes("Email not confirmed")) {
       return `Email not confirmed yet. Open the confirmation link from your inbox — it should return to ${callbackUrl}.`;
@@ -176,9 +174,7 @@ function AuthPage() {
         options: { emailRedirectTo: callbackUrl },
       });
       if (error) throw error;
-      const success = isDemo
-        ? `Account created. Check your email for a confirmation link (returns to ${callbackUrl}). After confirming, tell the platform owner your email so they can enable admin.`
-        : `Account created. Check your email for a confirmation link — it should open ${callbackUrl}.`;
+      const success = `Account created. Check your email for a confirmation link (returns to ${callbackUrl}). After confirming, ask a coach to grant admin in Team Admins.`;
       setMessage({ type: "success", text: success });
       toast.success("Account created. Check your email to confirm.");
       setMode("signin");
@@ -208,32 +204,14 @@ function AuthPage() {
     <SiteLayout>
       <section className="py-20">
         <div className="container-page max-w-md">
-          <div className="eyebrow">{isDemo ? "Demo coach access" : "Team Admin"}</div>
+          <div className="eyebrow">Team Admin</div>
           <h1 className="mt-3 font-display text-4xl">{mode === "signup" ? "Create account" : "Sign in"}</h1>
 
-          {isDemo && demoLogin ? (
-            <div className="mt-4 rounded-2xl border border-forest/25 bg-forest/5 p-4 text-sm">
-              <p className="font-medium text-foreground">Demo coach sign in</p>
-              <p className="mt-1 text-muted-foreground">
-                Use your team username and the password provided to you. You can create your own
-                account later and ask the platform owner to enable admin.
-              </p>
-            </div>
-          ) : isDemo ? (
-            <div className="mt-4 rounded-2xl border border-amber-200/80 bg-amber-50/80 p-4 text-sm text-amber-950">
-              <p className="font-medium">Get admin on this demo site</p>
-              <p className="mt-2">
-                Create your own account below, or ask the platform owner to enable the shared demo
-                admin for this team.
-              </p>
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-muted-foreground">
-              Access the admin area to manage calendar, team, coaches, and announcements. Password
-              only signs you in — admin access is a separate database role. First time? Create an
-              account, confirm your email, then ask a coach to grant admin in Team Admins.
-            </p>
-          )}
+          <p className="mt-2 text-sm text-muted-foreground">
+            Access the admin area to manage calendar, team, coaches, and announcements. Password only
+            signs you in — admin access is a separate role. First time? Create an account, confirm
+            your email, then ask a coach to grant admin in Team Admins.
+          </p>
 
           {isDev && projectRef && (
             <p className="mt-2 text-xs text-muted-foreground">
@@ -244,7 +222,7 @@ function AuthPage() {
           <form onSubmit={onSubmit} className="mt-8 space-y-3">
             <div>
               <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                {isDemo ? "Username" : "Email"}
+                Email
               </label>
               <input
                 type={isDemo ? "text" : "email"}
@@ -292,11 +270,7 @@ function AuthPage() {
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
             className="mt-4 text-sm text-forest underline-offset-4 hover:underline"
           >
-            {mode === "signin"
-              ? isDemo
-                ? "First time? Create account"
-                : "Need an account? Sign up"
-              : "Have an account? Sign in"}
+            {mode === "signin" ? "Need an account? Sign up" : "Have an account? Sign in"}
           </button>
 
           <div className="mt-8 text-xs text-muted-foreground">

@@ -5,16 +5,15 @@ type DemoBannerProps = {
   tenantStatus?: "demo" | "live" | null;
 };
 
+/** Quiet coach entry for demo tenants — avoids “demo / goes live” framing on a live-feeling site. */
 export function DemoBanner({ tenantStatus }: DemoBannerProps) {
   const show = isDemoMode || tenantStatus === "demo";
   if (!show) return null;
 
   return (
-    <div className="border-b border-amber-300/50 bg-amber-50 px-4 py-2 text-center text-sm text-amber-950">
-      <strong>Demo site</strong> — explore and edit freely. Changes you save here carry over when this
-      team goes live.{" "}
-      <Link to="/auth" className="font-medium underline underline-offset-2 hover:text-amber-900">
-        Coach admin sign in →
+    <div className="border-b border-border/60 bg-cream/80 px-4 py-2 text-center text-sm text-foreground/80">
+      <Link to="/auth" className="font-medium text-forest underline-offset-2 hover:underline">
+        Coach sign in →
       </Link>
     </div>
   );

@@ -3,8 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { SiteLayout } from "@/components/site/Layout";
 import { EditablePageHero } from "@/components/admin/inline-edit/EditablePageHero";
 import { EditableOutreachStory } from "@/components/admin/inline-edit/EditableOutreachStory";
-import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
-import { DEMO_OUTREACH_STORIES } from "@/lib/demo/demo-defaults";
 import {
   buildDefaultSiteImageOverrides,
   fetchSiteImageOverrides,
@@ -15,12 +13,10 @@ import { outreachItemsFromDefaults } from "@/lib/outreach";
 import { useSiteContent, useSiteSettings } from "@/lib/site-settings-context";
 
 export const Route = createFileRoute("/outreach")({
-  loader: async () => ({ isDemo: await shouldUseDemoAssets() }),
   component: OutreachPage,
 });
 
 function OutreachPage() {
-  const { isDemo } = Route.useLoaderData();
   const { outreachHeroDescription, outreachPageTitle } = useSiteSettings();
   const { outreachStories } = useSiteContent();
   const [imageOverrides, setImageOverrides] = useState(buildDefaultSiteImageOverrides());
@@ -30,25 +26,21 @@ function OutreachPage() {
   }, []);
 
   const items = useMemo(() => {
-    const stories = isDemo ? DEMO_OUTREACH_STORIES : outreachStories;
     const defaults = outreachItemsFromDefaults();
-    return stories.map((story) => {
+    return outreachStories.map((story) => {
       const imageKey = story.imageKey as SiteImageKey;
       const image = resolveSiteImage(imageKey, imageOverrides);
-      const demoStory = DEMO_OUTREACH_STORIES.find((s) => s.id === story.id);
       const fallback = defaults.find((item) => item.id === story.id);
-      const demoUrl = demoStory?.defaultImageUrl;
       return {
         story,
-        imageUrl: isDemo
-          ? demoUrl || image.url
-          : image.isOverride
-            ? image.url
-            : story.defaultImageUrl || fallback?.imageUrl || image.url,
+        // Prefer tenant uploads over bundled defaults (live + demo).
+        imageUrl: image.isOverride
+          ? image.url
+          : story.defaultImageUrl || fallback?.imageUrl || image.url,
         imageAlt: image.alt || story.defaultImageAlt,
       };
     });
-  }, [outreachStories, imageOverrides, isDemo]);
+  }, [outreachStories, imageOverrides]);
 
   return (
     <SiteLayout>

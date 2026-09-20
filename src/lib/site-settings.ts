@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { DEFAULT_BRAND_COLOR, normalizeAccentColor, normalizeBrandColor } from "@/lib/brand-colors";
+import { DEFAULT_BRAND_COLOR, normalizeAccentColor, normalizeBrandColor, normalizeHeroTextColor, DEFAULT_HERO_TEXT_COLOR } from "@/lib/brand-colors";
 import {
   DEFAULT_ACCENT_COLOR,
   DEFAULT_CORE_VALUES_OFFICIAL_BLURB,
@@ -80,6 +80,7 @@ export type SiteSettings = {
   joinSuccessTitle: string;
   joinSuccessMessage: string;
   heroSubtext: string;
+  heroTextColor: string;
   heroPrimaryLabel: string;
   heroPrimaryPath: string;
   heroSecondaryLabel: string;
@@ -155,6 +156,7 @@ export const DEFAULT_NAV_LINKS: NavLinkItem[] = [
   { kind: "internal", label: "Our Team", to: "/about" },
   { kind: "internal", label: "Coaches", to: "/coaches" },
   { kind: "internal", label: "Calendar", to: "/calendar" },
+  { kind: "internal", label: "Assignments", to: "/assignments" },
   { kind: "internal", label: "Resources", to: "/resources" },
   { kind: "internal", label: "Gallery", to: "/gallery" },
   { kind: "internal", label: "Outreach", to: "/outreach" },
@@ -165,6 +167,7 @@ export const DEFAULT_FOOTER_EXPLORE_LINKS: NavLinkItem[] = [
   { kind: "internal", label: "Our Team", to: "/about" },
   { kind: "internal", label: "Coaches", to: "/coaches" },
   { kind: "internal", label: "Calendar", to: "/calendar" },
+  { kind: "internal", label: "Assignments", to: "/assignments" },
   { kind: "internal", label: "Gallery", to: "/gallery" },
   { kind: "internal", label: "Resources", to: "/resources" },
   { kind: "internal", label: "Outreach", to: "/outreach" },
@@ -328,6 +331,7 @@ export const PRODUCTION_SITE_SETTINGS: SiteSettings = {
   joinSuccessMessage: "Thanks for reaching out. A coach will reply within a few days.",
   heroSubtext:
     "We research the season challenge, build robots that score on the table, and practice Core Values every Sunday—then take that energy into outreach.",
+  heroTextColor: DEFAULT_HERO_TEXT_COLOR,
   heroPrimaryLabel: DEFAULT_HERO_BUTTONS.primary.label,
   heroPrimaryPath: DEFAULT_HERO_BUTTONS.primary.path,
   heroSecondaryLabel: DEFAULT_HERO_BUTTONS.secondary.label,
@@ -403,12 +407,30 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = isDemoMode
 const db = supabase as any;
 
 const RESOURCES_NAV_LINK: NavLinkItem = { kind: "internal", label: "Resources", to: "/resources" };
+const ASSIGNMENTS_NAV_LINK: NavLinkItem = { kind: "internal", label: "Assignments", to: "/assignments" };
 
 function isLegacyResourcesNavItem(item: NavLinkItem): boolean {
   if (item.kind === "internal") {
     return item.to === "/videos" || item.to === "/quick-links" || item.label === "Videos" || item.label === "Quick Links";
   }
   return item.label === "Resources";
+}
+
+function ensureAssignmentsBeforeResources(links: NavLinkItem[]): NavLinkItem[] {
+  if (links.some((item) => item.kind === "internal" && item.to === "/assignments")) {
+    return links;
+  }
+  const resourcesIndex = links.findIndex(
+    (item) => item.kind === "internal" && item.to === "/resources",
+  );
+  const calendarIndex = links.findIndex(
+    (item) => item.kind === "internal" && item.to === "/calendar",
+  );
+  const insertAt =
+    resourcesIndex >= 0 ? resourcesIndex : calendarIndex >= 0 ? calendarIndex + 1 : links.length;
+  const next = [...links];
+  next.splice(insertAt, 0, ASSIGNMENTS_NAV_LINK);
+  return next;
 }
 
 const SPONSORS_NAV_LINK: NavLinkItem = { kind: "internal", label: "Sponsors", to: "/sponsors" };
@@ -424,9 +446,10 @@ function ensureSponsorsAfterOutreach(links: NavLinkItem[]): NavLinkItem[] {
   return next;
 }
 
-const HIDDEN_NAV_PATHS = ["/assignments"];
+const HIDDEN_NAV_PATHS: string[] = [];
 
 function stripHiddenNavPaths(links: NavLinkItem[]): NavLinkItem[] {
+  if (!HIDDEN_NAV_PATHS.length) return links;
   return links.filter(
     (item) => !(item.kind === "internal" && HIDDEN_NAV_PATHS.includes(item.to)),
   );
@@ -466,12 +489,15 @@ function normalizeInternalPath(path: string): string {
 function parseNavLinks(
   value: unknown,
   fallback: NavLinkItem[],
-  options?: { ensureSponsorsAfterOutreach?: boolean },
+  options?: { ensureSponsorsAfterOutreach?: boolean; ensureAssignments?: boolean },
 ): NavLinkItem[] {
   if (!Array.isArray(value)) {
-    const base = options?.ensureSponsorsAfterOutreach
+    let base = options?.ensureSponsorsAfterOutreach
       ? ensureSponsorsAfterOutreach(fallback)
       : fallback;
+    if (options?.ensureAssignments) {
+      base = ensureAssignmentsBeforeResources(base);
+    }
     return stripHiddenNavPaths(base);
   }
   const parsed = value.filter(
@@ -489,6 +515,9 @@ function parseNavLinks(
   let result = mergeNavLinksForResources(mapped, fallback);
   if (options?.ensureSponsorsAfterOutreach) {
     result = ensureSponsorsAfterOutreach(result);
+  }
+  if (options?.ensureAssignments) {
+    result = ensureAssignmentsBeforeResources(result);
   }
   return stripHiddenNavPaths(result);
 }
@@ -623,6 +652,9 @@ function mapSettingsRow(row: Record<string, unknown>): SiteSettings {
     joinSuccessTitle: String(row.join_success_title ?? DEFAULT_SITE_SETTINGS.joinSuccessTitle),
     joinSuccessMessage: String(row.join_success_message ?? DEFAULT_SITE_SETTINGS.joinSuccessMessage),
     heroSubtext: String(row.hero_subtext ?? DEFAULT_SITE_SETTINGS.heroSubtext),
+    heroTextColor: normalizeHeroTextColor(
+      String(row.hero_text_color ?? DEFAULT_SITE_SETTINGS.heroTextColor),
+    ),
     heroPrimaryLabel: String(row.hero_primary_label ?? DEFAULT_SITE_SETTINGS.heroPrimaryLabel),
     heroPrimaryPath: normalizeInternalPath(String(row.hero_primary_path ?? DEFAULT_SITE_SETTINGS.heroPrimaryPath)),
     heroSecondaryLabel: String(row.hero_secondary_label ?? DEFAULT_SITE_SETTINGS.heroSecondaryLabel),
@@ -677,8 +709,13 @@ function mapSettingsRow(row: Record<string, unknown>): SiteSettings {
     genericCoachBio: String(row.generic_coach_bio ?? DEFAULT_SITE_SETTINGS.genericCoachBio),
     genericMemberBio: String(row.generic_member_bio ?? DEFAULT_SITE_SETTINGS.genericMemberBio),
     footerMeetTeamLabel: String(row.footer_meet_team_label ?? DEFAULT_SITE_SETTINGS.footerMeetTeamLabel),
-    navLinks: parseNavLinks(row.nav_links, DEFAULT_NAV_LINKS, { ensureSponsorsAfterOutreach: true }),
-    footerExploreLinks: parseNavLinks(row.footer_explore_links, DEFAULT_FOOTER_EXPLORE_LINKS),
+    navLinks: parseNavLinks(row.nav_links, DEFAULT_NAV_LINKS, {
+      ensureSponsorsAfterOutreach: true,
+      ensureAssignments: true,
+    }),
+    footerExploreLinks: parseNavLinks(row.footer_explore_links, DEFAULT_FOOTER_EXPLORE_LINKS, {
+      ensureAssignments: true,
+    }),
     footerExternalLinks: parseNavLinks(row.footer_external_links, DEFAULT_FOOTER_EXTERNAL_LINKS),
     visitBarLinks: parseNavLinks(row.visit_bar_links, DEFAULT_VISIT_BAR_LINKS),
   };

@@ -7,7 +7,7 @@ export const photos = {
   favicon16: "/photos/logo/favicon-16x16.png",
   appleTouchIcon: "/photos/logo/apple-touch-icon.png",
   ogLogo: "/photos/logo/fll-logo.png",
-  hero: "",
+  hero: "/photos/site/hero-naples.png",
   og: "/photos/logo/fll-logo.png",
   outdoorAdventure: {
     camping: "/photos/outreach/mentoring-teams.png",

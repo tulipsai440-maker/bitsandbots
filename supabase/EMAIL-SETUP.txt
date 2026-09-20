@@ -15,8 +15,10 @@ REQUIRED: verify fllbots.com in Resend (one-time)
    - Leave **Proxy status** = DNS only (grey cloud) for email records
 6. Back in Resend, click **Verify** — status should turn **Verified**
 
-7. Set sender address (local `.env` + Cloudflare Worker secret):
+7. Set sender mailbox (local `.env` + Cloudflare Worker secret):
      RESEND_FROM="Bits & Bots <updates@fllbots.com>"
+   The address (`updates@fllbots.com`) must be on the verified Resend domain.
+   Display name is overridden per team at send time (e.g. `Bots2theFuture <updates@fllbots.com>`).
 
 8. Redeploy or restart dev server after changing secrets.
 

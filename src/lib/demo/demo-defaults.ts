@@ -2,65 +2,82 @@ import { demoSiteName, demoSiteOrigin } from "@/lib/demo/app-mode";
 import { demoAssets } from "@/lib/demo/demo-assets";
 import type { OutreachStoryRow, SiteSettings } from "@/lib/site-settings";
 
-/** Partial overrides applied when VITE_DEMO_MODE=true. */
+/** Partial overrides applied when VITE_DEMO_MODE=true. Prefer natural team copy over instructional placeholders. */
 export const DEMO_SITE_SETTINGS_OVERRIDES: Partial<SiteSettings> = {
   siteName: demoSiteName,
-  siteTagline: "FIRST LEGO League · Demo & play",
+  siteTagline: "First Tech Challenge Team in Collier County",
   siteUrl: demoSiteOrigin,
   foundedYear: "2025",
   aboutBlurb:
-    "This is a demo team site for coaches to explore. Customize names, photos, calendar, and copy in Admin — everything you change is saved for when the site goes live.",
+    "We are a community robotics team from Collier County, Florida, competing in First Tech Challenge. Each season we design and program robots, prepare for competitions, and practice Core Values like discovery, innovation, impact, inclusion, teamwork, and fun.",
   aboutHeroDescription:
-    "Demo Robotics Team is a sample FIRST LEGO League site. Edit content inline or in Admin → Site content.",
+    "Bots4Life is a First Tech Challenge team founded in 2025. Team practice Saturdays 10:00 AM–12:00 PM in Naples, plus a midweek Zoom check-in.",
   coachesHeroDescription:
-    "Sample coaches — replace names, photos, and bios with your real coaching team.",
+    "The coaches who guide Bots4Life through design, coding, Core Values, and competition season.",
   sponsorsHeroDescription:
-    "Community partners help our team build, compete, and share FIRST LEGO League with others.",
+    "Community partners help Bots4Life build, compete, and share First Tech Challenge with others.",
   outreachHeroDescription:
-    "Sample outreach stories — tell how your team shares FLL in the community.",
+    "Bots4Life shares robotics beyond our own meetings—mentoring new teams and hosting workshops at community events.",
   heroSubtext:
-    "Explore the site, try Admin tools, and customize every page. Your edits stay here when you go live.",
+    "We design robots, write code, and practice Core Values every week—then take that energy into outreach and competition.",
   seasonStoryTitle: "Built for the challenge—shared beyond the table",
   seasonStoryBody:
-    "Demo Robotics Team shows how an FLL site can highlight the Innovation Project, Robot Design & Code, and Core Values — plus outreach in your community.",
-  seasonStoryLinkLabel: "See sample outreach stories",
+    "Bots4Life is a First Tech Challenge team. We split practice between robot design, coding, strategy, and Core Values—then mentor newer teams and run workshops so more kids can try robotics.",
+  seasonStoryLinkLabel: "How we show up in the community",
+  whatWeDoTitle: "How First Tech Challenge works for us",
   videosHeroTitle: "Resources",
   videosHeroDescription:
-    "Official season videos and PDFs, plus FIRST LEGO League links — sample content you can replace.",
+    "Official season videos and PDFs, plus FIRST Tech Challenge links — everything in one place.",
   quickLinksHeroTitle: "Quick links",
-  quickLinksHeroDescription: "Helpful links for families — customize in Admin → Site content.",
-  consentHeroDescription: "Sample media consent form — wire to your team roster in Supabase.",
+  quickLinksHeroDescription:
+    "Official season videos and PDFs, plus FIRST links for Bots4Life families.",
+  consentHeroDescription: "Permission for Bots4Life to share team photos and videos.",
   assignmentsIntro:
-    "Sample assignments page for team members. Coaches can create tasks and parents receive overdue reminders.",
-  galleryHeroDescription: "Sample approved photos — parents can submit more from the gallery page.",
+    "This page is for Bots4Life team members only. On your first visit, choose your name and create a private 4-digit PIN. After that, enter your PIN each time you sign in to view and update your tasks. If you forget your PIN, ask a coach — they can reset it so you can set a new one.",
+  galleryHeroDescription: "Approved photos from practices, builds, and team events.",
   galleryEmptyTitle: "No photos yet.",
   galleryEmptyMessage: "Share photos below — a coach approves them before they appear here.",
-  meetingsBlurb: "Set your team schedule in Admin — practice times, Zoom links, and calendar events.",
-  meetingSummary: "Customize in Admin",
-  practiceSummary: "Your practice day & time",
-  practicePlace: "Your location",
-  zoomSummary: "Optional midweek check-in",
-  zoomPlace: "Online",
+  meetingsBlurb:
+    "Team practice Saturdays 10:00 AM–12:00 PM in Naples, plus a Wednesday Zoom call 6:00–6:30 PM.",
+  meetingSummary: "Saturdays 10–12 · Wednesdays Zoom 6–6:30",
+  practiceSummary: "Saturdays · 10:00 AM–12:00 PM",
+  practicePlace: "Naples, FL",
+  zoomSummary: "Wednesdays · 6:00–6:30 PM",
+  zoomPlace: "Online · Zoom",
   ctaTitle: "Come to a practice",
   ctaBody:
-    "Invite families to visit a practice or meeting — customize this message and your schedule in Admin.",
-  joinHeroDescription: "Send a short message and a coach will follow up.",
+    "Team practice Saturdays 10:00 AM–12:00 PM in Naples, plus a Wednesday Zoom call 6:00–6:30 PM. Watch a robot run, meet the team, or just say hello.",
+  joinHeroDescription:
+    "Send a short message and a coach will follow up. You can also visit a Saturday team practice.",
   coreValuesIntro:
-    "The FIRST Core Values guide how teams learn, compete, and work with others. Official definitions below are from FIRST / FIRST LEGO League.",
-  eventsHeroDescription: "Add practices and events in Admin → Calendar.",
-  calendarHeroDescription: "Team practices, Zoom check-ins, and FLL events — manage in Admin.",
+    "The FIRST Core Values guide how Bots4Life learns, competes, and works with others. Official definitions below are from FIRST.",
+  eventsHeroDescription: "Team practice on Saturdays and Zoom check-ins on Wednesdays.",
+  calendarHeroDescription: "Practices, Zoom calls, and team events.",
+  footerExternalLinks: [
+    {
+      kind: "external",
+      label: "FIRST Tech Challenge",
+      href: "https://www.firstinspires.org/robotics/ftc",
+    },
+    {
+      kind: "external",
+      label: "FIRST Inspires",
+      href: "https://www.firstinspires.org/",
+    },
+    { kind: "internal", label: "Resources", to: "/resources" },
+  ],
 };
 
 export const DEMO_OUTREACH_STORIES: OutreachStoryRow[] = [
   {
     id: "mentoring-teams",
     sortOrder: 0,
-    title: "Mentoring new FLL teams",
+    title: "Mentoring new teams",
     description:
-      "Our demo team runs workshops for new FIRST LEGO League teams — pairing experienced students with rookies to design, build, and learn Core Values together.",
+      "Our team runs workshops for new robotics teams — pairing experienced students with rookies to design, build, and learn Core Values together.",
     imageKey: "outreachMentoring",
     defaultImageUrl: demoAssets.outreachMentoring,
-    defaultImageAlt: "Mentors and youth building LEGO robots together",
+    defaultImageAlt: "Mentors and youth building robots together",
   },
   {
     id: "community-festival",
@@ -77,7 +94,7 @@ export const DEMO_OUTREACH_STORIES: OutreachStoryRow[] = [
     sortOrder: 2,
     title: "STEAM Expo",
     description:
-      "We showcase mission runs and Innovation Project posters at county STEAM events — inviting neighbors to see what FLL is about.",
+      "We showcase robot demos and team projects at county STEAM events — inviting neighbors to see what youth robotics is about.",
     imageKey: "outreachSteamExpo",
     defaultImageUrl: demoAssets.outreachSteamExpo,
     defaultImageAlt: "STEAM expo robotics demonstration",

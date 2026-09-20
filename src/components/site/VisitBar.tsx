@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { InternalRouteLink } from "@/lib/internal-route-link";
 import { Clock, ClipboardList, MapPin, X } from "lucide-react";
 import { useState } from "react";
 import { useSiteSettings } from "@/lib/site-settings-context";
@@ -59,8 +59,8 @@ function VisitBarButton({ item, primary }: { item: NavLinkItem; primary: boolean
 
   const Icon = item.to === "/assignments" ? ClipboardList : MapPin;
   return (
-    <Link to={item.to as "/"} className={className}>
+    <InternalRouteLink to={item.to} className={className}>
       <Icon size={12} /> {item.label}
-    </Link>
+    </InternalRouteLink>
   );
 }

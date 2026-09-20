@@ -8,15 +8,16 @@ import { CheckCircle2, Send } from "lucide-react";
 import { fetchJoinContactEmail, sendJoinEmailFromBrowser } from "@/lib/join-client-email";
 import { submitJoinRequest } from "@/lib/join.functions";
 import { useSiteSettings } from "@/lib/site-settings-context";
-import { brandingRouteLoader, routeTeamName } from "@/lib/team-branding";
+import { brandingRouteLoader, routeTeamName, routeTeamTagline } from "@/lib/team-branding";
 
 export const Route = createFileRoute("/join")({
   loader: brandingRouteLoader,
   head: ({ loaderData }) => {
     const name = routeTeamName(loaderData);
+    const tagline = routeTeamTagline(loaderData);
     return {
       meta: [
-        { title: `Join ${name} — FIRST LEGO League` },
+        { title: `Join ${name} — ${tagline}` },
         {
           name: "description",
           content: `Contact ${name} with a short form. A coach will reply and invite you to a team practice.`,
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/join")({
         { property: "og:title", content: `Join ${name}` },
         {
           property: "og:description",
-          content: `Send a message to join ${name}, a FIRST LEGO League team.`,
+          content: `Send a message to join ${name}. ${tagline}`,
         },
       ],
     };

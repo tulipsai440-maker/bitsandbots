@@ -1,4 +1,4 @@
-Site image defaults for activity cards. Homepage hero is uploaded in Admin → Site Images (no bundled default).
+Site image defaults for activity cards. Homepage hero falls back to hero-naples.png until replaced in Admin → Site Images.
 
 - camping-tents.png — optional activity card
 

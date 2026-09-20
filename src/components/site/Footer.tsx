@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { InternalRouteLink } from "@/lib/internal-route-link";
 import { MapPin, Clock, Mail } from "lucide-react";
 import { ManageInAdmin } from "@/components/admin/inline-edit/AdminLiveEditBar";
 import { EditableText } from "@/components/admin/inline-edit/EditableText";
@@ -42,7 +43,10 @@ export function Footer() {
             </div>
           </div>
           <p className="mt-4 text-sm leading-relaxed text-cream/75">
-            A FIRST LEGO League Challenge team founded in{" "}
+            <EditableText settingKey="siteName" label="Team name">
+              {siteName}
+            </EditableText>{" "}
+            — founded in{" "}
             <EditableText settingKey="foundedYear" label="Founded year">
               {foundedYear}
             </EditableText>
@@ -151,8 +155,8 @@ function FooterLink({ item }: { item: NavLinkItem }) {
     );
   }
   return (
-    <Link to={item.to as "/"} className="hover:text-gold">
+    <InternalRouteLink to={item.to} className="hover:text-gold">
       {item.label}
-    </Link>
+    </InternalRouteLink>
   );
 }

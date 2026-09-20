@@ -38,9 +38,9 @@ export const SITE_IMAGE_SLOTS: SiteImageSlot[] = [
   {
     key: "hero",
     label: "Homepage hero",
-    description: "Background for the landing page hero. Upload in Admin — no bundled default.",
-    defaultUrl: "",
-    defaultAlt: "FIRST LEGO League team group photo",
+    description: "Background for the landing page hero. Upload in Admin to replace the bundled default.",
+    defaultUrl: "/photos/site/hero-naples.png",
+    defaultAlt: "Youth robotics team",
     aspect: "16/9",
   },
   {
@@ -278,16 +278,8 @@ export async function fetchSiteImageOverrides(): Promise<SiteImageOverrides> {
   for (const row of data ?? []) {
     const key = row.key as SiteImageKey;
     if (!SLOT_BY_KEY[key]) continue;
-    const publicUrl = String(row.public_url ?? "");
-    if (!publicUrl.trim()) {
-      defaults[key] = {
-        url: "",
-        alt: "",
-        updatedAt: row.updated_at ?? null,
-        isOverride: true,
-      };
-      continue;
-    }
+    const publicUrl = String(row.public_url ?? "").trim();
+    if (!publicUrl) continue;
     defaults[key] = {
       url: publicUrl,
       alt: row.alt || SLOT_BY_KEY[key].defaultAlt,
@@ -353,6 +345,79 @@ async function compressSiteImage(file: File, maxDimension = 2000): Promise<Blob>
   return blob;
 }
 
+function isUniqueViolation(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null;
+  if (!e) return false;
+  if (e.code === "23505") return true;
+  const message = String(e.message ?? "").toLowerCase();
+  return message.includes("duplicate key") || message.includes("unique constraint");
+}
+
+/**
+ * Persist a site image row for this tenant.
+ *
+ * Never steals another tenant's row. With legacy PRIMARY KEY (key), only one
+ * row can exist globally — in that case we update only if it already belongs
+ * to this tenant (or has null tenant_id). Otherwise insert, and if the legacy
+ * PK blocks us, throw a clear schema-migration error.
+ */
+async function writeSiteImageRow(
+  tenantId: string,
+  key: SiteImageKey,
+  fields: {
+    storage_path: string;
+    public_url: string;
+    alt: string;
+    updated_by: string | null;
+  },
+): Promise<void> {
+  const row = { key, tenant_id: tenantId, ...fields };
+
+  let existingQuery = supabase.from("site_images").select("key, tenant_id").eq("key", key);
+  existingQuery = withTenantFilter(existingQuery, tenantId);
+  const { data: tenantRow, error: tenantReadError } = await existingQuery.maybeSingle();
+  if (tenantReadError) throw tenantReadError;
+
+  if (tenantRow?.key) {
+    let updateQuery = supabase.from("site_images").update(row).eq("key", key);
+    updateQuery = withTenantFilter(updateQuery, tenantId);
+    const { error: updateError } = await updateQuery;
+    if (updateError) throw updateError;
+    return;
+  }
+
+  // Legacy unscoped row (null tenant) — claim for this tenant only.
+  const { data: legacyRow, error: legacyReadError } = await supabase
+    .from("site_images")
+    .select("key, tenant_id")
+    .eq("key", key)
+    .is("tenant_id", null)
+    .maybeSingle();
+  if (legacyReadError) throw legacyReadError;
+
+  if (legacyRow?.key) {
+    const { error: claimError } = await supabase
+      .from("site_images")
+      .update(row)
+      .eq("key", key)
+      .is("tenant_id", null);
+    if (claimError) throw claimError;
+    return;
+  }
+
+  const { error: insertError } = await supabase.from("site_images").insert(row);
+  if (!insertError) return;
+
+  if (isUniqueViolation(insertError)) {
+    throw new Error(
+      "Could not save this image because the database still uses a single global primary key on site_images.key. " +
+        "Run supabase/patch-site-images-tenant-key.sql in the Supabase SQL Editor, then try again. " +
+        `(${insertError.message})`,
+    );
+  }
+  throw insertError;
+}
+
 export async function uploadSiteImageOverride(
   key: SiteImageKey,
   file: File,
@@ -377,28 +442,40 @@ export async function uploadSiteImageOverride(
   const userId = userData.user?.id ?? null;
   const tenantId = await tenantIdForQuery();
 
-  const { error: upsertError } = await supabase.from("site_images").upsert(
-    {
-      key,
-      storage_path: storagePath,
-      public_url: publicUrl,
-      alt: alt?.trim() || slot.defaultAlt,
-      updated_by: userId,
-      tenant_id: tenantId,
-    },
-    { onConflict: "tenant_id,key" },
-  );
-  if (upsertError) throw upsertError;
+  await writeSiteImageRow(tenantId, key, {
+    storage_path: storagePath,
+    public_url: publicUrl,
+    alt: alt?.trim() || slot.defaultAlt,
+    updated_by: userId,
+  });
 }
 
 export async function resetSiteImageOverride(key: SiteImageKey): Promise<void> {
   const tenantId = await tenantIdForQuery();
-  let existingQuery = supabase.from("site_images").select("storage_path").eq("key", key);
+  let existingQuery = supabase.from("site_images").select("storage_path, tenant_id").eq("key", key);
   existingQuery = withTenantFilter(existingQuery, tenantId);
-  const { data: existing } = await existingQuery.maybeSingle();
+  const { data: tenantRow } = await existingQuery.maybeSingle();
 
-  if (existing?.storage_path) {
-    await supabase.storage.from(SITE_IMAGES_BUCKET).remove([existing.storage_path]);
+  // Only touch this tenant's row (or a null-tenant legacy row). Never delete another team's image.
+  let storagePath = tenantRow?.storage_path as string | undefined;
+  if (!storagePath) {
+    const { data: legacyRow } = await supabase
+      .from("site_images")
+      .select("storage_path")
+      .eq("key", key)
+      .is("tenant_id", null)
+      .maybeSingle();
+    storagePath = legacyRow?.storage_path as string | undefined;
+    if (storagePath) {
+      await supabase.storage.from(SITE_IMAGES_BUCKET).remove([storagePath]);
+      const { error } = await supabase.from("site_images").delete().eq("key", key).is("tenant_id", null);
+      if (error) throw error;
+      return;
+    }
+  }
+
+  if (storagePath) {
+    await supabase.storage.from(SITE_IMAGES_BUCKET).remove([storagePath]);
   }
 
   let deleteQuery = supabase.from("site_images").delete().eq("key", key);
@@ -412,25 +489,30 @@ export async function clearSiteImageSlot(key: SiteImageKey): Promise<void> {
   const tenantId = await tenantIdForQuery();
   let existingQuery = supabase.from("site_images").select("storage_path").eq("key", key);
   existingQuery = withTenantFilter(existingQuery, tenantId);
-  const { data: existing } = await existingQuery.maybeSingle();
+  const { data: tenantRow } = await existingQuery.maybeSingle();
 
-  if (existing?.storage_path) {
-    await supabase.storage.from(SITE_IMAGES_BUCKET).remove([existing.storage_path]);
+  let storagePath = tenantRow?.storage_path as string | undefined;
+  if (!storagePath) {
+    const { data: legacyRow } = await supabase
+      .from("site_images")
+      .select("storage_path")
+      .eq("key", key)
+      .is("tenant_id", null)
+      .maybeSingle();
+    storagePath = legacyRow?.storage_path as string | undefined;
+  }
+
+  if (storagePath) {
+    await supabase.storage.from(SITE_IMAGES_BUCKET).remove([storagePath]);
   }
 
   const { data: userData } = await supabase.auth.getUser();
-  const { error } = await supabase.from("site_images").upsert(
-    {
-      key,
-      tenant_id: tenantId,
-      storage_path: "",
-      public_url: "",
-      alt: "",
-      updated_by: userData.user?.id ?? null,
-    },
-    { onConflict: "tenant_id,key" },
-  );
-  if (error) throw error;
+  await writeSiteImageRow(tenantId, key, {
+    storage_path: "",
+    public_url: "",
+    alt: "",
+    updated_by: userData.user?.id ?? null,
+  });
 }
 
 export async function fetchSiteImageRowsForAdmin(): Promise<

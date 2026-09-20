@@ -22,8 +22,22 @@ export function normalizeAccentColor(input: string | null | undefined): string {
   return normalizeHexColor(input, DEFAULT_ACCENT_COLOR);
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const h = normalizeBrandColor(hex).slice(1);
+/** Default hero overlay text — matches --cream in styles.css */
+export const DEFAULT_HERO_TEXT_COLOR = "#faf7f2";
+
+export function normalizeHeroTextColor(input: string | null | undefined): string {
+  return normalizeHexColor(input, DEFAULT_HERO_TEXT_COLOR);
+}
+
+/** Hex color with alpha 0–1 for hero subtext / tagline tints */
+export function hexWithAlpha(hex: string, alpha: number, fallback = DEFAULT_HERO_TEXT_COLOR): string {
+  const { r, g, b } = hexToRgb(hex, fallback);
+  const a = Math.max(0, Math.min(1, alpha));
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+function hexToRgb(hex: string, fallback = DEFAULT_BRAND_COLOR): { r: number; g: number; b: number } {
+  const h = normalizeHexColor(hex, fallback).slice(1);
   return {
     r: parseInt(h.slice(0, 2), 16),
     g: parseInt(h.slice(2, 4), 16),

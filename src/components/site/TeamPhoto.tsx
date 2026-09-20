@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImageIcon } from "lucide-react";
 
 type Props = {
@@ -10,6 +10,8 @@ type Props = {
   loading?: "lazy" | "eager";
   fetchPriority?: "high" | "low" | "auto";
   label?: string;
+  /** Used when the primary src fails to load (e.g. deleted Supabase object). */
+  fallbackSrc?: string;
 };
 
 export function TeamPhoto({
@@ -21,8 +23,15 @@ export function TeamPhoto({
   loading = "lazy",
   fetchPriority,
   label,
+  fallbackSrc,
 }: Props) {
+  const [activeSrc, setActiveSrc] = useState(src);
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setActiveSrc(src);
+    setFailed(false);
+  }, [src]);
 
   if (failed) {
     return (
@@ -41,14 +50,20 @@ export function TeamPhoto({
 
   return (
     <img
-      src={src}
+      src={activeSrc}
       alt={alt}
       width={width}
       height={height}
       loading={loading}
       fetchPriority={fetchPriority}
       className={className}
-      onError={() => setFailed(true)}
+      onError={() => {
+        if (fallbackSrc && activeSrc !== fallbackSrc) {
+          setActiveSrc(fallbackSrc);
+          return;
+        }
+        setFailed(true);
+      }}
     />
   );
 }

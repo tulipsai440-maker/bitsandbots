@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { normalizeAccentColor, normalizeBrandColor } from "@/lib/brand-colors";
+import { normalizeAccentColor, normalizeBrandColor, normalizeHeroTextColor } from "@/lib/brand-colors";
 import { DEMO_OUTREACH_STORIES } from "@/lib/demo/demo-defaults";
 import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import {
@@ -62,6 +62,7 @@ function settingsToRow(settings: SiteSettings, tenantId: string, rowId: number) 
     join_success_title: settings.joinSuccessTitle,
     join_success_message: settings.joinSuccessMessage,
     hero_subtext: settings.heroSubtext,
+    hero_text_color: normalizeHeroTextColor(settings.heroTextColor),
     hero_primary_label: settings.heroPrimaryLabel,
     hero_primary_path: settings.heroPrimaryPath,
     hero_secondary_label: settings.heroSecondaryLabel,
@@ -157,10 +158,17 @@ export async function saveSiteSettings(settings: SiteSettings): Promise<void> {
     rowId = ((maxRow?.id as number | undefined) ?? 0) + 1;
   }
 
-  const { error } = await db
-    .from("site_settings")
-    .upsert(settingsToRow(settings, tenantId, rowId), { onConflict: "tenant_id" });
-  if (error) throw error;
+  const row = settingsToRow(settings, tenantId, rowId);
+  if (existing?.id != null) {
+    const { error } = await withTenantFilter(
+      db.from("site_settings").update(row).eq("id", rowId),
+      tenantId,
+    );
+    if (error) throw error;
+  } else {
+    const { error } = await db.from("site_settings").insert(row);
+    if (error) throw error;
+  }
 }
 
 export async function saveOutreachStories(stories: OutreachStoryRow[]): Promise<void> {
@@ -196,20 +204,33 @@ export async function saveOutreachStories(stories: OutreachStoryRow[]): Promise<
       if (legacyDeleteError) throw legacyDeleteError;
     }
 
-    const { error } = await db.from("outreach_stories").upsert(
-      {
-        id: storageId,
-        tenant_id: tenantId,
-        sort_order: story.sortOrder,
-        title: story.title,
-        description: story.description,
-        image_key: story.imageKey,
-        default_image_url: story.defaultImageUrl,
-        default_image_alt: story.defaultImageAlt,
-      },
-      { onConflict: "id" },
-    );
-    if (error) throw error;
+    const payload = {
+      id: storageId,
+      tenant_id: tenantId,
+      sort_order: story.sortOrder,
+      title: story.title,
+      description: story.description,
+      image_key: story.imageKey,
+      default_image_url: story.defaultImageUrl,
+      default_image_alt: story.defaultImageAlt,
+    };
+
+    const { data: existingStory, error: storyReadError } = await withTenantFilter(
+      db.from("outreach_stories").select("id").eq("id", storageId),
+      tenantId,
+    ).maybeSingle();
+    if (storyReadError) throw storyReadError;
+
+    if (existingStory) {
+      const { error } = await withTenantFilter(
+        db.from("outreach_stories").update(payload).eq("id", storageId),
+        tenantId,
+      );
+      if (error) throw error;
+    } else {
+      const { error } = await db.from("outreach_stories").insert(payload);
+      if (error) throw error;
+    }
   }
 }
 

@@ -65,6 +65,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
       <div className="max-w-md text-center">
         <h1 className="font-display text-2xl text-foreground">Something went wrong</h1>
         <p className="mt-2 text-sm text-muted-foreground">Please try again or return to the homepage.</p>
+        {import.meta.env.DEV && error.message ? (
+          <pre className="mt-4 max-h-40 overflow-auto rounded-lg border border-border bg-muted/40 p-3 text-left text-xs text-muted-foreground whitespace-pre-wrap">
+            {error.stack ?? error.message}
+          </pre>
+        ) : null}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => { router.invalidate(); reset(); }}
@@ -121,14 +126,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { title: `${s.siteName} — ${s.siteTagline}` },
         {
           name: "description",
-          content: `${s.siteName} is a FIRST LEGO League team founded in ${s.foundedYear}. ${s.meetingsBlurb}`,
+          content: `${s.siteName} — ${s.siteTagline}. Founded in ${s.foundedYear}. ${s.meetingsBlurb}`,
         },
         { name: "author", content: s.siteName },
         { name: "theme-color", content: normalizeBrandColor(s.brandColor) },
         { property: "og:title", content: `${s.siteName} — ${s.siteTagline}` },
         {
           property: "og:description",
-          content: `A FIRST LEGO League team founded in ${s.foundedYear}. ${s.meetingsBlurb}`,
+          content: `${s.siteName} — ${s.siteTagline}. Founded in ${s.foundedYear}. ${s.meetingsBlurb}`,
         },
         { property: "og:type", content: "website" },
         { property: "og:site_name", content: s.siteName },

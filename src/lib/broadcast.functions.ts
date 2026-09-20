@@ -7,7 +7,7 @@ import {
 import { createClient } from "@supabase/supabase-js";
 import { uniquePhonesFromParentRows } from "@/lib/broadcast-phones";
 import { loadCoachCcEmailsServer } from "@/lib/coach-cc-emails";
-import { BITSANDBOTS_TENANT_ID } from "@/lib/tenant/types";
+import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 const schema = z.object({
   subject: z.string().min(1, "Subject is required").max(200),
@@ -63,9 +63,10 @@ async function loadParentEmails(): Promise<string[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = supabaseAdmin as any;
+  const tenantId = await tenantIdForQuery();
 
   const { data: rpcData, error: rpcError } = await admin.rpc("list_unique_parent_emails", {
-    p_tenant_id: BITSANDBOTS_TENANT_ID,
+    p_tenant_id: tenantId,
   });
   if (!rpcError && Array.isArray(rpcData)) {
     const emails = rpcData
@@ -77,7 +78,10 @@ async function loadParentEmails(): Promise<string[]> {
     if (emails.length > 0) return [...new Set(emails)].sort();
   }
 
-  const { data, error } = await admin.from("parent_contacts").select("email");
+  const { data, error } = await admin
+    .from("parent_contacts")
+    .select("email")
+    .eq("tenant_id", tenantId);
   if (error) {
     console.error("[broadcast] parent emails", error.message, rpcError?.message);
     throw new Error(
@@ -103,8 +107,12 @@ async function loadParentPhones(): Promise<string[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = supabaseAdmin as any;
+  const tenantId = await tenantIdForQuery();
 
-  const { data, error } = await admin.from("parent_contacts").select("phone");
+  const { data, error } = await admin
+    .from("parent_contacts")
+    .select("phone")
+    .eq("tenant_id", tenantId);
   if (error) {
     console.error("[broadcast] parent phones", error.message);
     throw new Error(
@@ -171,7 +179,7 @@ async function sendOneWhatsApp(
 async function sendOneResend(
   apiKey: string,
   fromAddress: string,
-  to: string,
+  to: string[],
   subject: string,
   text: string,
   html: string,
@@ -180,7 +188,7 @@ async function sendOneResend(
 ) {
   const body: Record<string, unknown> = {
     from: fromAddress,
-    to: [to],
+    to,
     subject,
     text,
     html,
@@ -199,8 +207,8 @@ async function sendOneResend(
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    console.error("[broadcast] Resend error", to, res.status, detail);
-    let message = detail || `Failed to send to ${to}`;
+    console.error("[broadcast] Resend error", to.join(","), res.status, detail);
+    let message = detail || `Failed to send to ${to.join(", ")}`;
     try {
       const parsed = JSON.parse(detail) as { message?: string };
       if (parsed.message) message = parsed.message;
@@ -223,7 +231,10 @@ async function sendOneResend(
   return res.json().catch(() => ({}));
 }
 
-/** Send one personalized email per parent via Resend batch API (reliable delivery). */
+/**
+ * One email to all parents (To), with coaches CC'd once.
+ * Resend allows up to 50 addresses across to/cc/bcc per message.
+ */
 async function sendBroadcastResend(
   apiKey: string,
   fromAddress: string,
@@ -234,54 +245,42 @@ async function sendBroadcastResend(
   replyTo?: string,
   cc?: string[],
 ) {
-  const batch = recipients.map((to) => {
-    const item: Record<string, unknown> = {
-      from: fromAddress,
-      to: [to],
+  const parentSet = new Set(recipients.map((e) => e.trim().toLowerCase()).filter((e) => e.includes("@")));
+  const parents = [...parentSet];
+  const coachCc = (cc ?? [])
+    .map((e) => e.trim().toLowerCase())
+    .filter((e) => e.includes("@") && !parentSet.has(e));
+
+  if (parents.length === 0) {
+    throw new Error("No parent emails to send to.");
+  }
+
+  // Keep coaches on every chunk so they still see large broadcasts; prefer one chunk when possible.
+  const maxPerEmail = 50;
+  const roomForParents = Math.max(1, maxPerEmail - coachCc.length);
+  const chunks: string[][] = [];
+  for (let i = 0; i < parents.length; i += roomForParents) {
+    chunks.push(parents.slice(i, i + roomForParents));
+  }
+
+  let sentMessages = 0;
+  for (let i = 0; i < chunks.length; i += 1) {
+    // Only CC coaches on the first message so they get one inbox copy.
+    const ccForChunk = i === 0 ? coachCc : undefined;
+    await sendOneResend(
+      apiKey,
+      fromAddress,
+      chunks[i],
       subject,
       text,
       html,
-    };
-    if (replyTo) item.reply_to = [replyTo];
-    if (cc?.length) item.cc = cc;
-    return item;
-  });
-
-  const res = await fetch("https://api.resend.com/emails/batch", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(batch),
-  });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    console.error("[broadcast] Resend batch error", res.status, detail);
-    let message = detail || "Failed to send broadcast emails";
-    try {
-      const parsed = JSON.parse(detail) as { message?: string };
-      if (parsed.message) message = parsed.message;
-    } catch {
-      /* keep raw */
-    }
-    throw new Error(message);
-  }
-
-  const result = (await res.json().catch(() => null)) as {
-    data?: Array<{ id?: string }>;
-  } | null;
-  const ids = result?.data?.filter((d) => d?.id) ?? [];
-  if (ids.length === 0) {
-    throw new Error("Resend accepted the request but no emails were queued.");
-  }
-  if (ids.length < recipients.length) {
-    throw new Error(
-      `Resend queued ${ids.length} of ${recipients.length} emails — retrying individually.`,
+      replyTo,
+      ccForChunk,
     );
+    sentMessages += 1;
   }
-  return ids.length;
+
+  return { sentMessages, parentCount: parents.length, coachCcCount: coachCc.length };
 }
 
 /** Admin-only: email every unique parent address via Resend. */
@@ -337,7 +336,7 @@ export const sendParentBroadcast = createServerFn({ method: "POST" })
     let sent = 0;
 
     try {
-      sent = await sendBroadcastResend(
+      const result = await sendBroadcastResend(
         apiKey,
         fromAddress,
         recipients,
@@ -347,16 +346,42 @@ export const sendParentBroadcast = createServerFn({ method: "POST" })
         replyTo,
         coachCc,
       );
+      sent = result.parentCount;
     } catch (err) {
-      // Batch failed — fall back to one-by-one so partial delivery still works.
-      console.warn("[broadcast] batch send failed, falling back to individual sends", err);
-      for (const to of recipients) {
+      // One-message send failed — fall back to individual parent emails WITHOUT coach CC
+      // so coaches don't get a flood of copies. Then send coaches a single copy.
+      console.warn("[broadcast] group send failed, falling back to individual parent sends", err);
+      const parentSet = new Set(recipients.map((e) => e.trim().toLowerCase()));
+      const uniqueParents = [...parentSet];
+      const uniqueCoaches = coachCc
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e.includes("@") && !parentSet.has(e));
+
+      for (const to of uniqueParents) {
         try {
-          await sendOneResend(apiKey, fromAddress, to, subject, text, html, replyTo, coachCc);
+          await sendOneResend(apiKey, fromAddress, [to], subject, text, html, replyTo);
           sent += 1;
         } catch (oneErr) {
           failures.push(
             `${to}: ${oneErr instanceof Error ? oneErr.message : "send failed"}`,
+          );
+        }
+      }
+
+      if (sent > 0 && uniqueCoaches.length > 0) {
+        try {
+          await sendOneResend(
+            apiKey,
+            fromAddress,
+            uniqueCoaches,
+            `[Coach copy] ${subject}`,
+            text,
+            html,
+            replyTo,
+          );
+        } catch (ccErr) {
+          failures.push(
+            `coaches: ${ccErr instanceof Error ? ccErr.message : "coach copy failed"}`,
           );
         }
       }

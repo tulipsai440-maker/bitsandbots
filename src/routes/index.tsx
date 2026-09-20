@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SettingsNavLink } from "@/components/site/SettingsNavLink";
 import { SiteLayout } from "@/components/site/Layout";
 import { EditableBlock, EditableText } from "@/components/admin/inline-edit/EditableText";
+import { EditableHeroTextColor } from "@/components/admin/inline-edit/EditableHeroTextColor";
+import { ManageInAdmin } from "@/components/admin/inline-edit/AdminLiveEditBar";
 import { EditableHomepagePillar } from "@/components/admin/inline-edit/EditableHomepagePillar";
 import { TeamPhoto } from "@/components/site/TeamPhoto";
 import { useEffect, useState } from "react";
@@ -12,15 +14,17 @@ import {
   buildDefaultSiteImageOverrides,
   fetchSiteImageOverrides,
   resolveSiteImage,
+  SITE_IMAGE_SLOTS,
   type SiteImageOverride,
   type SiteImageOverrides,
 } from "@/lib/site-images";
 import { OUTREACH_ITEMS } from "@/lib/outreach";
 import { useSiteSettings } from "@/lib/site-settings-context";
 import { DEFAULT_SITE_SETTINGS } from "@/lib/site-settings";
-import { brandingRouteLoader } from "@/lib/team-branding";
+import { brandingRouteLoader, defaultTeamBranding } from "@/lib/team-branding";
 import { shouldUseDemoAssets } from "@/lib/demo/demo-tenant";
 import { parseAdminEditSearch } from "@/lib/admin-route-search";
+import { hexWithAlpha, normalizeHeroTextColor } from "@/lib/brand-colors";
 
 async function loadSiteImages(): Promise<SiteImageOverrides> {
   try {
@@ -32,27 +36,45 @@ async function loadSiteImages(): Promise<SiteImageOverrides> {
 
 export const Route = createFileRoute("/")({
   validateSearch: parseAdminEditSearch,
-  loader: async () => ({
-    siteImages: await loadSiteImages(),
-    isDemo: await shouldUseDemoAssets(),
-    ...(await brandingRouteLoader()),
-  }),
+  loader: async () => {
+    try {
+      return {
+        siteImages: await loadSiteImages(),
+        isDemo: await shouldUseDemoAssets(),
+        ...(await brandingRouteLoader()),
+      };
+    } catch (error) {
+      console.error("[home loader]", error);
+      return {
+        siteImages: buildDefaultSiteImageOverrides(),
+        isDemo: false,
+        branding: defaultTeamBranding(),
+      };
+    }
+  },
   head: ({ loaderData }) => {
     const siteImages = loaderData?.siteImages ?? buildDefaultSiteImageOverrides();
     const hero = resolveSiteImage("hero", siteImages);
+    const heroDefault = SITE_IMAGE_SLOTS.find((slot) => slot.key === "hero")!;
+    const heroUrl = hero.url || heroDefault.defaultUrl;
     const s = loaderData?.branding
-      ? { ...DEFAULT_SITE_SETTINGS, siteName: loaderData.branding.siteName, siteUrl: loaderData.branding.siteUrl }
+      ? {
+          ...DEFAULT_SITE_SETTINGS,
+          siteName: loaderData.branding.siteName,
+          siteTagline: loaderData.branding.siteTagline,
+          siteUrl: loaderData.branding.siteUrl,
+        }
       : DEFAULT_SITE_SETTINGS;
     const links =
-      hero.url ? [{ rel: "preload" as const, as: "image" as const, href: hero.url }] : [];
+      heroUrl ? [{ rel: "preload" as const, as: "image" as const, href: heroUrl }] : [];
     return {
       meta: [
         { title: `${s.siteName} — ${s.siteTagline}` },
         {
           name: "description",
-          content: `${s.siteName} is a FIRST LEGO League team founded in ${s.foundedYear}. ${s.meetingsBlurb}`,
+          content: `${s.siteName} — ${s.siteTagline}`,
         },
-        ...(hero.url ? [{ property: "og:image", content: hero.url }] : []),
+        ...(heroUrl ? [{ property: "og:image", content: heroUrl }] : []),
       ],
       links,
     };
@@ -75,22 +97,30 @@ function HomePage() {
   );
 }
 
-function Hero({ hero, isDemo }: { hero: SiteImageOverride; isDemo: boolean }) {
+function Hero({ hero }: { hero: SiteImageOverride; isDemo?: boolean }) {
+  const heroDefault = SITE_IMAGE_SLOTS.find((slot) => slot.key === "hero")!;
   const {
     siteName,
     siteTagline,
     heroSubtext,
+    heroTextColor,
     heroPrimaryLabel,
     heroPrimaryPath,
     heroSecondaryLabel,
     heroSecondaryPath,
   } = useSiteSettings();
+  const heroUrl = hero.url || heroDefault.defaultUrl;
+  const textColor = normalizeHeroTextColor(heroTextColor);
+  const taglineColor = hexWithAlpha(textColor, 0.92);
+  const subtextColor = hexWithAlpha(textColor, 0.82);
   return (
     <section className="relative isolate overflow-hidden bg-forest-deep">
-      {hero.url ? (
+      <EditableHeroTextColor />
+      {heroUrl ? (
         <TeamPhoto
-          src={hero.url}
-          alt={hero.alt || `${siteName} FIRST LEGO League team`}
+          src={heroUrl}
+          fallbackSrc={hero.isOverride ? heroDefault.defaultUrl : undefined}
+          alt={hero.alt || `${siteName} team`}
           width={1024}
           height={453}
           loading="eager"
@@ -99,29 +129,35 @@ function Hero({ hero, isDemo }: { hero: SiteImageOverride; isDemo: boolean }) {
           label="Hero"
         />
       ) : null}
-      {!isDemo && (
-        <>
-          <div className="absolute inset-0 bg-gradient-to-b from-navy/35 via-transparent via-35% to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-forest-deep from-0% via-forest-deep/88 via-40% to-transparent to-72%" />
-        </>
-      )}
+      {/* Soft overlay so hero copy stays readable on bright or busy photos (live + demo). */}
+      <div className="absolute inset-0 bg-gradient-to-b from-navy/25 via-transparent via-40% to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-forest-deep from-0% via-forest-deep/85 via-42% to-transparent to-74%" />
       <div className="relative">
         <div
-          className={`container-page flex min-h-[78vh] flex-col items-center justify-end pb-14 pt-24 text-center text-cream md:min-h-[86vh] md:pb-20${isDemo ? " [text-shadow:0_2px_16px_rgba(0,0,0,0.65)]" : ""}`}
+          className="container-page flex min-h-[78vh] flex-col items-center justify-end pb-14 pt-24 text-center md:min-h-[86vh] md:pb-20"
+          style={{ color: textColor }}
         >
           <div className="animate-rise max-w-3xl">
-            <h1 className="font-display text-6xl leading-[0.95] tracking-tight text-cream md:text-8xl">
-              <EditableText settingKey="siteName" label="Team name">
+            <h1
+              className="font-display text-6xl leading-[0.95] tracking-tight md:text-8xl"
+              style={{ color: textColor }}
+            >
+              <EditableText settingKey="siteName" label="Team name" heroText>
                 {siteName}
               </EditableText>
             </h1>
-            <p className="mt-4 font-display text-xl text-cream/90 md:text-2xl">
-              <EditableText settingKey="siteTagline" label="Tagline">
+            <p
+              className="mt-4 font-display text-xl md:text-2xl"
+              style={{ color: taglineColor }}
+            >
+              <EditableText settingKey="siteTagline" label="Tagline" heroText>
                 {siteTagline}
               </EditableText>
             </p>
-            <EditableBlock settingKey="heroSubtext" label="Hero subtext" className="mx-auto mt-5 max-w-lg">
-              <p className="text-base leading-relaxed text-cream/80 md:text-lg">{heroSubtext}</p>
+            <EditableBlock settingKey="heroSubtext" label="Hero subtext" className="mx-auto mt-5 max-w-lg" heroText>
+              <p className="text-base leading-relaxed md:text-lg" style={{ color: subtextColor }}>
+                {heroSubtext}
+              </p>
             </EditableBlock>
             <div className="mt-9 flex flex-wrap justify-center gap-3">
               <SettingsNavLink path={heroPrimaryPath} className="btn-primary">

@@ -44,12 +44,12 @@ export const Route = createFileRoute("/gallery")({
         { title: `Photo Gallery — ${name}` },
         {
           name: "description",
-          content: `Photos from ${name} practices, builds, and FIRST LEGO League events.`,
+          content: `Photos from ${name} practices, builds, and events.`,
         },
         { property: "og:title", content: `${name} Photo Gallery` },
         {
           property: "og:description",
-          content: "Photos from practices, builds, and FLL events.",
+          content: "Photos from practices, builds, and team events.",
         },
         {
           property: "og:image",

@@ -7,6 +7,7 @@ import { TeamLogo } from "./TeamLogo";
 import { EditableBrandColor } from "@/components/admin/inline-edit/EditableBrandColor";
 import { useSiteSettings } from "@/lib/site-settings-context";
 import type { NavLinkItem } from "@/lib/site-settings";
+import { InternalRouteLink } from "@/lib/internal-route-link";
 
 const navLinkClass =
   "rounded-full px-2.5 py-2 text-sm text-foreground/80 transition-colors hover:bg-muted hover:text-foreground xl:px-3.5";
@@ -99,13 +100,13 @@ function NavLink({
     );
   }
   return (
-    <Link
-      to={item.to as "/"}
+    <InternalRouteLink
+      to={item.to}
       className={className}
       activeProps={{ className: activeClassName ?? className }}
     >
       {item.label}
-    </Link>
+    </InternalRouteLink>
   );
 }
 
@@ -124,8 +125,8 @@ function MobileNavLink({ item, onNavigate }: { item: NavLinkItem; onNavigate: ()
     );
   }
   return (
-    <Link to={item.to as "/"} onClick={onNavigate} className="rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-muted">
+    <InternalRouteLink to={item.to} onClick={onNavigate} className="rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-muted">
       {item.label}
-    </Link>
+    </InternalRouteLink>
   );
 }

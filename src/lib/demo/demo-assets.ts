@@ -2,7 +2,8 @@
 const base = "/photos/demo";
 
 export const demoAssets = {
-  hero: `${base}/hero-team-group.png`,
+  /** Generic demo hero — never a live team's uploaded photo. */
+  hero: `${base}/hero-demo-default.png`,
   teamLogo: `${base}/demo-team-logo.png`,
   favicon32: `${base}/favicon-32x32.png`,
   favicon16: `${base}/favicon-16x16.png`,

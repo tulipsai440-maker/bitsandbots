@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import {
@@ -12,6 +11,7 @@ import {
 import { useAdminEdit } from "./AdminEditProvider";
 import { useSiteContent } from "@/lib/site-settings-context";
 import type { HomepagePillar } from "@/lib/site-settings";
+import { InternalRouteLink } from "@/lib/internal-route-link";
 
 export function EditableHomepagePillar({
   pillar,
@@ -76,12 +76,12 @@ export function EditableHomepagePillar({
         <h3 className="mt-2 font-display text-2xl md:text-3xl">{live.title}</h3>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">{live.copy}</p>
         {live.href ? (
-          <Link
-            to={live.href as "/"}
+          <InternalRouteLink
+            to={live.href}
             className="mt-4 inline-block text-sm font-medium text-forest hover:underline"
           >
             {live.linkLabel ?? "Learn more →"}
-          </Link>
+          </InternalRouteLink>
         ) : null}
       </article>
 

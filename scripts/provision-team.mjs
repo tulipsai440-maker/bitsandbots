@@ -316,8 +316,33 @@ async function main() {
 
     await clearDemoSponsors(tenantId);
 
+    // Always start demos on bundled /photos/demo assets — never inherit another team's uploads.
+    await rest("DELETE", `site_images?tenant_id=eq.${tenantId}`).catch(() => {});
+    console.log("site_images cleared → bundled demo hero/photos");
+
     console.log(`\nDemo URL: ${result.url}`);
-    printCloudflareSteps(result.hostname);
+
+    // Auto DNS: prefer existing wildcard; otherwise create this team's *-demo CNAME.
+    try {
+      const { ensureDemoDns } = await import("./add-demo-dns.mjs");
+      try {
+        const wild = await ensureDemoDns({ wildcard: true });
+        console.log(`DNS: ${wild.note || "wildcard ready"} (${wild.name} → ${wild.content})`);
+      } catch (wildErr) {
+        const per = await ensureDemoDns({ slug: result.slug });
+        console.log(
+          `DNS: ${per.created ? "created" : "exists"} ${per.name} → ${per.content}`,
+        );
+      }
+    } catch (dnsErr) {
+      console.warn(`\nWARN: Could not create Cloudflare DNS automatically: ${dnsErr.message || dnsErr}`);
+      console.warn("One-time fix (covers all future demos):");
+      console.warn("  1. Cloudflare API token with Zone → DNS → Edit for fllbots.com");
+      console.warn("  2. Save as CLOUDFLARE_API_TOKEN in .env");
+      console.warn("  3. npm run dns:demo-wildcard");
+      console.warn("Or add one DNS CNAME in the dashboard: * → fllbots.com (proxied)");
+      printCloudflareSteps(result.hostname);
+    }
   }
 
   if (args.addDomain) {

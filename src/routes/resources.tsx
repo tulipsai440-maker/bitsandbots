@@ -41,12 +41,12 @@ export const Route = createFileRoute("/resources")({
         { title: `Resources — ${name}` },
         {
           name: "description",
-          content: `Official FIRST LEGO League season videos, PDFs, and helpful links for ${name} families.`,
+          content: `Season videos, PDFs, and helpful links for ${name} families.`,
         },
         { property: "og:title", content: `${name} — Resources` },
         {
           property: "og:description",
-          content: "Season videos, official PDFs, and FLL program links in one place.",
+          content: "Season videos, official PDFs, and program links in one place.",
         },
       ],
     };

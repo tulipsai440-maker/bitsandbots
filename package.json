@@ -16,6 +16,8 @@
     "provision:team": "node scripts/provision-team.mjs",
     "provision:demo-admin": "node scripts/provision-demo-admin.mjs",
     "grant:demo-admin": "node scripts/grant-demo-admin.mjs",
+    "dns:demo-wildcard": "node scripts/add-demo-dns.mjs --wildcard",
+    "dns:demo": "node scripts/add-demo-dns.mjs",
     "verify:tenants": "node scripts/verify-tenant-isolation.mjs",
     "lint": "eslint .",
     "format": "prettier --write ."

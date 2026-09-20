@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fetchActiveJoinNotifyEmailAddresses } from "@/lib/join-notify-emails";
 import { withTenantFilter } from "@/lib/tenant/query";
-import { BITSANDBOTS_TENANT_ID } from "@/lib/tenant/types";
 import { tenantIdForQuery } from "@/lib/tenant/tenant-id";
 
 function normalizeList(emails: string[]): string[] {
@@ -46,12 +45,14 @@ export async function loadCoachCcEmailsServer(): Promise<string[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = supabaseAdmin as any;
+  const tenantId = await tenantIdForQuery();
 
   const notify: string[] = [];
   const { data: notifyRows, error: notifyError } = await admin
     .from("join_notify_emails")
     .select("email")
     .eq("active", true)
+    .eq("tenant_id", tenantId)
     .order("sort_order", { ascending: true });
 
   if (!notifyError) {
@@ -66,7 +67,7 @@ export async function loadCoachCcEmailsServer(): Promise<string[]> {
   const { data: coachRows, error: coachError } = await admin
     .from("coaches")
     .select("email")
-    .eq("tenant_id", BITSANDBOTS_TENANT_ID);
+    .eq("tenant_id", tenantId);
   if (!coachError) {
     for (const row of coachRows ?? []) {
       coachEmails.push(String(row.email ?? ""));

@@ -144,16 +144,23 @@ export async function saveWhatsAppGroupUrl(url: string): Promise<void> {
     rowId = existing.id as number;
   }
 
-  const { error } = await db.from("broadcast_settings").upsert(
-    {
-      id: rowId,
-      tenant_id: tenantId,
-      whatsapp_group_url: trimmed,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "tenant_id" },
-  );
-  if (error) throw error;
+  const row = {
+    id: rowId,
+    tenant_id: tenantId,
+    whatsapp_group_url: trimmed,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (existing?.id != null) {
+    const { error } = await withTenantFilter(
+      db.from("broadcast_settings").update(row).eq("id", rowId),
+      tenantId,
+    );
+    if (error) throw error;
+  } else {
+    const { error } = await db.from("broadcast_settings").insert(row);
+    if (error) throw error;
+  }
 }
 
 export function formatBroadcastMessage(subject: string, body: string): string {

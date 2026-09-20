@@ -60,7 +60,7 @@ function CoreValuesPage() {
 
             <a
 
-              href="https://www.firstlegoleague.org/"
+              href="https://www.firstinspires.org/"
 
               target="_blank"
 
@@ -70,7 +70,7 @@ function CoreValuesPage() {
 
             >
 
-              Learn more at FIRST LEGO League
+              Learn more at FIRST
 
             </a>
 

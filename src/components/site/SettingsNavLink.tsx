@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { InternalRouteLink } from "@/lib/internal-route-link";
 
 /** Renders an internal route or external URL from site settings button paths. */
 export function SettingsNavLink({
@@ -20,8 +20,8 @@ export function SettingsNavLink({
   }
   const to = path.startsWith("/") ? path : `/${path}`;
   return (
-    <Link to={to as "/"} className={className}>
+    <InternalRouteLink to={to} className={className}>
       {children}
-    </Link>
+    </InternalRouteLink>
   );
 }

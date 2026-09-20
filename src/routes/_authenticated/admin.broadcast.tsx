@@ -247,8 +247,8 @@ function AdminBroadcastPage() {
         <h1 className="font-display text-3xl text-foreground">Send message to parents</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           All parent emails load in <strong className="text-foreground">To</strong> — remove anyone
-          who should not receive this send. Coaches are always CC&apos;d. Pick a template to start
-          fast.
+          who should not receive this send. One email goes to every parent together; coaches are
+          CC&apos;d once. Pick a template to start fast.
         </p>
       </div>
 
@@ -332,7 +332,7 @@ function AdminBroadcastPage() {
         <div className="border-t border-border/60 pt-4">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">CC</p>
           <p className="mt-1 text-muted-foreground">
-            Coach emails are CC&apos;d on every parent message (
+            Coach emails are CC&apos;d once on the group email (
             {coachCcEmails.length} address{coachCcEmails.length === 1 ? "" : "es"}).{" "}
             <Link to="/admin/join-notifications" className="font-medium text-forest underline">
               Manage coach CC emails
